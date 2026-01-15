@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { formulas } from '@/config/formulasConfig';
 import { CONFIG } from '@/config/config';
 
@@ -114,35 +114,47 @@ export function useDataPersistence() {
     reader.readAsText(file);
   };
 
-  const loadDataFromExcel = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        if (!firstSheetName) {
-          throw new Error('Excel file contains no sheets.');
-        }
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null }); // Use null for empty cells
-         if (!Array.isArray(jsonData)) {
-          throw new Error('Could not parse sheet data into an array.');
-        }
-        const processedData = jsonData.map(processLoadedRow).filter(p => p !== null); // Process and filter invalid rows
-        loadedData.value = processedData;
-      } catch (err) {
-        console.error('Error reading Excel data:', err);
-        errorLoading.value = `Error loading Excel: ${err.message}`;
-        loadedData.value = [];
+  const loadDataFromExcel = async (file) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        throw new Error('Excel file contains no sheets.');
       }
-    };
-     reader.onerror = (err) => {
-        console.error('FileReader error:', err);
-        errorLoading.value = 'Error reading file.';
-        loadedData.value = [];
-    };
-    reader.readAsArrayBuffer(file);
+      
+      // Convert worksheet to JSON
+      const jsonData = [];
+      const headerRow = worksheet.getRow(1);
+      const headers = [];
+      headerRow.eachCell((cell, colNumber) => {
+        headers[colNumber] = cell.value;
+      });
+      
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header row
+        const rowData = {};
+        row.eachCell((cell, colNumber) => {
+          const header = headers[colNumber];
+          if (header) {
+            rowData[header] = cell.value;
+          }
+        });
+        jsonData.push(rowData);
+      });
+      
+      if (!Array.isArray(jsonData)) {
+        throw new Error('Could not parse sheet data into an array.');
+      }
+      const processedData = jsonData.map(processLoadedRow).filter(p => p !== null); // Process and filter invalid rows
+      loadedData.value = processedData;
+    } catch (err) {
+      console.error('Error reading Excel data:', err);
+      errorLoading.value = `Error loading Excel: ${err.message}`;
+      loadedData.value = [];
+    }
   };
 
 
@@ -164,28 +176,58 @@ export function useDataPersistence() {
     linkElement.click();
   };
 
-  const downloadDataAsExcel = (dataToSave) => {
+  const downloadDataAsExcel = async (dataToSave) => {
      if (!Array.isArray(dataToSave)) {
         console.error('Data to save is not an array');
         return;
     }
-    // Prepare data for saving (e.g., select/rename columns if needed)
-    const worksheetData = dataToSave.map(point => ({
-        ID: point.id,
-        Age: point.age,
-        TLV: point.tlv,
-        nTLV: point.ntlv,
-        PG: point.pg,
-        LGR: point.lgr,
-        Group: point.group,
-        GroupColor: point.groupColor
-    }));
+    try {
+      // Prepare data for saving (e.g., select/rename columns if needed)
+      const worksheetData = dataToSave.map(point => ({
+          ID: point.id,
+          Age: point.age,
+          TLV: point.tlv,
+          nTLV: point.ntlv,
+          PG: point.pg,
+          LGR: point.lgr,
+          Group: point.group,
+          GroupColor: point.groupColor
+      }));
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(worksheetData);
-    XLSX.utils.book_append_sheet(wb, ws, "PLD_Data");
-    const fileName = `pld_data_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('PLD_Data');
+      
+      // Add headers
+      worksheet.columns = [
+        { header: 'ID', key: 'ID' },
+        { header: 'Age', key: 'Age' },
+        { header: 'TLV', key: 'TLV' },
+        { header: 'nTLV', key: 'nTLV' },
+        { header: 'PG', key: 'PG' },
+        { header: 'LGR', key: 'LGR' },
+        { header: 'Group', key: 'Group' },
+        { header: 'GroupColor', key: 'GroupColor' }
+      ];
+      
+      // Add data rows
+      worksheet.addRows(worksheetData);
+      
+      // Generate buffer and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const fileName = `pld_data_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', url);
+      linkElement.setAttribute('download', fileName);
+      linkElement.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error writing Excel file:', err);
+    }
   };
 
   // --- Return public API ---
