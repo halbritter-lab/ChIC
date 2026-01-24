@@ -17,8 +17,8 @@ export default defineConfig(({ command }) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'] // Ensure all needed assets are cached
         },
         manifest: {
-          name: 'PLD-Progression Grouper',
-          short_name: 'PLD-PG',
+          name: 'Charité Imaging Classification Tool',
+          short_name: 'ChIC',
           description: 'An application to group PLD progression data.', // Add a description
           start_url: './?source=pwa',
           display: 'standalone',
