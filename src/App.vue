@@ -3,6 +3,7 @@
   <div
     id="app"
     class="container"
+    :class="{ 'dark-theme': isDark }"
   >
     <!-- Note: disclaimerSections prop is provided by the disclaimerMixin -->
     <!-- Use the DisclaimerModal component -->
@@ -15,68 +16,122 @@
       @reopen-modal="reopenModal"
     />
 
+    <!-- FAQ Modal -->
+    <div v-if="showFAQ" class="faq-modal-overlay" @click.self="closeFAQ">
+      <div class="faq-modal">
+        <div class="faq-header">
+          <h2>How to Use & FAQ</h2>
+          <button class="faq-close" @click="closeFAQ">×</button>
+        </div>
+        <div class="faq-content">
+          <h3>How to Use</h3>
+          <ol>
+            <li><strong>Enter Patient ID:</strong> Provide a unique identifier for the patient.</li>
+            <li><strong>Enter Age:</strong> Input the patient's age (20-80 years).</li>
+            <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
+            <li><strong>Plot Data:</strong> Click "Plot Data" to add the data point to the chart.</li>
+            <li><strong>View Results:</strong> The normalized TLV and progression group (PG1-PG3) will be displayed.</li>
+          </ol>
+          
+          <h3>Frequently Asked Questions</h3>
+          <div class="faq-item">
+            <h4>What is nTLV?</h4>
+            <p>Normalized Total Liver Volume (nTLV) is the TLV divided by a normalization factor, allowing comparison across patients.</p>
+          </div>
+          <div class="faq-item">
+            <h4>What do the progression groups mean?</h4>
+            <p><strong>PG1:</strong> Low progression (&lt;3.3%/year)<br>
+               <strong>PG2:</strong> Intermediate progression (3.3-6.6%/year)<br>
+               <strong>PG3:</strong> High progression (&gt;6.6%/year)</p>
+          </div>
+          <div class="faq-item">
+            <h4>Can I save my data?</h4>
+            <p>Yes! Use the "Save" button to export your data as JSON, or "Download (Excel)" to export as an Excel file.</p>
+          </div>
+          <div class="faq-item">
+            <h4>What is the grouping feature?</h4>
+            <p>Enable grouping to categorize multiple patients and assign different colors for visualization.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Use the AppHeader component -->
     <AppHeader
       :version="version"
       :last-commit-hash="lastCommitHash"
       :fetch-error="fetchError"
+      :is-dark="isDark"
+      @reset-form="resetForm"
+      @toggle-theme="toggleTheme"
+      @open-faq="openFAQ"
+      @print-page="printPage"
     />
 
     <!-- Main content area -->
     <div class="content">
-      <!-- Use the InputControls component -->
-      <InputControls
-        v-if="showControls"
-        v-model:patient-id="patientId"
-        v-model:age="age"
-        v-model:total-liver-volume="totalLiverVolume"
-        v-model:group="group"
-        v-model:group-color="groupColor"
-        :enable-grouping="enableGrouping"
-        :id-warning-message="idWarningMessage"
-        :age-validation-message="ageValidationMessage"
-        :tlv-validation-message="tlvValidationMessage"
-        :formatted-normalized-t-l-v="formattedNormalizedTLV"
-        :progression-group="progressionGroup"
-        :liver-growth-rate="liverGrowthRate"
-        :is-invalid-input="isInvalidInput"
-        :data-points-length="dataPoints.length"
-        @toggle-grouping="toggleGrouping"
-        @add-data-point="addDataPoint"
-        @print-page="printPage"
-        @download-chart="downloadChart"
-        @save-data-as-json="() => saveDataAsJson(dataPoints)"
-        @trigger-load="triggerLoad"
-        @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
-      />
+      <!-- Two column layout -->
+      <div class="two-column-layout">
+        <!-- Left column: Input controls -->
+        <div class="left-column">
+          <!-- Use the InputControls component -->
+          <InputControls
+            v-if="showControls"
+            v-model:patient-id="patientId"
+            v-model:age="age"
+            v-model:total-liver-volume="totalLiverVolume"
+            v-model:group="group"
+            v-model:group-color="groupColor"
+            :enable-grouping="enableGrouping"
+            :id-warning-message="idWarningMessage"
+            :age-validation-message="ageValidationMessage"
+            :tlv-validation-message="tlvValidationMessage"
+            :formatted-normalized-t-l-v="formattedNormalizedTLV"
+            :progression-group="progressionGroup"
+            :liver-growth-rate="liverGrowthRate"
+            :is-invalid-input="isInvalidInput"
+            :data-points-length="dataPoints.length"
+            @toggle-grouping="toggleGrouping"
+            @add-data-point="addDataPoint"
+            @print-page="printPage"
+            @download-chart="downloadChart"
+            @save-data-as-json="() => saveDataAsJson(dataPoints)"
+            @trigger-load="triggerLoad"
+            @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
+          />
 
-      <!-- Loading Error Display -->
-      <div
-        v-if="loadingError"
-        class="validation-message"
-      > 
-        {{ loadingError }}
-      </div>
-
-      <!-- Container for the chart visualization -->
-      <ChartDisplay 
-        ref="chartDisplayRef" 
-        :data-points="dataPoints"
-        :enable-grouping="enableGrouping"
-        :group="group"
-        :group-color="groupColor"
-      />
-
-      <!-- Progression Group Squares -->
-      <div class="progression-groups">
-        <div class="progression-group PG3">
-          <strong>PG3</strong><br>&gt;6.6%/y
+          <!-- Loading Error Display -->
+          <div
+            v-if="loadingError"
+            class="validation-message"
+          > 
+            {{ loadingError }}
+          </div>
         </div>
-        <div class="progression-group PG2">
-          <strong>PG2</strong><br>3.3-6.6%/y
-        </div>
-        <div class="progression-group PG1">
-          <strong>PG1</strong><br>&lt;3.3%/y
+
+        <!-- Right column: Chart and progression groups -->
+        <div class="right-column">
+          <!-- Container for the chart visualization -->
+          <ChartDisplay 
+            ref="chartDisplayRef" 
+            :data-points="dataPoints"
+            :enable-grouping="enableGrouping"
+            :group="group"
+            :group-color="groupColor"
+          />
+
+          <!-- Progression Group Squares -->
+          <div class="progression-groups">
+            <div class="progression-group PG1">
+              <strong>PG1</strong><br>&lt;3.3%/y
+            </div>
+            <div class="progression-group PG2">
+              <strong>PG2</strong><br>3.3-6.6%/y
+            </div>
+            <div class="progression-group PG3">
+              <strong>PG3</strong><br>&gt;6.6%/y
+            </div>
+          </div>
         </div>
       </div>
   
@@ -203,6 +258,8 @@ export default {
     const showCitation = ref(true);
     const showDocumentation = ref(true);
     const showControls = ref(true);
+    const isDark = ref(false);
+    const showFAQ = ref(false);
 
     const getUrlQueryParams = async () => {
       await router.isReady();
@@ -416,6 +473,36 @@ export default {
       enableGrouping.value = !enableGrouping.value;
     };
 
+    // Toggle dark/light theme
+    const toggleTheme = () => {
+      isDark.value = !isDark.value;
+      document.body.classList.toggle('dark-theme', isDark.value);
+    };
+
+    // Reset form to initial state
+    const resetForm = () => {
+      patientId.value = '';
+      age.value = CONFIG.AGE_MIN;
+      totalLiverVolume.value = CONFIG.TLV_MIN;
+      group.value = '';
+      groupColor.value = '';
+      dataPoints.value = [];
+      idWarningMessage.value = '';
+      ageValidationMessage.value = '';
+      tlvValidationMessage.value = '';
+      chartDisplayRef.value?.clearChart();
+    };
+
+    // Open FAQ/Help modal
+    const openFAQ = () => {
+      showFAQ.value = true;
+    };
+
+    // Close FAQ modal
+    const closeFAQ = () => {
+      showFAQ.value = false;
+    };
+
     onMounted(async () => { // Make onMounted async if using await inside
       // Ensure DOM is updated and refs are available before accessing URL params that might interact with refs
       await nextTick(); 
@@ -423,8 +510,8 @@ export default {
       document.documentElement.style.setProperty('--modal-max-width', CONFIG.MODAL_MAX_WIDTH);
       document.documentElement.style.setProperty('--modal-max-height', CONFIG.MODAL_MAX_HEIGHT);
       fetchLastCommit(); // Call fetchLastCommit here
-      document.title = 'PLD-Progression Grouper';
-      updateMetaTag('description', 'PLD-Progression Grouper is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.');
+      document.title = 'Charité Imaging Classification';
+      updateMetaTag('description', 'Charité Imaging Classification is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.');
       updateMetaTag('keywords', 'PLD, Polycystic Liver Disease, Liver Health, Medical Research, Data Visualization, Vue.js, Web Application, Liver Disease Progression, Medical Education, Healthcare Technology');
       updateMetaTag('author', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
       updateMetaTag('creator', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
@@ -473,12 +560,164 @@ export default {
       groupColor,
       toggleGrouping,
       updateChartPoint,
-      chartDisplayRef // Return the ref for the ChartDisplay component
+      chartDisplayRef, // Return the ref for the ChartDisplay component
+      // Theme and UI
+      isDark,
+      toggleTheme,
+      resetForm,
+      showFAQ,
+      openFAQ,
+      closeFAQ
     };
   }
 };
 </script>
 
 <style>
-/* ... */
+/* Dark theme styles */
+.dark-theme {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.dark-theme .controls,
+.dark-theme .data-points-table,
+.dark-theme .progression-group {
+  background-color: #16213e;
+  color: #e0e0e0;
+}
+
+.dark-theme .data-points-table th {
+  background-color: #0f3460;
+}
+
+.dark-theme .data-points-table td {
+  background-color: #1a1a2e;
+}
+
+.dark-theme input {
+  background-color: #16213e;
+  color: #e0e0e0;
+  border-color: #0f3460;
+}
+
+/* FAQ Modal styles */
+.faq-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.faq-modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  max-height: 80vh;
+  width: 90%;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .faq-modal {
+  background: #16213e;
+  color: #e0e0e0;
+}
+
+.faq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  color: white;
+}
+
+.faq-header h2 {
+  margin: 0;
+  font-size: 1.3em;
+}
+
+.faq-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.faq-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.faq-content {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+}
+
+.faq-content h3 {
+  color: #2c3e50;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 5px;
+}
+
+.dark-theme .faq-content h3 {
+  color: #3498db;
+  border-bottom-color: #3498db;
+}
+
+.faq-content ol {
+  padding-left: 20px;
+}
+
+.faq-content li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.faq-item {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.dark-theme .faq-item {
+  background: #0f3460;
+}
+
+.faq-item h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+}
+
+.dark-theme .faq-item h4 {
+  color: #e0e0e0;
+}
+
+.faq-item p {
+  margin: 0;
+  line-height: 1.5;
+  color: #555;
+}
+
+.dark-theme .faq-item p {
+  color: #b0b0b0;
+}
 </style>
