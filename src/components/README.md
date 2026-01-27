@@ -1,6 +1,6 @@
 # Components Directory
 
-This directory contains the Vue components used in the PLD-Progression Grouper application.
+This directory contains the Vue components used in the Charité Imaging Classification application.
 
 ## Overview
 

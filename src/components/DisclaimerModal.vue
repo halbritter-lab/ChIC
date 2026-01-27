@@ -16,7 +16,7 @@
       class="modal"
     >
       <div class="modal-content">
-        <h2>Disclaimer for PLD-Progression Grouper</h2>
+        <h2>Disclaimer for Charité Imaging Classification</h2>
         <section
           v-for="(section, index) in disclaimerSections"
           :key="index"
@@ -25,7 +25,7 @@
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p v-html="section.content" />
         </section>
-        <button @click="closeModal">
+        <button class="modal-action-button" @click="closeModal">
           I Acknowledge
         </button>
       </div>
@@ -96,16 +96,44 @@ const reopenModal = () => {
 .modal-content h2 {
   margin-top: 0;
 }
+.modal-content h2 {
+  margin-bottom: 16px; /* add empty line after main title */
+  border-bottom: 2px solid #3498db; /* colored line under title (FAQ style) */
+  padding-bottom: 6px;
+}
+.modal-content h3 {
+  margin-bottom: 8px; /* spacing after section title */
+}
+.modal-content section {
+  margin-bottom: 16px; /* spacing after each section */
+  background: #f8f9fa; /* gray box around each subsection (FAQ style) */
+  padding: 12px;
+  border-radius: 8px;
+}
 .modal-content button {
   margin-top: 15px;
   padding: 10px 15px;
 }
 
+/* Match modal acknowledge button to the main controls button style */
+.modal-content .modal-action-button {
+  background-color: #00bf7d;
+  color: black;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 10px 15px;
+  font-size: 14px;
+}
+.modal-content .modal-action-button:hover {
+  background-color: #45a049;
+}
+
 /* Acknowledgment message styles */
 .acknowledgment-message {
   font-size: 12px;
-  background-color: orange;
-  color: black;
+  background-color: #e0e0e0; /* changed to gray */
+  color: #333;
   text-align: center;
   padding: 0px; /* Reduced padding */
   position: fixed; /* Keep it fixed at the bottom */

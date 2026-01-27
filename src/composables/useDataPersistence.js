@@ -63,29 +63,30 @@ export function useDataPersistence() {
     }
 
 
-    const computedNTLV = (tlvValue / CONFIG.NORMALIZATION_FACTOR); // Keep as number for calculations
+    // Compute height-adjusted TLV (htLV). If no height provided in row, fall back to normalization factor.
+    const heightValue = row.height !== undefined && row.height !== null ? Number(String(row.height).replace(',', '.')) : null;
+    const computedHTLV = heightValue && !Number.isNaN(heightValue) && heightValue > 0 ? (tlvValue / heightValue) : (tlvValue / CONFIG.NORMALIZATION_FACTOR);
     let computedPG = null;
-    if (computedNTLV > formulas.calculatePG3Threshold(ageValue)) {
+    if (computedHTLV > formulas.calculatePG3Threshold(ageValue)) {
       computedPG = 'PG3';
-    } else if (computedNTLV > formulas.calculatePG2Threshold(ageValue) &&
-               computedNTLV <= formulas.calculatePG3Threshold(ageValue)) {
+    } else if (computedHTLV > formulas.calculatePG2Threshold(ageValue) &&
+               computedHTLV <= formulas.calculatePG3Threshold(ageValue)) {
       computedPG = 'PG2';
     } else {
       computedPG = 'PG1';
     }
-    // LGR calculation needs check for age > CONFIG.AGE_MIN_LGR (assuming 20 from original)
-    const computedLGR = ageValue > CONFIG.AGE_MIN_LGR ? formulas.calculateLiverGrowthRate(ageValue, computedNTLV) : null;
+    const computedLGR = ageValue > CONFIG.AGE_MIN_LGR ? formulas.calculateLiverGrowthRate(ageValue, computedHTLV) : null;
 
     return {
         id: String(row.id), // Ensure ID is a string
         age: ageValue,
         tlv: tlvValue,
-        ntlv: computedNTLV.toFixed(3), // Format for display consistency
+        htlv: computedHTLV, // numeric value for charting
+        htlv_formatted: computedHTLV.toFixed(3), // formatted string for display
         pg: computedPG,
         lgr: computedLGR !== null ? computedLGR.toFixed(2) : 'N/A',
         group: row.group || '', // Preserve grouping info if present
         groupColor: row.groupColor || null,
-        // Note: backgroundColor is handled in App.vue when adding to chart
     };
   };
 
@@ -183,16 +184,16 @@ export function useDataPersistence() {
     }
     try {
       // Prepare data for saving (e.g., select/rename columns if needed)
-      const worksheetData = dataToSave.map(point => ({
+        const worksheetData = dataToSave.map(point => ({
           ID: point.id,
           Age: point.age,
           TLV: point.tlv,
-          nTLV: point.ntlv,
+          htTLV: point.htlv_formatted || (point.htlv ? Number(point.htlv).toFixed(3) : ''),
           PG: point.pg,
           LGR: point.lgr,
           Group: point.group,
           GroupColor: point.groupColor
-      }));
+        }));
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('PLD_Data');
@@ -202,7 +203,7 @@ export function useDataPersistence() {
         { header: 'ID', key: 'ID' },
         { header: 'Age', key: 'Age' },
         { header: 'TLV', key: 'TLV' },
-        { header: 'nTLV', key: 'nTLV' },
+        { header: 'htTLV', key: 'htTLV' },
         { header: 'PG', key: 'PG' },
         { header: 'LGR', key: 'LGR' },
         { header: 'Group', key: 'Group' },

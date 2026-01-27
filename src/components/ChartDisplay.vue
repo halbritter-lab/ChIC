@@ -36,11 +36,26 @@ const initChart = () => {
     // Generate data for background lines/areas based on formulas
     const lineLength = CONFIG.CHART_X_AXIS_MAX - CONFIG.CHART_X_AXIS_MIN + 1;
     const startAge = CONFIG.CHART_X_AXIS_MIN;
-    const lineDataPG3 = formulas.generateLineData1(lineLength, startAge); // PG3 Threshold Data
-    const lineDataPG2 = formulas.generateLineData2(lineLength, startAge); // PG2 Threshold Data
+    // Generate line data for each threshold curve (T1..T4)
+    const lineDataT1 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold01(a) };
+    });
+    const lineDataT2 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold02(a) };
+    });
+    const lineDataT3 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold03(a) };
+    });
+    const lineDataT4 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold04(a) };
+    });
 
     // Dataset for the absolute top of the chart area (used for filling down)
-    const ceilingData = Array.from({ length: (CONFIG.CHART_X_AXIS_MAX - CONFIG.CHART_X_AXIS_MIN) + 1 }, (_, i) => ({ x: CONFIG.CHART_X_AXIS_MIN + i, y: CONFIG.CHART_Y_AXIS_MAX }));
+    const ceilingData = Array.from({ length: lineLength }, (_, i) => ({ x: startAge + i, y: CONFIG.CHART_Y_AXIS_MAX }));
 
     chartInstance = new Chart(ctx, {
       type: 'scatter',
@@ -50,50 +65,76 @@ const initChart = () => {
           label: 'Patient Data',
           data: props.dataPoints.map(p => ({
             x: p.age,
-            y: p.ntlv,
+            y: p.htlv,
             id: p.id,
             group: p.group,
-            backgroundColor: p.groupColor || '#180C0C' // Original default color
+            backgroundColor: p.groupColor || '#180C0C'
           })),
-          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'), // Use original default
+          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
           pointRadius: 5,
           pointHoverRadius: 7,
           showLine: false,
-          order: 4 // Ensure patient data is drawn on top
+          order: 6 // Ensure patient data is drawn on top
         },
-        // Replicating original background shading using datasets and simpler fills
+        // Ceiling for top fill (area above T4)
         {
-          label: 'Ceiling Line (for PG3 fill)', // Top boundary
+          label: 'Ceiling',
           data: ceilingData,
           borderColor: 'transparent',
           borderWidth: 0,
           showLine: true,
           pointRadius: 0,
-          fill: '+1', // Fill down to next dataset (PG3 Line)
-          backgroundColor: '#B2241C33', // PG3 Area Color
-          order: 1 // Draw first
+          fill: '+1', // fill down to T4
+          backgroundColor: '#BFE9FF33', // pastel blue
+          order: 1
         },
+        // Threshold T4 (highest) - defines fill between T4 and T3 (pastel sky blue)
         {
-          label: 'PG3 Threshold Line',
-          data: lineDataPG3,
-          borderColor: '#B2241C', // Original color for PG3 line
-          borderWidth: 3, // Original width
+          label: 'Threshold 1.04 (PG5)',
+          data: lineDataT4,
+          borderColor: '#BFE9FF',
+          borderWidth: 3,
           showLine: true,
           pointRadius: 0,
-          fill: '+1', // Fill down to next dataset (PG2 Line)
-          backgroundColor: '#F64C4633', // PG2 Area Color
-          order: 2 // Draw second
+          fill: '+1', // fill down to T3
+          backgroundColor: '#BFE9FF33', // pastel blue for above T4 (will be mostly covered by ceiling)
+          order: 2
         },
+        // Threshold T3
         {
-          label: 'PG2 Threshold Line',
-          data: lineDataPG2,
-          borderColor: '#F64C46', // Original color for PG2 line
-          borderWidth: 2, // Original width
+          label: 'Threshold 1.03 (PG4)',
+          data: lineDataT3,
+          borderColor: '#64C8FF',
+          borderWidth: 2,
           showLine: true,
           pointRadius: 0,
-          fill: 'origin', // Fill down to origin (0)
-          backgroundColor: '#FDA3A133', // PG1 Area Color
-          order: 3 // Draw third
+          fill: '+1', // fill down to T2
+          backgroundColor: '#64C8FF33', // sky blue between T3 and T2
+          order: 3
+        },
+        // Threshold T2
+        {
+          label: 'Threshold 1.02 (PG3)',
+          data: lineDataT2,
+          borderColor: '#8E9BFF',
+          borderWidth: 2,
+          showLine: true,
+          pointRadius: 0,
+          fill: '+1', // fill down to T1
+          backgroundColor: '#8E9BFF33', // periwinkle between T2 and T3
+          order: 4
+        },
+        // Threshold T1 (lowest)
+        {
+          label: 'Threshold 1.01 (PG2)',
+          data: lineDataT1,
+          borderColor: '#2B1B6F',
+          borderWidth: 2,
+          showLine: true,
+          pointRadius: 0,
+          fill: 'origin', // fill down to origin
+          backgroundColor: '#E0E0E033', // gray fill under T1 to x-axis
+          order: 5
         }
        ]
       },
@@ -116,23 +157,37 @@ const initChart = () => {
             max: CONFIG.CHART_X_AXIS_MAX  // Use config value
           },
           y: {
-            type: 'linear',
+            type: 'logarithmic',
             position: 'left',
             title: {
               display: true,
-              text: 'Normalized Total Liver Volume (nTLV)',
+              text: 'Height-adjusted Total Liver Volume (htTLV)',
               font: {
                 size: 16,
                 weight: 'bold'
               }
             },
-            min: 0, // Original used beginAtZero: true
-            max: CONFIG.CHART_Y_AXIS_MAX // Use config value
+            min: 600,
+            max: 10100,
+            // Force specific tick marks on the logarithmic axis
+            ticks: {
+              autoSkip: false,
+              callback: function(value) {
+                const marks = [600, 800, 1000, 2000, 4000, 8000, 10000];
+                // Show label only for specified marks
+                return marks.includes(value) ? value.toLocaleString() : '';
+              }
+            },
+            afterBuildTicks: function(scale) {
+              const marks = [600, 800, 1000, 2000, 4000, 8000, 10000];
+              // Replace automatically generated ticks with our marks
+              scale.ticks = marks.map(v => ({ value: v }));
+            }
           }
         },
         plugins: {
           legend: {
-            display: false // Hide dataset label legend
+            display: false
           },
           tooltip: {
             callbacks: {
@@ -158,7 +213,7 @@ const updateChart = () => {
   if (!chartInstance) return;
   chartInstance.data.datasets[0].data = props.dataPoints.map(p => ({
     x: p.age,
-    y: p.ntlv,
+    y: p.htlv,
     id: p.id,
     group: p.group,
     backgroundColor: p.groupColor || '#180C0C' // Use group color or default

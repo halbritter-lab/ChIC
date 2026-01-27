@@ -13,6 +13,15 @@ html, body {
   padding: 0;
   overflow-x: hidden;
 }
+/* Banner color variables (match AppHeader ribbon gradient) */
+:root {
+  --banner-left: #2c3e50; /* left/dark */
+  --banner-right: #3498db; /* right/light */
+  --button-calc: #2b6fd6; /* medium blue for Calculate (between left/right) */
+  --button-calc-hover: var(--banner-left);
+  --button-other: var(--banner-right);
+  --button-other-hover: #167bb6; /* slightly darker hover for non-Calculate buttons */
+}
 /* REMOVED: .app-version, .app-commit styles as they are now in AppHeader.vue */
 /* REMOVED: .header, .app-logo, .app-title styles as they are now in AppHeader.vue */
 .container {
@@ -29,12 +38,14 @@ html, body {
   gap: 40px;
   margin: 20px 0;
   text-align: left;
+  align-items: flex-start; /* align left controls with top of chart */
 }
 
 .left-column {
   flex: 1;
   min-width: 300px;
   max-width: 400px;
+  padding-top: 24px; /* small offset to line up inputs with chart top */
 }
 
 .right-column {
@@ -73,28 +84,71 @@ html, body {
   background-color: #B2241C33;
   border-color: #B2241C;
 }
-.PG2 {
-  background-color: #F64C4633;
-  border-color: #F64C46;
-}
 .PG1 {
-  background-color: #FDA3A133;
-  border-color: #FDA3A1;
+  background-color: #E0E0E0; /* gray fill to match chart band */
+  border-color: #BDBDBD; /* light gray border */
+  color: #222; /* ensure readable text */
+}
+.PG2 {
+  background-color: #8E9BFF33; /* periwinkle (T2->T1 band) */
+  border-color: #8E9BFF;
+  color: #062c46;
+}
+.PG3 {
+  background-color: #64C8FF33; /* sky blue (T3->T2 band) */
+  border-color: #64C8FF;
+  color: #062c46;
+}
+.PG4 {
+  background-color: #BFE9FF33; /* pastel blue (T4->T3 band) */
+  border-color: #BFE9FF;
+  color: #062c46;
+}
+.PG5 {
+  background-color: #BFE9FF44; /* top pastel blue (above T4) slightly stronger */
+  border-color: #BFE9FF;
+  color: #062c46;
 }
 .input-group {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   margin: 10px 0;
+  gap: 10px;
+}
+.input-group label {
+  white-space: nowrap;
+  min-width: fit-content;
+  text-align: left;
 }
 .input-group input {
   padding: 5px;
   border: 2px solid #ddd;
   border-radius: 0px;
   font-size: 14px;
-  margin-bottom: 10px;
-  width: 100%;
+  width: 190px; /* adjusted per request */
   box-sizing: border-box;
+  text-align: left; /* keep text left-aligned inside inputs */
+}
+
+/* Ensure specific inputs match the TLV input width */
+#idInput,
+#ageInput,
+#heightInput,
+#liverInput {
+  width: 190px !important;
+  box-sizing: border-box;
+}
+
+/* Normalize number inputs (remove browser spinner) for consistent width */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }
 .output-group {
   display: flex;
@@ -110,65 +164,134 @@ html, body {
 }
 .output-field, .progression-group-output {
   flex-grow: 1;
-  border: 1px solid;
-  padding: 5px;
-  border-radius: 0px;
+  border: none;
+  padding: 5px 12px;
   text-align: center;
-  margin: 2px;
+  margin: 0;
   min-width: 80px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.input-group label {
-  margin-bottom: 5px;
+
+/* Add a thin vertical separator between the output items */
+.output-fields {
+  align-items: center;
+  width: 100%;
 }
+/* Give each output equal horizontal padding so they sit centered between separators */
+.output-fields > * {
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+.output-fields > * + * {
+  border-left: 1px solid rgba(0,0,0,0.12);
+  position: relative;
+  z-index: 1;
+}
+
+/* Keep progression outputs from filling background; use color accents instead */
+.output-fields .progression-group-output {
+  background: transparent !important;
+  min-height: 20px;
+}
+.output-fields .progression-group-output.PG1 { color: #222; }
+.output-fields .progression-group-output.PG2 { color: #062c46; }
+.output-fields .progression-group-output.PG3 { color: #062c46; }
+.output-fields .progression-group-output.PG4 { color: #062c46; }
+.output-fields .progression-group-output.PG5 { color: #062c46; }
+
+/* Ensure htTLV numeric output text matches progression group colors */
+.output-fields .output-field.PG1 { color: #222; }
+.output-fields .output-field.PG2 { color: #062c46; }
+.output-fields .output-field.PG3 { color: #062c46; }
+.output-fields .output-field.PG4 { color: #062c46; }
+.output-fields .output-field.PG5 { color: #062c46; }
 .chart-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 0; /* align top with left-column inputs */
   height: 450px; /* Explicit height for the container */
+}
+/* Box style for htTLV output to match FAQ/Disclaimer sections */
+.httlv-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0;
+}
+.httlv-box > label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 8px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 6px;
 }
 canvas {
   max-width: 100%;
   height: 100%; /* Allow canvas to fill the container height */
 }
-button {
-  margin: 5px;
+.button {
+  margin: 3px;
   padding: 10px 15px;
-  font-size: 16px;
+  font-size: 14px; /* match input font-size */
   cursor: pointer;
 }
+
+/* Ensure native button elements also match input font-size */
+button {
+  font-size: 14px;
+}
 .controls button {
-  background-color: #00bf7d;
-  color: black;
+  background-color: var(--button-other); /* light blue default for non-calculate buttons */
+  color: #062c46; /* dark text for contrast */
   border: none;
   border-radius: 5px;
   cursor: pointer;
   padding: 10px 15px;
-  margin: 5px 5px 5px 0;
+  margin: 3px 3px 3px 0;
 }
 .controls button:hover {
-  background-color: #45a049;
+  background-color: var(--button-other-hover); /* slightly darker light blue on hover */
 }
-.controls button.plot-point {
-  background-color: #89ce00;
-  border: 2px solid #0056b3;
+.controls button.calculate-button {
+  background-color: var(--button-calc); /* medium blue for Calculate */
+  color: #ffffff;
+  border: 2px solid #274f9a;
 }
-.controls button.plot-point.button-disabled {
+.controls button.calculate-button.button-disabled {
   background-color: #ccc;
   color: #666;
   cursor: not-allowed;
+  border-color: #999;
 }
-.controls button.plot-point:active {
-  background-color: #0056b3;
-  border-color: #004085;
+.controls button.calculate-button:hover {
+  background-color: var(--button-calc-hover); /* dark from banner left */
+  border-color: #0f2b5a;
 }
-.controls button.plot-point:hover {
-  background-color: #0062cc;
-  border-color: #0056b3;
+.controls button.calculate-button:active {
+  background-color: #0f2b5a;
+  border-color: #0b2148;
+}
+
+/* Center action buttons (Plot, Print, Download, etc.) */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px; /* reduced lateral spacing by 50% */
+  flex-wrap: wrap;
+  margin-top: 12px;
 }
 /* REMOVED: .footer, .institution-logo styles as they are now in AppFooter.vue */
 .data-points-table-container {
@@ -181,11 +304,12 @@ button {
 }
 .data-points-table th,
 .data-points-table td {
-  border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
+  border: none; /* remove all cell borders */
 }
-.data-points-table th {
+.data-points-table thead th {
+  border-bottom: 1px solid #ddd; /* single line between header and data */
   background-color: #f5f5f5;
   font-weight: bold;
 }
@@ -217,7 +341,28 @@ button {
   border: 1px solid transparent;
   border-radius: .25rem;
   min-height: 20px;
+  text-align: center;
 }
+
+/* Temporary debug panel */
+.debug-panel {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #111;
+  z-index: 4000;
+  max-width: 260px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+.debug-panel pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
 .button-disabled {
   background-color: #ccc;
   color: #666;

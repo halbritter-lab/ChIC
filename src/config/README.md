@@ -1,6 +1,6 @@
 # Configuration Module
 
-This folder contains the configuration settings for the PLD-Progression Grouper application. The `config.js` file includes essential constants and parameters used throughout the application.
+This folder contains the configuration settings for the Charité Imaging Classification application. The `config.js` file includes essential constants and parameters used throughout the application.
 
 ## Contents
 

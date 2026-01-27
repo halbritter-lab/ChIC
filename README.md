@@ -1,27 +1,27 @@
 
 <p align="center">
-    <img src="public/logo.png" alt="PLD-Progression Grouper logo" width="192" height="192">
+   <img src="public/logo.png" alt="Charité Imaging Classification logo" width="192" height="192">
 </p>
 
-# PLD-Progression Grouper
+# Charité Imaging Classification
 
-Please explore the [PLD-Progression Grouper](https://halbritter-lab.github.io/pld-progression-grouper/) app hosted on GitHub pages.
+Please explore the [Charité Imaging Classification](https://halbritter-lab.github.io/pld-progression-grouper/) app hosted on GitHub pages.
 
 ## Introduction
 
 "Polycystic Liver Disease (PLD) - Progression Grouper" is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on two recents studies titled "Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease" and "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis" (PMID: 36246085), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver-related hospitalization in individuals with PLD.
 
-PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The application leverages data from a single-center and a multicenter study to introduce novel clinical endpoints, such as normalized age-adjusted total liver volume (nTLV) and PLD-related hospitalization, for prognostic risk stratification.
+PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The application leverages data from a single-center and a multicenter study to introduce novel clinical endpoints, such as height-adjusted total liver volume (htTLV) and PLD-related hospitalization, for prognostic risk stratification.
 
 
 ## References
 
-The principle of the "PLD-Progression Grouper" tool has been first published in 2022, highlighting its application in the study of PLD within the context of both Autosomal Dominant Polycystic Kidney Disease (ADPKD) and Autosomal Dominant Polycystic Liver Disease (ADPLD). This underscores the tool's relevance and adaptability for assessing PLD progression not only in isolated cases but also when it occurs in conjunction with ADPKD. For more details on the publication, see [PMID:36246085](https://pubmed.ncbi.nlm.nih.gov/36246085/).
+The principle of the "Charité Imaging Classification" tool has been first published in 2022, highlighting its application in the study of PLD within the context of both Autosomal Dominant Polycystic Kidney Disease (ADPKD) and Autosomal Dominant Polycystic Liver Disease (ADPLD). This underscores the tool's relevance and adaptability for assessing PLD progression not only in isolated cases but also when it occurs in conjunction with ADPKD. For more details on the publication, see [PMID:36246085](https://pubmed.ncbi.nlm.nih.gov/36246085/).
 
 
 ## Features
 
-- **Data Input and Visualization:** Users can input individual-specific data, including age and total liver volume, to visualize the normalized total liver volume (nTLV) on a chart.
+- **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
 - **Trend Analysis:** The app plots two key trend lines based on the formulas derived from the study, offering visual insight into the progression groups as defined in the research.
 - **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories.
 - **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
@@ -33,22 +33,22 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
 ## Webapp usage and application components
 
 <p align="left">
-    <img src="public/pld-app_application-components.png" alt="PLD-Progression Grouper application components description" width="600">
+   <img src="public/pld-app_application-components.png" alt="Charité Imaging Classification application components description" width="600">
 </p>
 
 1. **Application Header**
-   - **(1a) Logo**: Displays the logo of the PLD-Progression Grouper application.
+   - **(1a) Logo**: Displays the logo of the Charité Imaging Classification application.
    - **(1b) Title**: Shows the name of the application.
    - **(1c) Version Tag**: Indicates the current version of the application.
 
 2. **User Input Area**
    - **(2a) ID Field**: Where users can enter a unique identifier for the data point they are entering or analyzing.
-   - **(2b) Age Input**: Users can input the age of the patient in years.
+   - **(2b) Age Input**: Users can input the age of the patient in years (15-80 years).
    - **(2c) Total Liver Volume (TLV) Input**: Users can input the total liver volume measured in milliliters.
 
 3. **Computed Outputs**
-   - **(3a) Normalized Total Liver Volume (nTLV)**: This field displays the calculated normalized total liver volume based on the input TLV.
-   - **(3b) Progression Group (PG) Indicator**: Shows the progression group classification based on the computed nTLV and age.
+   - **(3a) Height-adjusted Total Liver Volume (htTLV)**: This field displays the calculated height-adjusted total liver volume based on the input TLV divided by height in meters.
+   - **(3b) Progression Group (PG) Indicator**: Shows the progression group classification based on the computed htTLV and age.
 
 4. **Action Buttons**
    - **(4a) Plot Point**: Submits the entered data and plots the point on the graph.
@@ -59,7 +59,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - **(4f) Download (Excel)**: Exports the data table into an Excel spreadsheet.
 
 5. **Chart Area**
-   - Displays a scatter plot graph illustrating the relationship between age and nTLV, with trend lines indicating progression thresholds.
+   - Displays a scatter plot graph illustrating the relationship between age and htTLV, with trend lines indicating progression thresholds.
 
 6. **Progression Group Legend**
    - **(6a) PG3**: Indicates rapid progression (greater than 6.6% per year).
@@ -77,7 +77,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - **(9b) Funder Logo**: Displays the logo of the funding organization.
 
 10. **Data Table** *(not visible in the screenshot)*
-   - If present, this would display a table of all data points entered, including ID, age, TLV, nTLV, progression group, and an option to remove data points.
+   - If present, this would display a table of all data points entered, including ID, age, height, TLV, htTLV, progression group, and an option to remove data points.
 
 Each numbered item refers to a different component or section of the app. Users interact with these components to input data, receive computed outputs, manage the data points, and utilize the results for further analysis or documentation.
 
@@ -85,7 +85,7 @@ Each numbered item refers to a different component or section of the app. Users 
 ## URL API Documentation
 
 ### Overview
-The PLD-Progression Grouper tool supports URL query parameters, allowing users to preset input fields directly through the URL. This feature enables easy sharing of specific configurations and faster access to the tool with predefined settings.
+The Charité Imaging Classification tool supports URL query parameters, allowing users to preset input fields directly through the URL. This feature enables easy sharing of specific configurations and faster access to the tool with predefined settings.
 
 ### Query flags
 The tool accepts the following query parameters:
@@ -116,7 +116,7 @@ https://halbritter-lab.github.io/pld-progression-grouper/?showFooter=false&showC
 ## Data Privacy and Storage
 
 ### Local Data Storage
-The PLD-Progression Grouper is designed to prioritize user privacy and data security:
+The Charité Imaging Classification is designed to prioritize user privacy and data security:
 - **Client-Side Data Storage**: All data input into the application is stored locally on the user's device. No personal or sensitive data is sent to or stored on a server.
 - **Data Security**: By keeping data client-side, the risk of data breaches is minimized, ensuring user data remains private and secure.
 
@@ -131,12 +131,12 @@ Users can export their data in various formats for ease of use and flexibility:
 
 ## Progressive Web App (PWA) support
 
-The PLD-Progression Grouper is also available as a Progressive Web App (PWA), providing a more integrated and efficient user experience.
+The Charité Imaging Classification is also available as a Progressive Web App (PWA), providing a more integrated and efficient user experience.
 The PWA is compatible with most modern browsers on both desktop and mobile devices. For the best experience, ensure your browser is up to date.
 
 ### Installing the PWA
 
-1. **Access the Tool**: Open the PLD-Progression Grouper in your web browser.
+1. **Access the Tool**: Open the Charité Imaging Classification in your web browser.
 2. **Install Prompt**: A prompt to "Add to Home Screen" will appear if you are using a compatible browser.
 3. **Confirm Installation**: Click the prompt to install the application on your device.
 4. **Access from Home Screen**: Once installed, the app can be accessed directly from your home screen, just like any other installed application.

@@ -1,6 +1,6 @@
 # Mixins Module
 
-This directory contains the mixins for the PLD-Progression Grouper application. Mixins are a flexible way to distribute reusable functionalities for Vue components.
+This directory contains the mixins for the Charité Imaging Classification application. Mixins are a flexible way to distribute reusable functionalities for Vue components.
 
 ## Contents
 

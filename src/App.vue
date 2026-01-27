@@ -27,16 +27,16 @@
           <h3>How to Use</h3>
           <ol>
             <li><strong>Enter Patient ID:</strong> Provide a unique identifier for the patient.</li>
-            <li><strong>Enter Age:</strong> Input the patient's age (20-80 years).</li>
+            <li><strong>Enter Age:</strong> Input the patient's age (15-80 years).</li>
             <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
-            <li><strong>Plot Data:</strong> Click "Plot Data" to add the data point to the chart.</li>
+            <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
             <li><strong>View Results:</strong> The normalized TLV and progression group (PG1-PG3) will be displayed.</li>
           </ol>
           
           <h3>Frequently Asked Questions</h3>
           <div class="faq-item">
-            <h4>What is nTLV?</h4>
-            <p>Normalized Total Liver Volume (nTLV) is the TLV divided by a normalization factor, allowing comparison across patients.</p>
+            <h4>What is htTLV?</h4>
+              <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, allowing comparison across patients of different body sizes.</p>
           </div>
           <div class="faq-item">
             <h4>What do the progression groups mean?</h4>
@@ -79,6 +79,7 @@
             v-if="showControls"
             v-model:patient-id="patientId"
             v-model:age="age"
+            v-model:height="height"
             v-model:total-liver-volume="totalLiverVolume"
             v-model:group="group"
             v-model:group-color="groupColor"
@@ -86,18 +87,21 @@
             :id-warning-message="idWarningMessage"
             :age-validation-message="ageValidationMessage"
             :tlv-validation-message="tlvValidationMessage"
-            :formatted-normalized-t-l-v="formattedNormalizedTLV"
-            :progression-group="progressionGroup"
-            :liver-growth-rate="liverGrowthRate"
+            :formatted-height-adjusted-t-l-v="displayFormattedHTLV"
+            :progression-group="displayProgressionGroup"
+            :liver-growth-rate="displayLiverGrowthRate"
             :is-invalid-input="isInvalidInput"
             :data-points-length="dataPoints.length"
             @toggle-grouping="toggleGrouping"
-            @add-data-point="addDataPoint"
+            @request-next-id="assignNextId"
+            @calculate-data-point="calculateDataPoint"
+            @field-touched="handleFieldTouched"
             @print-page="printPage"
             @download-chart="downloadChart"
             @save-data-as-json="() => saveDataAsJson(dataPoints)"
             @trigger-load="triggerLoad"
             @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
+            :height-validation-message="heightValidationMessage"
           />
 
           <!-- Loading Error Display -->
@@ -120,16 +124,22 @@
             :group-color="groupColor"
           />
 
-          <!-- Progression Group Squares -->
+          <!-- Progression Group Squares (PG1 - PG5) -->
           <div class="progression-groups">
             <div class="progression-group PG1">
-              <strong>PG1</strong><br>&lt;3.3%/y
+              <strong>PG1</strong><br>&lt;1%/y
             </div>
             <div class="progression-group PG2">
-              <strong>PG2</strong><br>3.3-6.6%/y
+              <strong>PG2</strong><br>1-2%/y
             </div>
             <div class="progression-group PG3">
-              <strong>PG3</strong><br>&gt;6.6%/y
+              <strong>PG3</strong><br>2-3%/y
+            </div>
+            <div class="progression-group PG4">
+              <strong>PG4</strong><br>3-4%/y
+            </div>
+            <div class="progression-group PG5">
+              <strong>PG5</strong><br>&gt;4%/y
             </div>
           </div>
         </div>
@@ -146,7 +156,7 @@
               <th>ID</th>
               <th>Age [y]</th>
               <th>TLV [ml]</th>
-              <th>nTLV</th>
+              <th>htTLV</th>
               <th>PG</th>
               <th>LGR [%/y]</th>
               <th v-if="enableGrouping">
@@ -166,7 +176,7 @@
               <td>{{ point.id }}</td>
               <td>{{ point.age }}</td>
               <td>{{ point.tlv }}</td>
-              <td>{{ point.ntlv }}</td>
+              <td>{{ point.htlv_formatted }}</td>
               <td>{{ point.pg }}</td>
               <td>{{ point.lgr }}</td>
               <td v-if="enableGrouping">
@@ -198,6 +208,7 @@
       <!-- Use the DocumentationSection component -->
       <DocumentationSection :show-documentation="showDocumentation" />
     </div>
+    
     <!-- Use the AppFooter component -->
     <!-- Note: footerLinks prop is provided by the footerMixin -->
     <AppFooter
@@ -270,7 +281,7 @@ export default {
       if (route.query.age) age.value = route.query.age;
       if (route.query.tlv) totalLiverVolume.value = route.query.tlv;
       if (route.query.patientId && route.query.age && route.query.tlv) {
-        addDataPoint();
+        calculateDataPoint();
       }
       showFooter.value = route.query.showFooter !== 'false';
       showCitation.value = route.query.showCitation !== 'false';
@@ -296,6 +307,10 @@ export default {
     const idWarningMessage = ref('');
     const ageValidationMessage = ref('');
     const tlvValidationMessage = ref('');
+    const patientIdTouched = ref(false);
+    const ageTouched = ref(false);
+    const heightTouched = ref(false);
+    const tlvTouched = ref(false);
 
     const disclaimerAcknowledged = ref(localStorage.getItem('disclaimerAcknowledged') === 'true');
     const acknowledgmentTime = ref(localStorage.getItem('acknowledgmentTime'));
@@ -315,8 +330,10 @@ export default {
     };
 
     const patientId = ref('');
-    const age = ref(CONFIG.AGE_MIN);
-    const totalLiverVolume = ref(CONFIG.TLV_MIN);
+    const age = ref(null);
+    const height = ref(null); // in meters
+    const heightValidationMessage = ref('');
+    const totalLiverVolume = ref(null);
     const chartDisplayRef = ref(null); // Ref for the ChartDisplay component instance
 
     // New reactive properties for grouping
@@ -324,57 +341,106 @@ export default {
     const group = ref('');
     const groupColor = ref('');
 
-    // Computed properties for normalized values
-    const normalizedTLV = computed(() => totalLiverVolume.value / CONFIG.NORMALIZATION_FACTOR);
-    const formattedNormalizedTLV = computed(() => {
+    // Validators
+    const isAgeValid = () => {
+      const v = Number(age.value);
+      return Number.isFinite(v) && v >= CONFIG.AGE_MIN && v <= CONFIG.AGE_MAX;
+    };
+    const isHeightValid = () => {
+      const v = Number(height.value);
+      return Number.isFinite(v) && v > 0 && v >= CONFIG.HEIGHT_MIN && v <= CONFIG.HEIGHT_MAX;
+    };
+
+    // Computed properties for height-adjusted TLV (htTLV)
+    const heightAdjustedTLV = computed(() => {
+      const h = height.value;
+      if (!h || Number.isNaN(Number(h)) || Number(h) <= 0) return NaN;
+      return totalLiverVolume.value / Number(h);
+    });
+    const formattedHeightAdjustedTLV = computed(() => {
       if (
-        age.value < CONFIG.AGE_MIN || age.value > CONFIG.AGE_MAX ||
-        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX
+        !isAgeValid() ||
+        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX ||
+        !isHeightValid()
       ) {
         return null;
       }
-      return (totalLiverVolume.value / CONFIG.NORMALIZATION_FACTOR).toFixed(3);
+      return (totalLiverVolume.value / Number(height.value)).toFixed(0);
     });
     const progressionGroup = computed(() => {
       if (
-        age.value < CONFIG.AGE_MIN || age.value > CONFIG.AGE_MAX ||
-        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX
+        !isAgeValid() ||
+        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX ||
+        !isHeightValid()
       ) {
         return null;
       }
-      const nTLV = normalizedTLV.value;
+      const htlv = heightAdjustedTLV.value;
       const patientAge = age.value;
-      if (nTLV > formulas.calculatePG3Threshold(patientAge)) return 'PG3';
-      if (nTLV > formulas.calculatePG2Threshold(patientAge) && nTLV <= formulas.calculatePG3Threshold(patientAge)) return 'PG2';
+      // Use the four configured thresholds to derive five progression groups (PG1..PG5)
+      const t1 = formulas.calculateThreshold01(patientAge);
+      const t2 = formulas.calculateThreshold02(patientAge);
+      const t3 = formulas.calculateThreshold03(patientAge);
+      const t4 = formulas.calculateThreshold04(patientAge);
+      if (htlv >= t4) return 'PG5';
+      if (htlv >= t3) return 'PG4';
+      if (htlv >= t2) return 'PG3';
+      if (htlv >= t1) return 'PG2';
       return 'PG1';
     });
     const liverGrowthRate = computed(() => {
       if (
-        age.value < CONFIG.AGE_MIN || age.value > CONFIG.AGE_MAX ||
-        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX
+        !isAgeValid() ||
+        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX ||
+        !isHeightValid()
       ) {
         return null;
       }
-      return formulas.calculateLiverGrowthRate(age.value, normalizedTLV.value);
+      return formulas.calculateLiverGrowthRate(age.value, heightAdjustedTLV.value);
     });
+
+    // Display values updated only when Calculate is clicked
+    const displayFormattedHTLV = ref(null); // string or null
+    const displayProgressionGroup = ref(null); // 'PG1'|'PG2'|'PG3' or null
+    const displayLiverGrowthRate = ref(null); // number or null
+    const suppressClearOnNextInput = ref(false);
 
     // Data points array now supports group and groupColor properties.
     const dataPoints = ref([]);
 
-    const addDataPoint = () => {
+    const calculateDataPoint = () => {
       if (isInvalidInput.value) {
-        idWarningMessage.value = 'Please correct the errors before plotting.';
+        idWarningMessage.value = 'Please correct the errors before calculating';
         return;
       }
       if (!patientId.value.trim()) {
-        idWarningMessage.value = "Please enter an ID before plotting a point.";
+        idWarningMessage.value = "Please enter an ID before calculating";
         return;
       }
+      // Ensure required numeric inputs are present and valid
+      if (!isAgeValid()) {
+        ageValidationMessage.value = `Age must be between ${CONFIG.AGE_MIN} and ${CONFIG.AGE_MAX} years`;
+        return;
+      }
+      if (!isHeightValid()) {
+        heightValidationMessage.value = `Height must be between ${CONFIG.HEIGHT_MIN} and ${CONFIG.HEIGHT_MAX} m`;
+        return;
+      }
+      if (totalLiverVolume.value === null || !Number.isFinite(Number(totalLiverVolume.value)) || totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX) {
+        tlvValidationMessage.value = `Total Liver Volume must be between ${CONFIG.TLV_MIN} and ${CONFIG.TLV_MAX} ml`;
+        return;
+      }
+      // Update display values (only on Calculate click)
+      displayFormattedHTLV.value = formattedHeightAdjustedTLV.value;
+      displayProgressionGroup.value = progressionGroup.value;
+      displayLiverGrowthRate.value = liverGrowthRate.value;
+
       const newData = {
         id: patientId.value,
         age: age.value,
         tlv: totalLiverVolume.value,
-        ntlv: formattedNormalizedTLV.value,
+        htlv: heightAdjustedTLV.value, // numeric for chart
+        htlv_formatted: formattedHeightAdjustedTLV.value, // formatted string for display
         pg: progressionGroup.value,
         lgr: liverGrowthRate.value !== null ? liverGrowthRate.value.toFixed(2) : 'N/A',
         group: enableGrouping.value ? group.value : '',
@@ -385,23 +451,84 @@ export default {
       }
       dataPoints.value.push(newData);
       idWarningMessage.value = '';
+      // Clear the ID so focusing the ID input will assign the next sequential ID
+      // Suppress the input-change watcher once so clearing the ID doesn't immediately clear the calculated display
+      suppressClearOnNextInput.value = true;
+      patientId.value = '';
+    };
+
+    // Compute next numeric ID (based on existing data points)
+    const computeNextId = () => {
+      let max = 0;
+      for (const p of dataPoints.value) {
+        const n = parseInt(String(p.id).replace(/^0+/, ''), 10);
+        if (!Number.isNaN(n) && n > max) max = n;
+      }
+      return max + 1;
+    };
+
+    const padId = (n) => String(n).padStart(3, '0');
+
+    const assignNextId = () => {
+      if (!patientId.value || String(patientId.value).trim() === '') {
+        const next = computeNextId();
+        patientId.value = padId(next);
+      }
     };
 
     const validateInput = () => {
       ageValidationMessage.value = '';
       tlvValidationMessage.value = '';
-      if (age.value < CONFIG.AGE_MIN || age.value > CONFIG.AGE_MAX) {
-        ageValidationMessage.value = `Age must be between ${CONFIG.AGE_MIN} and ${CONFIG.AGE_MAX} years.`;
+      heightValidationMessage.value = '';
+      // Age: numeric-only; InputControls emits numbers or NaN or null
+      if (age.value !== null) {
+        if (!Number.isFinite(age.value)) {
+          ageValidationMessage.value = 'Age must be a number';
+        } else if (!isAgeValid()) {
+          ageValidationMessage.value = `Age must be between ${CONFIG.AGE_MIN} and ${CONFIG.AGE_MAX} years`;
+          // ageValidationMessage set
+        }
       }
-      if (totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX) {
-        tlvValidationMessage.value = `Total Liver Volume must be between 0 and ${CONFIG.TLV_MAX} ml.`;
+      // Height: numeric-only, allow comma/dot converted to Number; show specific messages for non-numeric vs out-of-range
+      if (height.value !== null) {
+        if (!Number.isFinite(height.value)) {
+          heightValidationMessage.value = 'Height must be a number';
+        } else if (height.value < CONFIG.HEIGHT_MIN || height.value > CONFIG.HEIGHT_MAX) {
+          heightValidationMessage.value = `Height must be between ${CONFIG.HEIGHT_MIN} and ${CONFIG.HEIGHT_MAX} m`;
+        }
       }
+      // TLV: numeric-only
+      if (totalLiverVolume.value !== null) {
+        if (!Number.isFinite(totalLiverVolume.value)) {
+          tlvValidationMessage.value = 'Total Liver Volume must be a number';
+        } else if (totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX) {
+          tlvValidationMessage.value = `Total Liver Volume must be between ${CONFIG.TLV_MIN} and ${CONFIG.TLV_MAX} ml`;
+          // tlvValidationMessage set
+        }
+      }
+      // validation messages updated
     };
 
-    const isInvalidInput = computed(() => ageValidationMessage.value !== '' || tlvValidationMessage.value !== '');
+    const isInvalidInput = computed(() => ageValidationMessage.value !== '' || tlvValidationMessage.value !== '' || heightValidationMessage.value !== '');
 
-    watch(age, validateInput);
-    watch(totalLiverVolume, validateInput);
+    watch(age, (v) => { validateInput(); });
+    watch(totalLiverVolume, (v) => { validateInput(); });
+    watch(height, (v) => { validateInput(); });
+    watch(patientId, (v) => { validateInput(); });
+
+    // Clear the displayed calculated results if any input changes after a calculation.
+    // We suppress the very next clear when calculateDataPoint intentionally clears the ID.
+    watch([patientId, age, height, totalLiverVolume, group, groupColor], () => {
+      if (suppressClearOnNextInput.value) {
+        suppressClearOnNextInput.value = false;
+        return;
+      }
+      if (displayFormattedHTLV.value !== null || displayProgressionGroup.value !== null || displayLiverGrowthRate.value !== null) {
+        displayFormattedHTLV.value = null;
+        displayProgressionGroup.value = null;
+        displayLiverGrowthRate.value = null;
+      }
+    });
 
     const removeDataPoint = (index) => {
       dataPoints.value.splice(index, 1);
@@ -436,7 +563,7 @@ export default {
         newDataArray.forEach(point => {
           chartDisplayRef.value?.addPoint({
             x: point.age,
-            y: parseFloat(point.ntlv),
+            y: point.htlv, // height-adjusted numeric value
             id: point.id,
             group: point.group,
             groupColor: point.groupColor, // Pass raw color
@@ -473,6 +600,16 @@ export default {
       enableGrouping.value = !enableGrouping.value;
     };
 
+    // Handle field touched events from InputControls
+    const handleFieldTouched = (field) => {
+      if (field === 'age') ageTouched.value = true;
+      if (field === 'height') heightTouched.value = true;
+      if (field === 'id') patientIdTouched.value = true;
+      if (field === 'tlv') tlvTouched.value = true;
+      // Run validation once after a field is marked touched so the message appears immediately
+      validateInput();
+    };
+
     // Toggle dark/light theme
     const toggleTheme = () => {
       isDark.value = !isDark.value;
@@ -483,7 +620,7 @@ export default {
     const resetForm = () => {
       patientId.value = '';
       age.value = CONFIG.AGE_MIN;
-      totalLiverVolume.value = CONFIG.TLV_MIN;
+      totalLiverVolume.value = null;
       group.value = '';
       groupColor.value = '';
       dataPoints.value = [];
@@ -511,6 +648,7 @@ export default {
       document.documentElement.style.setProperty('--modal-max-height', CONFIG.MODAL_MAX_HEIGHT);
       fetchLastCommit(); // Call fetchLastCommit here
       document.title = 'Charité Imaging Classification';
+      // Do not auto-run validation on mount; validation messages appear after the user focuses a field.
       updateMetaTag('description', 'Charité Imaging Classification is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.');
       updateMetaTag('keywords', 'PLD, Polycystic Liver Disease, Liver Health, Medical Research, Data Visualization, Vue.js, Web Application, Liver Disease Progression, Medical Education, Healthcare Technology');
       updateMetaTag('author', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
@@ -537,11 +675,16 @@ export default {
       patientId,
       age,
       totalLiverVolume,
-      normalizedTLV,
-      formattedNormalizedTLV,
+      heightValidationMessage,
+      height,
+      heightAdjustedTLV,
+      formattedHeightAdjustedTLV,
       progressionGroup,
       liverGrowthRate,
-      addDataPoint,
+      displayFormattedHTLV,
+      displayProgressionGroup,
+      displayLiverGrowthRate,
+      calculateDataPoint,
       removeDataPoint,
       printPage,
       downloadChart,
@@ -561,6 +704,8 @@ export default {
       toggleGrouping,
       updateChartPoint,
       chartDisplayRef, // Return the ref for the ChartDisplay component
+      assignNextId,
+      handleFieldTouched,
       // Theme and UI
       isDark,
       toggleTheme,

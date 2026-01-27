@@ -1,7 +1,7 @@
 ---
 layout: about
 title: Contact
-description: Get in touch with the PLD-Progression Grouper maintainers.
+description: Get in touch with the Charité Imaging Classification maintainers.
 ---
 
 ## Email

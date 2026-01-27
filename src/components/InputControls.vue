@@ -9,11 +9,12 @@
         type="text"
         placeholder="Enter ID"
         @input="$emit('update:patientId', $event.target.value)"
+        @focus="$emit('request-next-id'); $emit('field-touched', 'id')"
       >
     </div>
     <div
       v-if="idWarningMessage"
-      class="id-warning-message"
+      class="validation-message"
     >
       {{ idWarningMessage }}
     </div>
@@ -24,9 +25,10 @@
       <input
         id="ageInput"
         :value="age"
-        type="number"
-        placeholder="20-80"
-        @input="$emit('update:age', $event.target.valueAsNumber)"
+        type="text"
+        placeholder="15-80"
+        @input="(e) => $emit('update:age', e.target.value === '' ? null : Number(e.target.value))"
+        @focus="$emit('field-touched', 'age')"
       >
     </div>
     <div
@@ -36,15 +38,38 @@
       {{ ageValidationMessage }}
     </div>
 
+    <!-- Height Input -->
+    <div class="input-group">
+      <label for="heightInput">Height [m]:</label>
+      <input
+        id="heightInput"
+        :value="height"
+        type="text"
+        placeholder="e.g. 1.75 or 1,75"
+        @input="(e) => {
+          const v = e.target.value.replace(',', '.');
+          $emit('update:height', v === '' ? null : Number(v));
+        }"
+        @focus="$emit('field-touched', 'height')"
+      >
+    </div>
+    <div
+      v-if="heightValidationMessage"
+      class="validation-message"
+    >
+      {{ heightValidationMessage }}
+    </div>
+
     <!-- TLV Input -->
     <div class="input-group">
-      <label for="liverInput">Total Liver Volume (TLV) [ml] :</label>
+      <label for="liverInput">Total Liver Volume [ml]:</label>
       <input
         id="liverInput"
         :value="totalLiverVolume"
-        type="number"
-        placeholder="0-20000"
-        @input="$emit('update:totalLiverVolume', $event.target.valueAsNumber)"
+        type="text"
+        placeholder="0-20,000"
+        @input="(e) => $emit('update:totalLiverVolume', e.target.value === '' ? null : Number(e.target.value))"
+        @focus="$emit('field-touched', 'tlv')"
       >
     </div>
     <div
@@ -54,10 +79,17 @@
       {{ tlvValidationMessage }}
     </div>
 
-    <!-- Grouping Toggle -->
-    <button @click="$emit('toggle-grouping')">
-      {{ enableGrouping ? 'Disable Grouping' : 'Enable Grouping' }}
-    </button>
+    <!-- Calculate (formerly "Plot Data") -->
+    <div class="grouping-toggle-container">
+      <button
+        class="calculate-button"
+        :class="{ 'button-disabled': isInvalidInput }"
+        :disabled="isInvalidInput"
+        @click="$emit('calculate-data-point')"
+      >
+        Calculate
+      </button>
+    </div>
 
     <!-- Extra Grouping Controls (Conditional) -->
     <template v-if="enableGrouping">
@@ -84,63 +116,75 @@
     </template>
 
     <!-- Output Display -->
-    <div class="input-group output-group">
-      <label for="normalizedTLV">Normalized Total Liver Volume (nTLV):</label>
+    <div class="input-group output-group httlv-box">
+      <label for="heightAdjustedTLV">Height-adjusted Total Liver Volume (htTLV):</label>
       <div class="output-fields">
         <output
-          id="normalizedTLV"
+          id="heightAdjustedTLV"
           class="output-field"
         >
-          {{ formattedNormalizedTLV }}
+          <template v-if="formattedHeightAdjustedTLV">
+            {{ formattedHeightAdjustedTLV }}
+          </template>
+          <template v-else>
+            <span class="httlv-placeholder">htTLV</span>
+          </template>
         </output>
         <output
           id="progressionGroupOutput"
           :class="`progression-group-output ${progressionGroup}`"
         >
-          {{ progressionGroup }}
+          <template v-if="progressionGroup">
+            {{ progressionGroup }}
+          </template>
+          <template v-else>
+            <span class="httlv-placeholder">PG</span>
+          </template>
         </output>
         <output
           id="liverGrowthRateOutput"
           :class="`progression-group-output ${progressionGroup}`"
         >
-          {{ liverGrowthRate !== null ? liverGrowthRate.toFixed(2) + ' %/y (LGR)' : '' }}
+          <template v-if="liverGrowthRate !== null && liverGrowthRate !== undefined">
+            {{ liverGrowthRate.toFixed(2) + ' %/y (LGR)' }}
+          </template>
+          <template v-else>
+            <span class="httlv-placeholder">growth rate</span>
+          </template>
         </output>
       </div>
     </div>
 
     <!-- Action Buttons -->
-    <button
-      class="plot-point"
-      :class="{ 'button-disabled': isInvalidInput }"
-      :disabled="isInvalidInput"
-      @click="$emit('add-data-point')"
-    >
-      Plot Data
-    </button>
-    <button @click="$emit('print-page')">
-      Print Page
-    </button>
-    <button
-      :disabled="dataPointsLength === 0"
-      @click="$emit('download-chart')"
-    >
-      Download Plot
-    </button>
-    <button
-      :disabled="dataPointsLength === 0"
-      @click="$emit('save-data-as-json')"
-    >
-      Save
-    </button>
-    <button @click="$emit('trigger-load')">
-      Load
-    </button>
-    <button
-      :disabled="dataPointsLength === 0"
-      @click="$emit('download-data-as-excel')"
-    >
-      Download (Excel)
-    </button>
+    <div class="action-buttons">
+      <button @click="$emit('toggle-grouping')">
+        {{ enableGrouping ? 'Disable Grouping' : 'Enable Grouping' }}
+      </button>
+      <button @click="$emit('print-page')">
+        Print Page
+      </button>
+      <button
+        :disabled="dataPointsLength === 0"
+        @click="$emit('download-chart')"
+      >
+        Download Plot
+      </button>
+      <button
+        :disabled="dataPointsLength === 0"
+        @click="$emit('save-data-as-json')"
+      >
+        Save
+      </button>
+      <button @click="$emit('trigger-load')">
+        Load
+      </button>
+      <button
+        :disabled="dataPointsLength === 0"
+        @click="$emit('download-data-as-excel')"
+      >
+        Download (Excel)
+      </button>
+    </div>
   </div>
 </template>
 
@@ -151,6 +195,7 @@ import { defineProps, defineEmits } from 'vue';
 defineProps({
   patientId: { type: [String, Number], default: '' },
   age: { type: [String, Number], default: null }, // Allow string for empty input
+  height: { type: [String, Number], default: null }, // Height in meters
   totalLiverVolume: { type: [String, Number], default: null }, // Allow string for empty input
   group: { type: String, default: '' },
   groupColor: { type: String, default: '' },
@@ -158,7 +203,8 @@ defineProps({
   idWarningMessage: { type: String, default: '' },
   ageValidationMessage: { type: String, default: '' },
   tlvValidationMessage: { type: String, default: '' },
-  formattedNormalizedTLV: { type: String, default: '' },
+  formattedHeightAdjustedTLV: { type: String, default: '' },
+  heightValidationMessage: { type: String, default: '' },
   progressionGroup: { type: String, default: '' },
   liverGrowthRate: { type: Number, default: null },
   isInvalidInput: { type: Boolean, default: true },
@@ -169,29 +215,40 @@ defineProps({
 defineEmits([
   'update:patientId',
   'update:age',
+  'update:height',
   'update:totalLiverVolume',
   'update:group',
   'update:groupColor',
   'toggle-grouping',
-  'add-data-point',
+  'calculate-data-point',
   'print-page',
   'download-chart',
   'save-data-as-json',
   'trigger-load', // Renamed from trigger-file-input for clarity
   'download-data-as-excel',
+  'field-touched',
+  'request-next-id',
 ]);
 </script>
 
 <style scoped>
 /* Styles for controls are now in the global app.css */
 /* This style block can be removed if no component-specific styles are needed */
-.id-warning-message { /* Style specifically for this component if needed */
-  color: red;
-  margin-bottom: 10px; /* Example adjustment */
-}
 .validation-message { /* Style specifically for this component if needed */
-   margin-top: -5px; /* Example adjustment */
-   margin-bottom: 10px;
+  margin-top: -5px; /* Example adjustment */
+  margin-bottom: 10px;
+}
+
+.grouping-toggle-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.httlv-placeholder {
+  color: #888;
+  font-style: italic;
 }
 
 </style>
