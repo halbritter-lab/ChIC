@@ -196,11 +196,9 @@ input[type="number"] {
   background: transparent !important;
   min-height: 20px;
 }
-.output-fields .progression-group-output.PG1 { color: #222; }
-.output-fields .progression-group-output.PG2 { color: #062c46; }
-.output-fields .progression-group-output.PG3 { color: #062c46; }
-.output-fields .progression-group-output.PG4 { color: #062c46; }
-.output-fields .progression-group-output.PG5 { color: #062c46; }
+.output-fields .progression-group-output.PG1 { color: #B2241C; }
+.output-fields .progression-group-output.PG2 { color: #F64C46; }
+.output-fields .progression-group-output.PG3 { color: #FDA3A1; }
 
 /* Ensure htTLV numeric output text matches progression group colors */
 .output-fields .output-field.PG1 { color: #222; }

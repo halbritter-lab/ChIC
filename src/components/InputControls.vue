@@ -121,7 +121,7 @@
       <div class="output-fields">
         <output
           id="heightAdjustedTLV"
-          class="output-field"
+          :class="`output-field ${progressionGroup}`"
         >
           <template v-if="formattedHeightAdjustedTLV">
             {{ formattedHeightAdjustedTLV }}
