@@ -190,10 +190,10 @@
           :class="`progression-group-output ${progressionGroup}`"
         >
           <template v-if="progressionGroup">
-            {{ progressionGroup }}
+            {{ progressionLabel }}
           </template>
           <template v-else>
-            <span class="httlv-placeholder">PG</span>
+            <span class="httlv-placeholder">Class</span>
           </template>
         </output>
         <output
@@ -257,7 +257,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, computed } from 'vue';
 
 // Props received from App.vue
 defineProps({
@@ -297,6 +297,19 @@ const emit = defineEmits([
   'field-touched',
   'request-next-id',
 ]);
+
+// Map internal progression group codes (PG1..PG5) to display labels (Class A..E)
+const progressionLabelMap = {
+  PG1: 'Class A',
+  PG2: 'Class B',
+  PG3: 'Class C',
+  PG4: 'Class D',
+  PG5: 'Class E'
+};
+const progressionLabel = computed(() => {
+  if (!progressionGroup) return null;
+  return progressionLabelMap[progressionGroup] || progressionGroup;
+});
 
 // (Dropdown visibility handled via CSS hover)
 </script>

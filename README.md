@@ -9,7 +9,7 @@ Please explore the [Charité Imaging Classification](https://halbritter-lab.gith
 
 ## Introduction
 
-"Polycystic Liver Disease (PLD) - Progression Grouper" is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on two recents studies titled "Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease" and "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis" (PMID: 36246085), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver-related hospitalization in individuals with PLD.
+"Polycystic Liver Disease (PLD) - Charité Imaging Classification" is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on two recents studies titled "Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease" and "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis" (PMID: 36246085), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver-related hospitalization in individuals with PLD.
 
 PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The application leverages data from a single-center and a multicenter study to introduce novel clinical endpoints, such as height-adjusted total liver volume (htTLV) and PLD-related hospitalization, for prognostic risk stratification.
 
@@ -22,7 +22,7 @@ The principle of the "Charité Imaging Classification" tool has been first publi
 ## Features
 
 - **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
-- **Trend Analysis:** The app plots three key trend lines based on the formulas derived from the study, offering visual insight into the progression groups as defined in the research.
+- **Trend Analysis:** The app plots four key trend lines based on the formulas derived from the study, offering visual insight into the Charité Imaging Classes as defined in the research.
 - **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories.
 - **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
 
@@ -48,7 +48,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
 
 3. **Computed Outputs**
    - **(3a) Height-adjusted Total Liver Volume (htTLV)**: This field displays the calculated height-adjusted total liver volume based on the input TLV divided by height in meters.
-   - **(3b) Progression Group (PG) Indicator**: Shows the progression group classification based on the computed htTLV and age.
+   - **(3b) Charité Imaging Class (Class) Indicator**: Shows the Charité Imaging Class classification based on the computed htTLV and age.
 
 4. **Action Buttons**
    - **(4a) Plot Point**: Submits the entered data and plots the point on the graph.
@@ -61,12 +61,12 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
 5. **Chart Area**
    - Displays a scatter plot graph illustrating the relationship between age and htTLV, with trend lines indicating progression thresholds.
 
-6. **Progression Group Legend**
-   - **PG1** — &lt;1%/y — Very slow progression
-   - **PG2** — 1–2%/y — Slow progression
-   - **PG3** — 2–3%/y — Moderate progression
-   - **PG4** — 3–4%/y — Rapid progression
-   - **PG5** — &gt;4%/y — Very rapid progression
+6. **Charité Imaging Classes Legend**
+   - **Class A** — &lt;1%/y — Very slow progression
+   - **Class B** — 1–2%/y — Slow progression
+   - **Class C** — 2–3%/y — Moderate progression
+   - **Class D** — 3–4%/y — Rapid progression
+   - **Class E** — &gt;4%/y — Very rapid progression
 
 7. **Documentation Link**
    - Provides a link to the GitHub README for detailed documentation of the application and its methodologies.
@@ -79,7 +79,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - **(9b) Funder Logo**: Displays the logo of the funding organization.
 
 10. **Data Table** *(not visible in the screenshot)*
-   - If present, this would display a table of all data points entered, including ID, age, height, TLV, htTLV, progression group, and an option to remove data points.
+   - If present, this would display a table of all data points entered, including ID, age, height, TLV, htTLV, Charité Imaging Class, and an option to remove data points.
 
 Each numbered item refers to a different component or section of the app. Users interact with these components to input data, receive computed outputs, manage the data points, and utilize the results for further analysis or documentation.
 

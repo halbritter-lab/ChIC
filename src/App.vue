@@ -39,7 +39,7 @@
             <li><strong>Enter Age:</strong> Input the patient's age (15-80 years).</li>
             <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
             <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
-            <li><strong>View Results:</strong> The height-adjusted TLV and progression groups (PG1–PG5) will be displayed.</li>
+            <li><strong>View Results:</strong> The height-adjusted TLV and Charité Imaging Classes (A–E) will be displayed.</li>
           </ol>
           
           <h3>Frequently Asked Questions</h3>
@@ -48,13 +48,13 @@
             <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, allowing comparison across patients of different body sizes.</p>
           </div>
           <div class="faq-item">
-            <h4>What do the progression groups mean?</h4>
+            <h4>What do the Charité Imaging Classes mean?</h4>
             <p>
-              <strong>PG1:</strong> Very slow progression (&lt;1%/y)<br>
-              <strong>PG2:</strong> Slow progression (1–2%/y)<br>
-              <strong>PG3:</strong> Moderate progression (2–3%/y)<br>
-              <strong>PG4:</strong> Rapid progression (3–4%/y)<br>
-              <strong>PG5:</strong> Very rapid progression (&gt;4%/y)
+              <strong>Class A:</strong> Very slow progression (&lt;1%/y)<br>
+              <strong>Class B:</strong> Slow progression (1–2%/y)<br>
+              <strong>Class C:</strong> Moderate progression (2–3%/y)<br>
+              <strong>Class D:</strong> Rapid progression (3–4%/y)<br>
+              <strong>Class E:</strong> Very rapid progression (&gt;4%/y)
             </p>
           </div>
           <div class="faq-item">
@@ -137,22 +137,22 @@
             :group-color="groupColor"
           />
 
-          <!-- Progression Group Squares (PG1 - PG5) -->
+          <!-- Charité Imaging Classes (A - E) -->
           <div class="progression-groups">
             <div class="progression-group PG1">
-              <strong>PG1</strong><br>&lt;1%/y
+              <strong>Class A</strong><br>&lt;1%/y
             </div>
             <div class="progression-group PG2">
-              <strong>PG2</strong><br>1-2%/y
+              <strong>Class B</strong><br>1-2%/y
             </div>
             <div class="progression-group PG3">
-              <strong>PG3</strong><br>2-3%/y
+              <strong>Class C</strong><br>2-3%/y
             </div>
             <div class="progression-group PG4">
-              <strong>PG4</strong><br>3-4%/y
+              <strong>Class D</strong><br>3-4%/y
             </div>
             <div class="progression-group PG5">
-              <strong>PG5</strong><br>&gt;4%/y
+              <strong>Class E</strong><br>&gt;4%/y
             </div>
           </div>
         </div>
@@ -170,7 +170,7 @@
               <th>Age [y]</th>
               <th>TLV [ml]</th>
               <th>htTLV</th>
-              <th>PG</th>
+              <th>Class</th>
               <th>LGR [%/y]</th>
               <th v-if="enableGrouping">
                 Group
@@ -190,7 +190,7 @@
               <td>{{ point.age }}</td>
               <td>{{ point.tlv }}</td>
               <td>{{ point.htlv_formatted }}</td>
-              <td>{{ point.pg }}</td>
+              <td>{{ formatPGLabel(point.pg) }}</td>
               <td>{{ point.lgr }}</td>
               <td v-if="enableGrouping">
                 <input
@@ -694,6 +694,19 @@ export default {
       // No longer need to remove resize listener here
     });
 
+    // Map internal PG codes to display labels (Class A..E)
+    const pgLabelMap = {
+      PG1: 'Class A',
+      PG2: 'Class B',
+      PG3: 'Class C',
+      PG4: 'Class D',
+      PG5: 'Class E'
+    };
+    const formatPGLabel = (pg) => {
+      if (!pg) return '';
+      return pgLabelMap[pg] || pg;
+    };
+
     return {
       version,
       lastCommitHash,
@@ -738,6 +751,7 @@ export default {
       groupColor,
       toggleGrouping,
       updateChartPoint,
+      formatPGLabel,
       chartDisplayRef, // Return the ref for the ChartDisplay component
       assignNextId,
       handleFieldTouched,

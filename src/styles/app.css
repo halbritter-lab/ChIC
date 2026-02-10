@@ -81,13 +81,12 @@ html, body {
   margin-bottom: 5px;
   min-width: 80px;
 }
-/* PG1: below all thresholds */
+/* Class A (PG1): below all thresholds */
 .PG1 {
   background-color: rgba(60,60,60,0.24); /* slightly darker translucent gray */
   border-color: #000000;
   color: #222;
 }
-/* PG2: corresponds to Threshold T1 colors (dark navy border, light gray fill under T1) */
 .PG2 {
   background-color: rgba(43,27,111,0.20); /* slightly darker pastel navy translucent */
   border-color: #2B1B6F; /* T1 border color */
@@ -230,19 +229,18 @@ input[type="number"] {
   z-index: 1;
 }
 
-/* Keep progression outputs from filling background; use color accents instead */
 .output-fields .progression-group-output {
   background: transparent !important;
   min-height: 20px;
 }
-/* Progression group output text colors match the progression box outlines */
+/* Charité Imaging Class output text colors match the progression box outlines */
 .output-fields .progression-group-output.PG1 { color: #BDBDBD; }
 .output-fields .progression-group-output.PG2 { color: #2B1B6F; }
 .output-fields .progression-group-output.PG3 { color: #8E9BFF; }
 .output-fields .progression-group-output.PG4 { color: #64C8FF; }
 .output-fields .progression-group-output.PG5 { color: #BFE9FF; }
 
-/* Ensure htTLV numeric output text matches progression group colors */
+/* Ensure htTLV numeric output text matches Charité Imaging Class colors */
 .output-fields .output-field.PG1 { color: #BDBDBD; }
 .output-fields .output-field.PG2 { color: #2B1B6F; }
 .output-fields .output-field.PG3 { color: #8E9BFF; }
