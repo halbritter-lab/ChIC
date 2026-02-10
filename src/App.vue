@@ -100,7 +100,7 @@
             :id-warning-message="idWarningMessage"
             :age-validation-message="ageValidationMessage"
             :tlv-validation-message="tlvValidationMessage"
-            :formatted-height-adjusted-t-l-v="displayFormattedHTLV"
+            :formatted-height-adjusted-tlv="displayFormattedHTLV"
             :progression-group="displayProgressionGroup"
             :liver-growth-rate="displayLiverGrowthRate"
             :is-invalid-input="isInvalidInput"
