@@ -17,8 +17,9 @@ html, body {
 :root {
   --banner-left: #2c3e50; /* left/dark */
   --banner-right: #3498db; /* right/light */
-  --button-calc: #2b6fd6; /* medium blue for Calculate (between left/right) */
-  --button-calc-hover: var(--banner-left);
+  --button-calc: var(--banner-left); /* match left ribbon color */
+  --button-calc-hover: #243347; /* slightly darker hover near banner-left */
+  --button-other-hover: #67b9f0; /* lighter hover for other controls */
   --button-other: var(--banner-right);
   --button-other-hover: #167bb6; /* slightly darker hover for non-Calculate buttons */
 }
@@ -73,39 +74,40 @@ html, body {
   margin: 20px 0;
 }
 .progression-group {
-  border: 3px solid #FFA3A3;
+  border: 3px solid #BDBDBD;
   border-radius: 0px;
   padding: 10px;
   text-align: center;
   margin-bottom: 5px;
   min-width: 80px;
 }
-.PG3 {
-  background-color: #B2241C33;
-  border-color: #B2241C;
-}
+/* PG1: below all thresholds */
 .PG1 {
-  background-color: #E0E0E0; /* gray fill to match chart band */
-  border-color: #BDBDBD; /* light gray border */
-  color: #222; /* ensure readable text */
+  background-color: rgba(60,60,60,0.24); /* slightly darker translucent gray */
+  border-color: #000000;
+  color: #222;
 }
+/* PG2: corresponds to Threshold T1 colors (dark navy border, light gray fill under T1) */
 .PG2 {
-  background-color: #8E9BFF33; /* periwinkle (T2->T1 band) */
+  background-color: rgba(43,27,111,0.20); /* slightly darker pastel navy translucent */
+  border-color: #2B1B6F; /* T1 border color */
+  color: #062c46;
+}
+/* PG3: corresponds to Threshold T2 (periwinkle) */
+.PG3 {
+  background-color: #8E9BFF33; /* periwinkle translucent */
   border-color: #8E9BFF;
   color: #062c46;
 }
-.PG3 {
-  background-color: #64C8FF33; /* sky blue (T3->T2 band) */
+/* PG4: corresponds to Threshold T3 (sky blue) */
+.PG4 {
+  background-color: #64C8FF33; /* sky blue translucent */
   border-color: #64C8FF;
   color: #062c46;
 }
-.PG4 {
-  background-color: #BFE9FF33; /* pastel blue (T4->T3 band) */
-  border-color: #BFE9FF;
-  color: #062c46;
-}
+/* PG5: corresponds to Threshold T4 (pastel blue) */
 .PG5 {
-  background-color: #BFE9FF44; /* top pastel blue (above T4) slightly stronger */
+  background-color: #BFE9FF33; /* pastel blue translucent */
   border-color: #BFE9FF;
   color: #062c46;
 }
@@ -117,6 +119,42 @@ html, body {
   margin: 10px 0;
   gap: 10px;
 }
+
+/* Add spacing around Calculate button and htTLV box to separate controls visually */
+.grouping-toggle-container {
+  margin-bottom: 24px; /* increased space below Calculate button */
+}
+
+.calculate-button {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.httlv-box {
+  margin-top: 12px; /* ensure gap above htTLV box */
+  margin-bottom: 24px; /* increased space below htTLV box before action buttons */
+}
+
+.action-buttons {
+  margin-top: 12px; /* space above action buttons */
+}
+
+/* Explicit spacer used in InputControls to force vertical gaps for Safari */
+.spacer {
+  display: block;
+  width: 100%;
+  min-height: 18px;
+  height: 18px;
+}
+.grouping-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* use flex gap so spacing equals single 10px between items */
+  margin: 0; /* remove external margin so only `.input-group` margins control spacing */
+}
+.grouping-controls .input-group {
+  margin: 0; /* remove child margins to avoid double spacing inside flex container */
+}
 .input-group label {
   white-space: nowrap;
   min-width: fit-content;
@@ -124,8 +162,8 @@ html, body {
 }
 .input-group input {
   padding: 5px;
-  border: 2px solid #ddd;
-  border-radius: 0px;
+  border: 1px solid #ddd; /* thinner line weight to match dark-mode form */
+  border-radius: 4px; /* subtle rounding to match dark-mode appearance */
   font-size: 14px;
   width: 190px; /* adjusted per request */
   box-sizing: border-box;
@@ -139,6 +177,7 @@ html, body {
 #liverInput {
   width: 190px !important;
   box-sizing: border-box;
+  border-radius: 4px;
 }
 
 /* Normalize number inputs (remove browser spinner) for consistent width */
@@ -196,16 +235,33 @@ input[type="number"] {
   background: transparent !important;
   min-height: 20px;
 }
-.output-fields .progression-group-output.PG1 { color: #B2241C; }
-.output-fields .progression-group-output.PG2 { color: #F64C46; }
-.output-fields .progression-group-output.PG3 { color: #FDA3A1; }
+/* Progression group output text colors match the progression box outlines */
+.output-fields .progression-group-output.PG1 { color: #BDBDBD; }
+.output-fields .progression-group-output.PG2 { color: #2B1B6F; }
+.output-fields .progression-group-output.PG3 { color: #8E9BFF; }
+.output-fields .progression-group-output.PG4 { color: #64C8FF; }
+.output-fields .progression-group-output.PG5 { color: #BFE9FF; }
 
 /* Ensure htTLV numeric output text matches progression group colors */
-.output-fields .output-field.PG1 { color: #222; }
-.output-fields .output-field.PG2 { color: #062c46; }
-.output-fields .output-field.PG3 { color: #062c46; }
-.output-fields .output-field.PG4 { color: #062c46; }
-.output-fields .output-field.PG5 { color: #062c46; }
+.output-fields .output-field.PG1 { color: #BDBDBD; }
+.output-fields .output-field.PG2 { color: #2B1B6F; }
+.output-fields .output-field.PG3 { color: #8E9BFF; }
+.output-fields .output-field.PG4 { color: #64C8FF; }
+.output-fields .output-field.PG5 { color: #BFE9FF; }
+
+/* Ensure the htTLV numeric output uses a neutral color instead of PG highlighting */
+.output-fields #heightAdjustedTLV.output-field {
+  color: inherit !important;
+}
+
+/* Remove any visual highlight (background, border, shadow, outline) from the htTLV output */
+.output-fields #heightAdjustedTLV {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  padding: 0 12px !important; /* keep horizontal padding consistent */
+}
 .chart-container {
   display: flex;
   justify-content: center;
@@ -218,12 +274,15 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #f8f9fa;
-  padding: 12px;
-  border-radius: 8px;
+  background: transparent; /* removed highlight */
+  padding: 0; /* remove inner box padding */
+  border-radius: 0;
   width: 100%;
   box-sizing: border-box;
   margin: 8px 0;
+}
+.grouping-enabled .httlv-box {
+  margin-top: 24px; /* ensure spacing above htTLV when grouping controls are present */
 }
 .httlv-box > label {
   display: block;
@@ -251,8 +310,8 @@ button {
   font-size: 14px;
 }
 .controls button {
-  background-color: var(--button-other); /* light blue default for non-calculate buttons */
-  color: #062c46; /* dark text for contrast */
+  background-color: var(--banner-right) !important; /* match right ribbon color */
+  color: #ffffff !important; /* ensure readable on blue */
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -260,18 +319,28 @@ button {
   margin: 3px 3px 3px 0;
 }
 .controls button:hover {
-  background-color: var(--button-other-hover); /* slightly darker light blue on hover */
+  background-color: var(--button-other-hover) !important; /* hover uses configured hover color */
+  color: #ffffff !important;
 }
 .controls button.calculate-button {
-  background-color: var(--button-calc); /* medium blue for Calculate */
-  color: #ffffff;
-  border: 2px solid #274f9a;
+  background-color: var(--button-calc) !important; /* enforce banner-left color */
+  color: #ffffff !important;
+  border: none !important; /* remove outline */
 }
 .controls button.calculate-button.button-disabled {
   background-color: #ccc;
   color: #666;
   cursor: not-allowed;
   border-color: #999;
+}
+
+/* Ensure non-calculate control buttons show disabled styling even when general button styles use !important */
+.controls button:disabled,
+.controls button.button-disabled {
+  background-color: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+  border-color: #999 !important;
 }
 .controls button.calculate-button:hover {
   background-color: var(--button-calc-hover); /* dark from banner left */
@@ -373,3 +442,103 @@ button:disabled {
   cursor: not-allowed;
 }
 /* REMOVED: .acknowledgment-message as it is now in DisclaimerModal.vue */
+
+/* Dark theme: remove visible boxes around inputs, htTLV box, outputs and controls */
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea,
+.dark-theme .output-field,
+.dark-theme .progression-group-output,
+.dark-theme .httlv-box,
+.dark-theme .input-group,
+.dark-theme .controls button {
+  border-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-clip: padding-box !important;
+}
+
+/* Keep focus outlines for accessibility but make them subtle in dark theme */
+.dark-theme input:focus,
+.dark-theme textarea:focus,
+.dark-theme select:focus,
+.dark-theme .controls button:focus {
+  outline: 2px solid rgba(255,255,255,0.12) !important;
+  outline-offset: 2px;
+}
+
+/* Stronger overrides for dark theme to remove any visible boxes/shadows */
+body.dark-theme input,
+body.dark-theme select,
+body.dark-theme textarea,
+body.dark-theme .output-field,
+body.dark-theme .progression-group-output,
+body.dark-theme .httlv-box,
+body.dark-theme .input-group,
+body.dark-theme .controls,
+body.dark-theme .left-column,
+body.dark-theme .controls button,
+body.dark-theme .action-buttons button,
+body.dark-theme .input-group input,
+body.dark-theme .output-fields > * {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-clip: padding-box !important;
+  background-color: transparent !important;
+  -webkit-appearance: none !important;
+}
+
+/* In dark mode, provide a subtle input border/outlines that matches suggestion text color */
+/* Use a soft bluish-gray to match suggestion/tooltip text used elsewhere */
+body.dark-theme input,
+body.dark-theme textarea,
+body.dark-theme select,
+body.dark-theme .input-group input {
+  border: 1px solid rgba(223,231,242,0.08) !important;
+  border-radius: 4px;
+  background-color: transparent !important;
+}
+
+/* Focus state: slightly stronger outline using the suggestion-like color */
+body.dark-theme input:focus,
+body.dark-theme textarea:focus,
+body.dark-theme select:focus,
+body.dark-theme .input-group input:focus {
+  outline: 2px solid rgba(223,231,242,0.14) !important;
+  outline-offset: 2px;
+}
+
+/* Ensure disabled state still visible */
+body.dark-theme button:disabled,
+body.dark-theme .controls button:disabled {
+  background-color: #444 !important;
+  color: #999 !important;
+}
+
+/* Give buttons a visible background in dark mode so they contrast with page background */
+body.dark-theme .controls button,
+body.dark-theme .action-buttons button,
+body.dark-theme .action-buttons .secondary-actions button {
+  background-color: var(--banner-right) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure Calculate matches left ribbon color in dark mode */
+body.dark-theme .controls button.calculate-button {
+  background-color: var(--button-calc) !important;
+  color: #ffffff !important;
+}
+
+/* Dark-mode footer styling: darker background and lighter text for citation box */
+body.dark-theme .footer,
+body.dark-theme .footer-box {
+  background-color: #0f2138 !important; /* darker than page background */
+  color: #e0e0e0 !important;
+}
+body.dark-theme .footer-text p {
+  color: #dfe7f2 !important;
+}
+body.dark-theme .footer-divider {
+  border-top-color: rgba(255,255,255,0.06) !important;
+}

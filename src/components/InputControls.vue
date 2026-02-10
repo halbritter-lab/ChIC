@@ -1,5 +1,8 @@
 <template>
-  <div class="controls">
+  <div
+    class="controls"
+    :class="{ 'grouping-enabled': enableGrouping }"
+  >
     <!-- ID Input -->
     <div class="input-group">
       <label for="idInput">ID:</label>
@@ -91,27 +94,79 @@
       </button>
     </div>
 
+    <div
+      class="spacer"
+      aria-hidden="true"
+    />
     <!-- Extra Grouping Controls (Conditional) -->
     <template v-if="enableGrouping">
-      <div class="input-group">
-        <label for="groupInput">Group:</label>
-        <input
-          id="groupInput"
-          :value="group"
-          type="text"
-          placeholder="Enter group name"
-          @input="$emit('update:group', $event.target.value)"
-        >
-      </div>
-      <div class="input-group">
-        <label for="groupColorInput">Group Color:</label>
-        <input
-          id="groupColorInput"
-          :value="groupColor"
-          type="text"
-          placeholder="e.g. #000000"
-          @input="$emit('update:groupColor', $event.target.value)"
-        >
+      <div class="grouping-controls">
+        <div class="input-group">
+          <label for="groupInput">Group:</label>
+          <input
+            id="groupInput"
+            :value="group"
+            type="text"
+            placeholder="Enter group name"
+            @input="$emit('update:group', $event.target.value)"
+          >
+        </div>
+        <div class="input-group color-suggest">
+          <label for="groupColorInput">Group Color:</label>
+          <div class="color-suggest-wrapper">
+            <input
+              id="groupColorInput"
+              :value="groupColor"
+              type="text"
+              placeholder="e.g. #000000"
+              @input="$emit('update:groupColor', $event.target.value)"
+            >
+            <div
+              class="color-suggestions"
+              aria-hidden="true"
+            >
+              <button
+                type="button"
+                class="color-swatch"
+                title="Black"
+                @click="$emit('update:groupColor', '#000000')"
+              >
+                <span
+                  class="swatch-dot"
+                  style="background:#000000"
+                />
+                <span class="swatch-label">Black</span>
+                <span class="swatch-hex">#000000</span>
+              </button>
+              <button
+                type="button"
+                class="color-swatch"
+                title="Red"
+                @click="$emit('update:groupColor', '#ff4d4d')"
+              >
+                <span
+                  class="swatch-dot"
+                  style="background:#ff4d4d"
+                />
+                <span class="swatch-label">Red</span>
+                <span class="swatch-hex">#ff4d4d</span>
+              </button>
+              <button
+                type="button"
+                class="color-swatch"
+                title="Blue"
+                @click="$emit('update:groupColor', '#3498db')"
+              >
+                <span
+                  class="swatch-dot"
+                  style="background:#3498db"
+                />
+                <span class="swatch-label">Blue</span>
+                <span class="swatch-hex">#3498db</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -124,7 +179,7 @@
           :class="`output-field ${progressionGroup}`"
         >
           <template v-if="formattedHeightAdjustedTLV">
-            {{ formattedHeightAdjustedTLV }}
+            {{ formattedHeightAdjustedTLV + ' ml/m' }}
           </template>
           <template v-else>
             <span class="httlv-placeholder">htTLV</span>
@@ -155,34 +210,47 @@
       </div>
     </div>
 
+
+
+    <div
+      class="spacer"
+      aria-hidden="true"
+    />
     <!-- Action Buttons -->
     <div class="action-buttons">
       <button @click="$emit('toggle-grouping')">
         {{ enableGrouping ? 'Disable Grouping' : 'Enable Grouping' }}
       </button>
+      <button @click="$emit('trigger-load')">
+        Load
+      </button>
       <button @click="$emit('print-page')">
         Print Page
       </button>
-      <button
-        :disabled="dataPointsLength === 0"
-        @click="$emit('download-chart')"
-      >
-        Download Plot
-      </button>
+    </div>
+
+    <!-- Save + Download actions on their own row -->
+    <div
+      class="action-buttons secondary-actions"
+      style="margin-top:6px;"
+    >
       <button
         :disabled="dataPointsLength === 0"
         @click="$emit('save-data-as-json')"
       >
         Save
       </button>
-      <button @click="$emit('trigger-load')">
-        Load
-      </button>
       <button
         :disabled="dataPointsLength === 0"
         @click="$emit('download-data-as-excel')"
       >
         Download (Excel)
+      </button>
+      <button
+        :disabled="dataPointsLength === 0"
+        @click="$emit('download-chart')"
+      >
+        Download Plot
       </button>
     </div>
   </div>
@@ -212,7 +280,7 @@ defineProps({
 });
 
 // Events emitted to App.vue
-defineEmits([
+const emit = defineEmits([
   'update:patientId',
   'update:age',
   'update:height',
@@ -229,6 +297,8 @@ defineEmits([
   'field-touched',
   'request-next-id',
 ]);
+
+// (Dropdown visibility handled via CSS hover)
 </script>
 
 <style scoped>
@@ -250,5 +320,100 @@ defineEmits([
   color: #888;
   font-style: italic;
 }
+
+/* Color suggestion dropdown for Group Color input */
+.color-suggest .color-suggest-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.color-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: none;
+  flex-direction: column; /* stacked vertically */
+  gap: 4px;
+  padding: 6px 8px;
+  width: 100%; /* match the input width via the wrapper */
+  box-sizing: border-box;
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  border-radius: 6px;
+  z-index: 50;
+}
+.color-swatch {
+  padding: 8px 10px;
+  border: none;
+  cursor: pointer;
+  background: transparent; /* no box around each option */
+  color: inherit;
+  border-radius: 0px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* left align content */
+  width: 100%;
+}
+.color-swatch {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.color-swatch:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.color-swatch::-moz-focus-inner {
+  border: 0;
+}
+.color-swatch .swatch-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+.color-swatch:hover {
+  background: rgba(0,0,0,0.06); /* light gray on hover */
+}
+.color-swatch:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: rgba(0,0,0,0.06); /* same visual as hover */
+}
+.swatch-label {
+  margin-right: 8px;
+}
+.swatch-hex {
+  color: rgba(0,0,0,0.54);
+  font-size: 12px;
+}
+.color-suggest:hover .color-suggestions,
+.color-suggest .color-suggest-wrapper:focus-within .color-suggestions {
+  display: flex;
+}
+
+/* Dark mode adjustments for the suggestion box */
+:deep(.dark-theme) .color-suggestions {
+  background: #0f2138;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+}
+/* Dark mode: make swatch dot borders lighter for contrast */
+:deep(.dark-theme) .swatch-dot {
+  border: 1px solid rgba(255,255,255,0.12);
+}
+/* Dark-mode: neutral hover for color options */
+:deep(.dark-theme) .color-swatch:hover,
+:deep(.dark-theme) .color-swatch:focus-visible {
+  background: rgba(255,255,255,0.03);
+}
+
 
 </style>

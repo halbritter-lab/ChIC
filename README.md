@@ -22,7 +22,7 @@ The principle of the "Charité Imaging Classification" tool has been first publi
 ## Features
 
 - **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
-- **Trend Analysis:** The app plots two key trend lines based on the formulas derived from the study, offering visual insight into the progression groups as defined in the research.
+- **Trend Analysis:** The app plots three key trend lines based on the formulas derived from the study, offering visual insight into the progression groups as defined in the research.
 - **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories.
 - **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
 
@@ -62,9 +62,11 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - Displays a scatter plot graph illustrating the relationship between age and htTLV, with trend lines indicating progression thresholds.
 
 6. **Progression Group Legend**
-   - **(6a) PG3**: Indicates rapid progression (greater than 6.6% per year).
-   - **(6b) PG2**: Indicates moderate progression (between 3.3% and 6.6% per year).
-   - **(6c) PG1**: Indicates slow progression (less than 3.3% per year).
+   - **PG1** — &lt;1%/y — Very slow progression
+   - **PG2** — 1–2%/y — Slow progression
+   - **PG3** — 2–3%/y — Moderate progression
+   - **PG4** — 3–4%/y — Rapid progression
+   - **PG5** — &gt;4%/y — Very rapid progression
 
 7. **Documentation Link**
    - Provides a link to the GitHub README for detailed documentation of the application and its methodologies.

@@ -84,7 +84,7 @@ export function useDataPersistence() {
         htlv: computedHTLV, // numeric value for charting
         htlv_formatted: computedHTLV.toFixed(3), // formatted string for display
         pg: computedPG,
-        lgr: computedLGR !== null ? computedLGR.toFixed(2) : 'N/A',
+        lgr: computedLGR !== null ? (computedLGR * 100).toFixed(2) : 'N/A',
         group: row.group || '', // Preserve grouping info if present
         groupColor: row.groupColor || null,
     };

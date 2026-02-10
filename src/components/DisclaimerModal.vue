@@ -25,7 +25,10 @@
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p v-html="section.content" />
         </section>
-        <button class="modal-action-button" @click="closeModal">
+        <button
+          class="modal-action-button"
+          @click="closeModal"
+        >
           I Acknowledge
         </button>
       </div>
@@ -115,18 +118,20 @@ const reopenModal = () => {
   padding: 10px 15px;
 }
 
-/* Match modal acknowledge button to the main controls button style */
 .modal-content .modal-action-button {
-  background-color: #00bf7d;
-  color: black;
-  border: none;
+  background-color: var(--button-calc);
+  color: #ffffff;
+  border: none; /* remove outline to match Calculate button */
   border-radius: 5px;
   cursor: pointer;
   padding: 10px 15px;
   font-size: 14px;
 }
 .modal-content .modal-action-button:hover {
-  background-color: #45a049;
+  background-color: var(--button-calc-hover);
+}
+.modal-content .modal-action-button:active {
+  background-color: #0f2b5a;
 }
 
 /* Acknowledgment message styles */

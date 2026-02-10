@@ -17,11 +17,20 @@
     />
 
     <!-- FAQ Modal -->
-    <div v-if="showFAQ" class="faq-modal-overlay" @click.self="closeFAQ">
+    <div
+      v-if="showFAQ"
+      class="faq-modal-overlay"
+      @click.self="closeFAQ"
+    >
       <div class="faq-modal">
         <div class="faq-header">
           <h2>How to Use & FAQ</h2>
-          <button class="faq-close" @click="closeFAQ">×</button>
+          <button
+            class="faq-close"
+            @click="closeFAQ"
+          >
+            ×
+          </button>
         </div>
         <div class="faq-content">
           <h3>How to Use</h3>
@@ -30,19 +39,23 @@
             <li><strong>Enter Age:</strong> Input the patient's age (15-80 years).</li>
             <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
             <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
-            <li><strong>View Results:</strong> The normalized TLV and progression group (PG1-PG3) will be displayed.</li>
+            <li><strong>View Results:</strong> The height-adjusted TLV and progression groups (PG1–PG5) will be displayed.</li>
           </ol>
           
           <h3>Frequently Asked Questions</h3>
           <div class="faq-item">
             <h4>What is htTLV?</h4>
-              <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, allowing comparison across patients of different body sizes.</p>
+            <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, allowing comparison across patients of different body sizes.</p>
           </div>
           <div class="faq-item">
             <h4>What do the progression groups mean?</h4>
-            <p><strong>PG1:</strong> Low progression (&lt;3.3%/year)<br>
-               <strong>PG2:</strong> Intermediate progression (3.3-6.6%/year)<br>
-               <strong>PG3:</strong> High progression (&gt;6.6%/year)</p>
+            <p>
+              <strong>PG1:</strong> Very slow progression (&lt;1%/y)<br>
+              <strong>PG2:</strong> Slow progression (1–2%/y)<br>
+              <strong>PG3:</strong> Moderate progression (2–3%/y)<br>
+              <strong>PG4:</strong> Rapid progression (3–4%/y)<br>
+              <strong>PG5:</strong> Very rapid progression (&gt;4%/y)
+            </p>
           </div>
           <div class="faq-item">
             <h4>Can I save my data?</h4>
@@ -92,6 +105,7 @@
             :liver-growth-rate="displayLiverGrowthRate"
             :is-invalid-input="isInvalidInput"
             :data-points-length="dataPoints.length"
+            :height-validation-message="heightValidationMessage"
             @toggle-grouping="toggleGrouping"
             @request-next-id="assignNextId"
             @calculate-data-point="calculateDataPoint"
@@ -101,7 +115,6 @@
             @save-data-as-json="() => saveDataAsJson(dataPoints)"
             @trigger-load="triggerLoad"
             @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
-            :height-validation-message="heightValidationMessage"
           />
 
           <!-- Loading Error Display -->
@@ -311,6 +324,7 @@ export default {
     const ageTouched = ref(false);
     const heightTouched = ref(false);
     const tlvTouched = ref(false);
+    const showAgeValidation = ref(false); // Only show age range error after Calculate is pressed
 
     const disclaimerAcknowledged = ref(localStorage.getItem('disclaimerAcknowledged') === 'true');
     const acknowledgmentTime = ref(localStorage.getItem('acknowledgmentTime'));
@@ -419,7 +433,9 @@ export default {
       }
       // Ensure required numeric inputs are present and valid
       if (!isAgeValid()) {
-        ageValidationMessage.value = `Age must be between ${CONFIG.AGE_MIN} and ${CONFIG.AGE_MAX} years`;
+        // Defer showing the range error until after Calculate is pressed (similar to ID missing behavior)
+        showAgeValidation.value = true;
+        validateInput();
         return;
       }
       if (!isHeightValid()) {
@@ -433,7 +449,9 @@ export default {
       // Update display values (only on Calculate click)
       displayFormattedHTLV.value = formattedHeightAdjustedTLV.value;
       displayProgressionGroup.value = progressionGroup.value;
-      displayLiverGrowthRate.value = liverGrowthRate.value;
+      // formulas.calculateLiverGrowthRate now returns fractional value (e.g., 0.01);
+      // convert to percent for display: 0.01 -> 1.00 %/y
+      displayLiverGrowthRate.value = liverGrowthRate.value !== null ? (liverGrowthRate.value * 100) : null;
 
       const newData = {
         id: patientId.value,
@@ -442,7 +460,7 @@ export default {
         htlv: heightAdjustedTLV.value, // numeric for chart
         htlv_formatted: formattedHeightAdjustedTLV.value, // formatted string for display
         pg: progressionGroup.value,
-        lgr: liverGrowthRate.value !== null ? liverGrowthRate.value.toFixed(2) : 'N/A',
+        lgr: liverGrowthRate.value !== null ? (liverGrowthRate.value * 100).toFixed(2) : 'N/A',
         group: enableGrouping.value ? group.value : '',
         groupColor: enableGrouping.value ? groupColor.value : null
       };
@@ -485,8 +503,12 @@ export default {
         if (!Number.isFinite(age.value)) {
           ageValidationMessage.value = 'Age must be a number';
         } else if (!isAgeValid()) {
-          ageValidationMessage.value = `Age must be between ${CONFIG.AGE_MIN} and ${CONFIG.AGE_MAX} years`;
-          // ageValidationMessage set
+          // Only show the range error after Calculate was pressed
+          if (showAgeValidation.value) {
+            ageValidationMessage.value = `Age must be between ${CONFIG.AGE_MIN} and ${CONFIG.AGE_MAX} years`;
+          } else {
+            ageValidationMessage.value = '';
+          }
         }
       }
       // Height: numeric-only, allow comma/dot converted to Number; show specific messages for non-numeric vs out-of-range
@@ -616,10 +638,11 @@ export default {
       document.body.classList.toggle('dark-theme', isDark.value);
     };
 
-    // Reset form to initial state
+    // Reset form to initial state (clear all inputs and UI state)
     const resetForm = () => {
       patientId.value = '';
-      age.value = CONFIG.AGE_MIN;
+      age.value = null;
+      height.value = null;
       totalLiverVolume.value = null;
       group.value = '';
       groupColor.value = '';
@@ -627,6 +650,18 @@ export default {
       idWarningMessage.value = '';
       ageValidationMessage.value = '';
       tlvValidationMessage.value = '';
+      heightValidationMessage.value = '';
+      // Clear displayed/calculated outputs
+      displayFormattedHTLV.value = null;
+      displayProgressionGroup.value = null;
+      displayLiverGrowthRate.value = null;
+      // Reset touched flags so validation behaves like first load
+      patientIdTouched.value = false;
+      ageTouched.value = false;
+      heightTouched.value = false;
+      tlvTouched.value = false;
+      suppressClearOnNextInput.value = false;
+      showAgeValidation.value = false;
       chartDisplayRef.value?.clearChart();
     };
 

@@ -23,15 +23,21 @@ export const formulas = {
     return { x: age, y: formulas.calculateThreshold03(age) };
   }),
 
-  // New liver growth rate formula per your specification:
-  // LGR = ((((htTLV)^(1/age))/600)-1)*100
+  // Updated liver growth rate formula per requested steps:
+  // 1) divide htTLV by 600
+  // 2) take the age-th root of that: (htTLV / 600)^(1/age)
+  // 3) subtract 1
+  // 4) divide by 100
+  // LGR = ((htTLV / 600)^(1/age) - 1) / 100
   calculateLiverGrowthRate: (age, htlv) => {
     const a = Number(age);
     const h = Number(htlv);
     if (!Number.isFinite(a) || a <= 0) return null;
     if (!Number.isFinite(h) || h <= 0) return null;
-    const root = Math.pow(h, 1 / a);
-    return ((root / 600) - 1) * 100;
+    const ratio = h / 600;
+    const root = Math.pow(ratio, 1 / a);
+    // Return fractional annual growth rate (e.g., 0.03 for 3%/y)
+    return root - 1;
   }
   // Add more formulas as needed
 };
