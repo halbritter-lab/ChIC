@@ -88,11 +88,15 @@ const initChart = () => {
         },
         // Ceiling for top fill (area above T4)
         {
-          label: 'Ceiling',
           data: ceilingData,
-          borderColor: 'transparent',
-          borderWidth: 0,
-          showLine: true,
+            pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            pointStyle: 'circle',
+            showLine: false,
+            order: 9999 // Force patient data to render above all threshold/fill datasets
           pointRadius: 0,
           fill: '+1', // fill down to T4
           backgroundColor: '#BFE9FF33', // pastel blue (unchanged)
