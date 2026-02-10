@@ -390,6 +390,21 @@ const emit = defineEmits([
   box-shadow: none !important;
   background: rgba(0,0,0,0.06); /* same visual as hover */
 }
+
+/* Force remove any browser default button background/focus styling for color options */
+.color-suggest .color-suggestions .color-swatch {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+.color-suggest .color-suggestions .color-swatch:active {
+  background-color: rgba(0,0,0,0.06) !important;
+}
+:deep(.dark-theme) .color-suggest .color-suggestions .color-swatch:active {
+  background-color: rgba(255,255,255,0.03) !important;
+}
 .swatch-label {
   margin-right: 8px;
 }
