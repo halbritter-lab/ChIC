@@ -178,8 +178,8 @@
           id="heightAdjustedTLV"
           :class="`output-field ${progressionGroup}`"
         >
-          <template v-if="formattedHeightAdjustedTLV">
-            {{ formattedHeightAdjustedTLV + ' ml/m' }}
+          <template v-if="formattedHeightAdjustedTlv">
+            {{ formattedHeightAdjustedTlv + ' ml/m' }}
           </template>
           <template v-else>
             <span class="httlv-placeholder">htTLV</span>
@@ -271,7 +271,7 @@ defineProps({
   idWarningMessage: { type: String, default: '' },
   ageValidationMessage: { type: String, default: '' },
   tlvValidationMessage: { type: String, default: '' },
-  formattedHeightAdjustedTLV: { type: String, default: '' },
+  formattedHeightAdjustedTlv: { type: String, default: '' },
   heightValidationMessage: { type: String, default: '' },
   progressionGroup: { type: String, default: '' },
   progressionGroupLabel: { type: String, default: '' },
