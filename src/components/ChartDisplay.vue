@@ -81,22 +81,21 @@ const initChart = () => {
             backgroundColor: p.groupColor || '#180C0C'
           })),
           pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointStyle: 'circle',
           showLine: false,
-          order: 6 // Ensure patient data is drawn on top
+          order: 9999 // Force patient data to render above all threshold/fill datasets
         },
         // Ceiling for top fill (area above T4)
         {
+          label: 'Ceiling',
           data: ceilingData,
-            pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1,
-            pointRadius: 6,
-            pointHoverRadius: 8,
-            pointStyle: 'circle',
-            showLine: false,
-            order: 9999 // Force patient data to render above all threshold/fill datasets
+          borderColor: 'transparent',
+          borderWidth: 0,
+          showLine: true,
           pointRadius: 0,
           fill: '+1', // fill down to T4
           backgroundColor: '#BFE9FF33', // pastel blue (unchanged)
