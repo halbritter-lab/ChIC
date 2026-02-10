@@ -115,6 +115,7 @@
             @save-data-as-json="() => saveDataAsJson(dataPoints)"
             @trigger-load="triggerLoad"
             @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
+            :progression-group-label="formatPGLabel(displayProgressionGroup)"
           />
 
           <!-- Loading Error Display -->

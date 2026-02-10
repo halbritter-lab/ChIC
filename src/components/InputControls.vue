@@ -189,8 +189,8 @@
           id="progressionGroupOutput"
           :class="`progression-group-output ${progressionGroup}`"
         >
-          <template v-if="progressionGroup">
-            {{ progressionLabel }}
+          <template v-if="progressionGroupLabel">
+            {{ progressionGroupLabel }}
           </template>
           <template v-else>
             <span class="httlv-placeholder">Class</span>
@@ -257,7 +257,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue';
+import { defineProps, defineEmits } from 'vue';
 
 // Props received from App.vue
 defineProps({
@@ -274,6 +274,7 @@ defineProps({
   formattedHeightAdjustedTLV: { type: String, default: '' },
   heightValidationMessage: { type: String, default: '' },
   progressionGroup: { type: String, default: '' },
+  progressionGroupLabel: { type: String, default: '' },
   liverGrowthRate: { type: Number, default: null },
   isInvalidInput: { type: Boolean, default: true },
   dataPointsLength: { type: Number, default: 0 },
@@ -298,18 +299,7 @@ const emit = defineEmits([
   'request-next-id',
 ]);
 
-// Map internal progression group codes (PG1..PG5) to display labels (Class A..E)
-const progressionLabelMap = {
-  PG1: 'Class A',
-  PG2: 'Class B',
-  PG3: 'Class C',
-  PG4: 'Class D',
-  PG5: 'Class E'
-};
-const progressionLabel = computed(() => {
-  if (!progressionGroup) return null;
-  return progressionLabelMap[progressionGroup] || progressionGroup;
-});
+// `progressionGroupLabel` prop is provided by the parent (App.vue)
 
 // (Dropdown visibility handled via CSS hover)
 </script>
