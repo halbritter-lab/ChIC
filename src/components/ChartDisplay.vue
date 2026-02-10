@@ -71,24 +71,7 @@ const initChart = () => {
       type: 'scatter',
       data: {
         datasets: [
-        {
-          label: 'Patient Data',
-          data: props.dataPoints.map(p => ({
-            x: p.age,
-            y: p.htlv,
-            id: p.id,
-            group: p.group,
-            backgroundColor: p.groupColor || '#180C0C'
-          })),
-          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 1,
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          pointStyle: 'circle',
-          showLine: false,
-          order: 9999 // Force patient data to render above all threshold/fill datasets
-        },
+        // (Thresholds, fills and baseline datasets are listed first so they render below patient points)
         // Ceiling for top fill (area above T4)
         {
           label: 'Ceiling',
@@ -214,6 +197,26 @@ const initChart = () => {
           fill: false,
           order: 5
         }
+        ,
+        // Patient Data: render this dataset last so points appear above fills and lines
+        {
+          label: 'Patient Data',
+          data: props.dataPoints.map(p => ({
+            x: p.age,
+            y: p.htlv,
+            id: p.id,
+            group: p.group,
+            backgroundColor: p.groupColor || '#180C0C'
+          })),
+          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointStyle: 'circle',
+          showLine: false,
+          order: -1 // Lower order = drawn on top in Chart.js
+        }
        ]
       },
       options: {
@@ -300,21 +303,25 @@ const initChart = () => {
 // Function to update the chart data
 const updateChart = () => {
   if (!chartInstance) return;
-  chartInstance.data.datasets[0].data = props.dataPoints.map(p => ({
+  const pdIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Patient Data');
+  if (pdIndex === -1) return;
+  chartInstance.data.datasets[pdIndex].data = props.dataPoints.map(p => ({
     x: p.age,
     y: p.htlv,
     id: p.id,
     group: p.group,
-    backgroundColor: p.groupColor || '#180C0C' // Use group color or default
+    backgroundColor: p.groupColor || '#180C0C'
   }));
   chartInstance.update();
 };
 
 // Function to update a specific point's appearance (e.g., color, group info for tooltips)
 const updateChartPoint = (index, sample) => {
-  if (!chartInstance || !chartInstance.data.datasets[0].data[index]) return;
+  if (!chartInstance) return;
+  const pdIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Patient Data');
+  if (pdIndex === -1 || !chartInstance.data.datasets[pdIndex].data[index]) return;
 
-  const chartPoint = chartInstance.data.datasets[0].data[index];
+  const chartPoint = chartInstance.data.datasets[pdIndex].data[index];
   chartPoint.backgroundColor = sample.groupColor || '#180C0C'; // Update color (original default)
   chartPoint.group = sample.group; // Update group info for tooltip
 

@@ -119,17 +119,19 @@
               :value="groupColor"
               type="text"
               placeholder="e.g. #000000"
-              @input="$emit('update:groupColor', $event.target.value)"
+              @input="handleGroupColorInput"
+              @focus="showSuggestions = true"
             >
             <div
               class="color-suggestions"
-              aria-hidden="true"
+              :class="{ 'visible-suggestions': showSuggestions }"
+              aria-hidden="false"
             >
               <button
                 type="button"
                 class="color-swatch"
                 title="Black"
-                @click="$emit('update:groupColor', '#000000')"
+                @click="selectSuggestion('#000000')"
               >
                 <span
                   class="swatch-dot"
@@ -142,7 +144,7 @@
                 type="button"
                 class="color-swatch"
                 title="Red"
-                @click="$emit('update:groupColor', '#ff4d4d')"
+                @click="selectSuggestion('#ff4d4d')"
               >
                 <span
                   class="swatch-dot"
@@ -155,7 +157,7 @@
                 type="button"
                 class="color-swatch"
                 title="Blue"
-                @click="$emit('update:groupColor', '#3498db')"
+                @click="selectSuggestion('#3498db')"
               >
                 <span
                   class="swatch-dot"
@@ -257,7 +259,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+import { ref } from 'vue';
 
 // Props received from App.vue
 defineProps({
@@ -302,6 +304,26 @@ const emit = defineEmits([
 // `progressionGroupLabel` prop is provided by the parent (App.vue)
 
 // (Dropdown visibility handled via CSS hover)
+const suggestionList = [
+  { label: 'Black', hex: '#000000' },
+  { label: 'Red', hex: '#ff4d4d' },
+  { label: 'Blue', hex: '#3498db' },
+];
+
+const showSuggestions = ref(false);
+
+function selectSuggestion(hex) {
+  emit('update:groupColor', hex);
+  showSuggestions.value = false;
+}
+
+function handleGroupColorInput(e) {
+  const v = e.target.value || '';
+  emit('update:groupColor', v);
+  const match = suggestionList.some(s => s.hex.toLowerCase() === String(v).toLowerCase() || s.label.toLowerCase() === String(v).toLowerCase());
+  // if the typed value doesn't exactly match a suggestion, hide suggestions
+  showSuggestions.value = match;
+}
 </script>
 
 <style scoped>
@@ -407,6 +429,7 @@ const emit = defineEmits([
 }
 .swatch-label {
   margin-right: 8px;
+  color: #000000 !important;
 }
 .swatch-hex {
   color: rgba(0,0,0,0.54);
@@ -414,7 +437,12 @@ const emit = defineEmits([
 }
 .color-suggest:hover .color-suggestions,
 .color-suggest .color-suggest-wrapper:focus-within .color-suggestions {
-  display: flex;
+  /* display controlled via component state */
+}
+
+/* Visible helper class toggled by component state */
+.visible-suggestions {
+  display: flex !important;
 }
 
 /* Dark mode adjustments for the suggestion box */
@@ -422,6 +450,10 @@ const emit = defineEmits([
   background: #0f2138;
   border: 1px solid rgba(255,255,255,0.06);
   box-shadow: none;
+}
+/* Keep label text readable per user request (force black) */
+:deep(.dark-theme) .swatch-label {
+  color: #000000 !important;
 }
 /* Dark mode: make swatch dot borders lighter for contrast */
 :deep(.dark-theme) .swatch-dot {
