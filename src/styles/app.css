@@ -65,6 +65,21 @@ html, body {
     max-width: 100%;
     min-width: 100%;
   }
+
+  /* Fix chart container to maintain aspect ratio on mobile with width constraint */
+  .chart-container {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 .progression-groups {
@@ -136,6 +151,59 @@ html, body {
 
 .action-buttons {
   margin-top: 12px; /* space above action buttons */
+}
+
+/* Download dropdown styles */
+.download-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.download-button {
+  position: relative;
+  z-index: 10;
+}
+
+.download-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 120px;
+  z-index: 20;
+  margin-top: 4px;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-item:first-child {
+  border-radius: 4px 4px 0 0;
+}
+
+.menu-item:last-child {
+  border-radius: 0 0 4px 4px;
 }
 
 /* Explicit spacer used in InputControls to force vertical gaps for Safari */
@@ -373,6 +441,17 @@ button {
   text-align: left;
   border: none; /* remove all cell borders */
 }
+.data-points-table th:first-child,
+.data-points-table td:first-child {
+  min-width: 100px;
+  width: 15%;
+}
+.data-points-table th:last-child,
+.data-points-table td:last-child {
+  min-width: 50px;
+  width: 6%;
+  text-align: center;
+}
 .data-points-table thead th {
   border-bottom: 1px solid #ddd; /* single line between header and data */
   background-color: #f5f5f5;
@@ -391,6 +470,29 @@ button {
 }
 .data-points-table button:hover {
   background-color: #ff3333;
+}
+.edit-button {
+  background-color: #4a90e2 !important;
+  padding: 5px 8px !important;
+}
+.edit-button:hover {
+  background-color: #357abd !important;
+}
+.data-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.data-row:hover {
+  background-color: #f0f0f0;
+}
+.row-editing {
+  background-color: #1b4d7c !important;
+  color: white !important;
+  font-weight: 600;
+}
+.row-editing td {
+  color: white !important;
+  background-color: #1b4d7c !important;
 }
 .id-warning-message {
   color: red;
@@ -539,4 +641,217 @@ body.dark-theme .footer-text p {
 }
 body.dark-theme .footer-divider {
   border-top-color: rgba(255,255,255,0.06) !important;
+}
+/* Print styles */
+@media print {
+  /* Hide non-essential elements when printing */
+  .footer,
+  .action-buttons,
+  .data-points-table-container,
+  .faq-modal-overlay {
+    display: none !important;
+  }
+
+  /* Show and center ribbon header */
+  .ribbon {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px !important;
+    margin-bottom: 10px;
+    text-align: center;
+    page-break-after: avoid;
+    border: none;
+    background: white !important;
+  }
+
+  .ribbon-left {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .ribbon-right {
+    display: none !important;
+  }
+
+  .app-logo {
+    max-width: 40px !important;
+    max-height: 40px !important;
+    display: block !important;
+  }
+
+  .title-container {
+    display: block !important;
+    text-align: center;
+  }
+
+  .app-title {
+    font-size: 14px !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  .app-version {
+    font-size: 8px !important;
+    display: block !important;
+  }
+
+  .app-commit {
+    display: inline !important;
+  }
+
+  /* Center the entire container */
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px !important;
+    max-width: 100% !important;
+  }
+
+  /* Show controls but hide print button, make input fields smaller */
+  .controls {
+    display: block !important;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .controls button[class*="print"],
+  .controls .secondary-actions {
+    display: none !important;
+  }
+
+  .left-column {
+    max-width: 100% !important;
+    min-width: auto !important;
+    flex: 0 0 auto;
+    margin-bottom: 5px;
+    width: 100%;
+  }
+
+  .input-group {
+    margin: 3px 0 !important;
+  }
+
+  .input-group label {
+    font-size: 9px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .input-group input {
+    font-size: 9px !important;
+    padding: 2px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .output-fields {
+    flex-direction: column;
+    font-size: 8px !important;
+    gap: 2px !important;
+  }
+
+  .output-field {
+    padding: 2px !important;
+    min-width: auto !important;
+    height: auto !important;
+  }
+
+  .validation-message {
+    font-size: 8px !important;
+    padding: 2px !important;
+    margin: 2px 0 !important;
+  }
+
+  /* Center and properly size chart - maintain aspect ratio */
+  .right-column {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    max-width: 500px !important;
+    flex: 0 0 auto;
+    margin: 5px auto !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .chart-container {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    margin: 5px 0 !important;
+  }
+
+  canvas {
+    max-height: none !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Keep progression groups on same page as chart */
+  .progression-groups {
+    page-break-before: avoid;
+    page-break-inside: avoid;
+    margin: 3px 0 !important;
+    gap: 10px !important;
+    display: flex !important;
+    justify-content: space-around;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .progression-group {
+    font-size: 9px !important;
+    padding: 3px !important;
+    min-width: 50px !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure the entire two-column layout stays on first page */
+  .two-column-layout {
+    page-break-inside: avoid;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    align-items: center;
+  }
+
+  /* Reduce button sizes */
+  .controls button {
+    font-size: 9px !important;
+    padding: 4px 8px !important;
+    margin: 2px !important;
+  }
+
+  /* Keep disclaimer visible */
+  .disclaimer-modal-overlay {
+    display: none !important;
+  }
+
+  /* Force single page print */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    orphans: 1;
+    widows: 1;
+  }
+
+  body {
+    margin: 0;
+    page-break-after: avoid;
+  }
+
+  * {
+    page-break-inside: avoid;
+  }
 }

@@ -39,31 +39,46 @@
             <li><strong>Enter Age:</strong> Input the patient's age (15-80 years).</li>
             <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
             <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
-            <li><strong>View Results:</strong> The height-adjusted TLV and Charité Imaging Classes (A–E) will be displayed.</li>
+            <li><strong>View Results:</strong> The height-adjusted TLV (htTLV) and Charité Imaging Classes (A–E) will be displayed.</li>
           </ol>
           
           <h3>Frequently Asked Questions</h3>
           <div class="faq-item">
             <h4>What is htTLV?</h4>
-            <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, allowing comparison across patients of different body sizes.</p>
+            <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, improving comparison across patients of different body sizes.</p>
+          </div>
+          <div class="faq-item">
+            <h4>What is LGR?</h4>
+            <p>LGR (Liver Growth Rate) represents the percentage change in liver volume per year (%/y). It indicates how quickly the liver is growing or shrinking over time, with higher values suggesting more rapid disease progression.</p>
           </div>
           <div class="faq-item">
             <h4>What do the Charité Imaging Classes mean?</h4>
             <p>
-              <strong>Class A:</strong> Very slow progression (&lt;1%/y)<br>
-              <strong>Class B:</strong> Slow progression (1–2%/y)<br>
-              <strong>Class C:</strong> Moderate progression (2–3%/y)<br>
-              <strong>Class D:</strong> Rapid progression (3–4%/y)<br>
-              <strong>Class E:</strong> Very rapid progression (&gt;4%/y)
+              <strong>Class A:</strong> Very slow progression (&lt;1% growth/y)<br>
+              <strong>Class B:</strong> Slow progression (1–2% growth/y)<br>
+              <strong>Class C:</strong> Moderate progression (2–3% growth/y)<br>
+              <strong>Class D:</strong> Rapid progression (3–4% growth/y)<br>
+              <strong>Class E:</strong> Very rapid progression (&gt;4% growth/y)
             </p>
-          </div>
-          <div class="faq-item">
-            <h4>Can I save my data?</h4>
-            <p>Yes! Use the "Save" button to export your data as JSON, or "Download (Excel)" to export as an Excel file.</p>
           </div>
           <div class="faq-item">
             <h4>What is the grouping feature?</h4>
             <p>Enable grouping to categorize multiple patients and assign different colors for visualization.</p>
+          </div>
+          <div class="faq-item">
+            <h4>Can I edit data after entering it?</h4>
+            <p>Yes! Click on any row in the data table below the chart to load it into the input fields for editing. The selected row will highlight in dark blue. You can also click the <button style="background-color: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 2px 6px; font-size: 12px; vertical-align: middle;">✎</button> (edit) button in the Edit column. Modify any fields (ID, Age, TLV, Height, Group, or Color) and then click "Calculate" to save your changes to that row. The row will be updated with the new values. To remove a data point from the table, click the <button style="background-color: #ff4d4d; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 2px 6px; font-size: 12px; vertical-align: middle;">−</button> (remove) button in the Remove column.</p>
+          </div>
+          <div class="faq-item">
+            <h4>How does batch uploading work?</h4>
+            <p>You can upload multiple patient records at once using a CSV, JSON, or Excel file. Each row should contain a patient's ID, age (years), total liver volume (ml), and height (m). Group and group color are optional fields for organizing and color-coding your data. Download a template to get started:
+            <a href="#" @click.prevent="downloadTemplateAsJson" style="margin-right: 12px;">JSON</a>
+            <a href="#" @click.prevent="downloadTemplateAsCsv" style="margin-right: 12px;">CSV</a>
+            <a href="#" @click.prevent="downloadTemplateAsExcel">Excel</a></p>
+          </div>
+          <div class="faq-item">
+            <h4>Can I save my data?</h4>
+            <p>Yes! Use the "Download Data" button to export as JSON, CSV, or Excel format. All files include the same columns as the data table: ID, Age (y), Height (m), TLV (ml), htTLV, Class, and LGR (%/y).</p>
           </div>
         </div>
       </div>
@@ -112,9 +127,10 @@
             @field-touched="handleFieldTouched"
             @print-page="printPage"
             @download-chart="downloadChart"
-            @save-data-as-json="() => saveDataAsJson(dataPoints)"
+            @download-data="() => saveDataAsJson(dataPoints)"
             @trigger-load="triggerLoad"
             @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
+            @download-data-as-csv="() => downloadDataAsCsv(dataPoints)"
             :progression-group-label="formatPGLabel(displayProgressionGroup)"
           />
 
@@ -136,6 +152,7 @@
             :enable-grouping="enableGrouping"
             :group="group"
             :group-color="groupColor"
+            :editing-index="editingIndex"
           />
 
           <!-- Charité Imaging Classes (A - E) -->
@@ -168,17 +185,19 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Age [y]</th>
-              <th>TLV [ml]</th>
+              <th>Age (y)</th>
+              <th>Height (m)</th>
+              <th>TLV (ml)</th>
               <th>htTLV</th>
               <th>Class</th>
-              <th>LGR [%/y]</th>
+              <th>LGR (%/y)</th>
               <th v-if="enableGrouping">
                 Group
               </th>
               <th v-if="enableGrouping">
                 Color
               </th>
+              <th>Edit</th>
               <th>Remove</th>
             </tr>
           </thead>
@@ -186,9 +205,13 @@
             <tr
               v-for="(point, index) in dataPoints"
               :key="point.id"
+              @click="editDataPoint(index)"
+              :class="{ 'row-editing': editingIndex === index }"
+              class="data-row"
             >
               <td>{{ point.id }}</td>
               <td>{{ point.age }}</td>
+              <td>{{ point.height }}</td>
               <td>{{ point.tlv }}</td>
               <td>{{ point.htlv_formatted }}</td>
               <td>{{ formatPGLabel(point.pg) }}</td>
@@ -208,7 +231,16 @@
                 >
               </td>
               <td>
-                <button @click="removeDataPoint(index)">
+                <button 
+                  @click.stop="editDataPoint(index)"
+                  class="edit-button"
+                  title="Edit this row"
+                >
+                  ✎
+                </button>
+              </td>
+              <td>
+                <button @click.stop="removeDataPoint(index)">
                   -
                 </button>
               </td>
@@ -272,6 +304,7 @@ export default {
       triggerLoad, 
       saveDataAsJson, 
       downloadDataAsExcel, 
+      downloadDataAsCsv,
       loadedData, 
       errorLoading: loadingError // Rename for template clarity
     } = useDataPersistence();
@@ -380,7 +413,7 @@ export default {
       ) {
         return null;
       }
-      return (totalLiverVolume.value / Number(height.value)).toFixed(0);
+      return (totalLiverVolume.value / Number(height.value)).toFixed(2);
     });
     const progressionGroup = computed(() => {
       if (
@@ -422,6 +455,7 @@ export default {
 
     // Data points array now supports group and groupColor properties.
     const dataPoints = ref([]);
+    const editingIndex = ref(null); // Track which row is being edited
 
     const calculateDataPoint = () => {
       if (isInvalidInput.value) {
@@ -457,6 +491,7 @@ export default {
       const newData = {
         id: patientId.value,
         age: age.value,
+        height: height.value,
         tlv: totalLiverVolume.value,
         htlv: heightAdjustedTLV.value, // numeric for chart
         htlv_formatted: formattedHeightAdjustedTLV.value, // formatted string for display
@@ -468,12 +503,32 @@ export default {
       if (enableGrouping.value && groupColor.value) {
         newData.backgroundColor = groupColor.value;
       }
-      dataPoints.value.push(newData);
+      
+      // If editing, update the existing row; otherwise add a new one
+      if (editingIndex.value !== null) {
+        dataPoints.value[editingIndex.value] = newData;
+        editingIndex.value = null;
+      } else {
+        dataPoints.value.push(newData);
+      }
+      
       idWarningMessage.value = '';
       // Clear the ID so focusing the ID input will assign the next sequential ID
       // Suppress the input-change watcher once so clearing the ID doesn't immediately clear the calculated display
       suppressClearOnNextInput.value = true;
       patientId.value = '';
+    };
+
+    // Load a data point into the input fields for editing
+    const editDataPoint = (index) => {
+      const point = dataPoints.value[index];
+      patientId.value = point.id;
+      age.value = point.age;
+      height.value = point.height || null;
+      totalLiverVolume.value = point.tlv;
+      group.value = point.group || '';
+      groupColor.value = point.groupColor || '';
+      editingIndex.value = index;
     };
 
     // Compute next numeric ID (based on existing data points)
@@ -579,23 +634,13 @@ export default {
     // Watch for data loaded by the composable
     watch(loadedData, (newDataArray) => {
       if (newDataArray && newDataArray.length > 0) {
-        // Replace existing data points
+        // Replace existing data points - this triggers the ChartDisplay watcher automatically
         dataPoints.value = [...newDataArray]; // Create new array to trigger reactivity
-        // Clear and update the chart
-        chartDisplayRef.value?.clearChart();
-        newDataArray.forEach(point => {
-          chartDisplayRef.value?.addPoint({
-            x: point.age,
-            y: point.htlv, // height-adjusted numeric value
-            id: point.id,
-            group: point.group,
-            groupColor: point.groupColor, // Pass raw color
-            backgroundColor: point.groupColor || null // Set background color for the point
-          });
-        });
         // Clear the loaded data in the composable after processing
         // to allow loading the same file again if needed
         loadedData.value = []; 
+        // Reset editing state when loading new data
+        editingIndex.value = -1;
       }
     });
 
@@ -676,6 +721,78 @@ export default {
       showFAQ.value = false;
     };
 
+    // Download CSV template for batch upload
+    const downloadCSVTemplate = () => {
+      const csvContent = `id,age,tlv,height,group,groupColor`;
+      
+      const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', dataUri);
+      link.setAttribute('download', 'batch_upload_template.csv');
+      link.click();
+    };
+
+    // Download JSON template for batch upload
+    const downloadTemplateAsJson = () => {
+      const templateData = [
+        {
+          id: '',
+          age: '',
+          tlv: '',
+          height: '',
+          group: '',
+          groupColor: ''
+        }
+      ];
+      const jsonContent = JSON.stringify(templateData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', dataUri);
+      link.setAttribute('download', 'batch_upload_template.json');
+      link.click();
+    };
+
+    // Download CSV template for batch upload
+    const downloadTemplateAsCsv = () => {
+      const csvContent = 'id,age,tlv,height,group,groupColor';
+      const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', dataUri);
+      link.setAttribute('download', 'batch_upload_template.csv');
+      link.click();
+    };
+
+    // Download Excel template for batch upload
+    const downloadTemplateAsExcel = async () => {
+      try {
+        const ExcelJS = (await import('exceljs')).default;
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+        
+        // Add headers only
+        worksheet.columns = [
+          { header: 'id', key: 'id' },
+          { header: 'age', key: 'age' },
+          { header: 'tlv', key: 'tlv' },
+          { header: 'height', key: 'height' },
+          { header: 'group', key: 'group' },
+          { header: 'groupColor', key: 'groupColor' }
+        ];
+        
+        // Generate and download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'batch_upload_template.xlsx');
+        link.click();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Error creating Excel template:', err);
+      }
+    };
+
     onMounted(async () => { // Make onMounted async if using await inside
       // Ensure DOM is updated and refs are available before accessing URL params that might interact with refs
       await nextTick(); 
@@ -734,12 +851,15 @@ export default {
       displayProgressionGroup,
       displayLiverGrowthRate,
       calculateDataPoint,
+      editDataPoint,
+      editingIndex,
       removeDataPoint,
       printPage,
       downloadChart,
       triggerLoad,
       saveDataAsJson,
       downloadDataAsExcel,
+      downloadDataAsCsv,
       fetchError,
       showFooter,
       showCitation,
@@ -762,7 +882,11 @@ export default {
       resetForm,
       showFAQ,
       openFAQ,
-      closeFAQ
+      closeFAQ,
+      downloadCSVTemplate,
+      downloadTemplateAsJson,
+      downloadTemplateAsCsv,
+      downloadTemplateAsExcel
     };
   }
 };

@@ -138,7 +138,7 @@ const reopenModal = () => {
 .acknowledgment-message {
   font-size: 12px;
   background-color: #e0e0e0; /* changed to gray */
-  color: #333;
+  color: #888;
   text-align: center;
   padding: 0px; /* Reduced padding */
   position: fixed; /* Keep it fixed at the bottom */
@@ -149,8 +149,8 @@ const reopenModal = () => {
 }
 .acknowledgment-message button {
   background-color: white;
-  color: black;
-  border: 1px solid black;
+  color: #888;
+  border: 1px solid #888;
   padding: 1px 6px; /* Reduced padding */
   font-size: 12px;
   cursor: pointer;

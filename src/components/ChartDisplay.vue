@@ -1,6 +1,7 @@
 <template>
   <div class="chart-container">
     <canvas ref="chartCanvas" />
+    <svg ref="overlayCanvas" class="ring-overlay"></svg>
   </div>
 </template>
 
@@ -10,7 +11,6 @@ import { Chart, registerables, Filler } from 'chart.js'; // Added Filler for bac
 import annotationPlugin from 'chartjs-plugin-annotation'; // Import annotation plugin
 import { formulas } from '@/config/formulasConfig'; // Import formulas
 import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits
-import html2canvas from 'html2canvas';
 
 // Register Chart.js components and plugins
 Chart.register(...registerables);
@@ -23,11 +23,61 @@ const props = defineProps({
   dataPoints: { type: Array, required: true },
   enableGrouping: { type: Boolean, default: false },
   group: { type: String, default: '' },
-  groupColor: { type: String, default: '' }
+  groupColor: { type: String, default: '' },
+  editingIndex: { type: Number, default: -1 }
 });
 
 const chartCanvas = ref(null);
+const overlayCanvas = ref(null);
 let chartInstance = null;
+let isInitialLoad = true; // Track if this is the first render
+let previousDataLength = 0; // Track previous data length to detect batch uploads
+
+// Function to draw ring overlay around selected point
+const drawRingOverlay = () => {
+  const overlay = overlayCanvas.value;
+  if (!overlay || !chartInstance) return;
+
+  // Clear overlay
+  while (overlay.firstChild) {
+    overlay.removeChild(overlay.firstChild);
+  }
+
+  // If no editing index, nothing to draw
+  if (props.editingIndex < 0 || props.editingIndex >= props.dataPoints.length) return;
+
+  const point = props.dataPoints[props.editingIndex];
+  const canvas = chartCanvas.value;
+  const canvasRect = canvas.getBoundingClientRect();
+  const containerRect = overlayCanvas.value.parentElement.getBoundingClientRect();
+  
+  // Get pixel coordinates from Chart.js
+  const dataX = chartInstance.scales.x.getPixelForValue(point.age);
+  const dataY = chartInstance.scales.y.getPixelForValue(point.htlv);
+  
+  // Set overlay canvas size and viewBox to match chart canvas exactly
+  overlay.setAttribute('width', canvas.width);
+  overlay.setAttribute('height', canvas.height);
+  overlay.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+  
+  // Position SVG to match canvas position
+  const offsetX = canvasRect.left - containerRect.left;
+  const offsetY = canvasRect.top - containerRect.top;
+  overlay.style.left = offsetX + 'px';
+  overlay.style.top = offsetY + 'px';
+  
+  // Draw white ring
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', dataX);
+  circle.setAttribute('cy', dataY);
+  circle.setAttribute('r', '7');
+  circle.setAttribute('fill', 'none');
+  circle.setAttribute('stroke', 'white');
+  circle.setAttribute('stroke-width', '3');
+  circle.setAttribute('pointer-events', 'none');
+  
+  overlay.appendChild(circle);
+};
 
 // Function to initialize the chart
 const initChart = () => {
@@ -210,18 +260,38 @@ const initChart = () => {
           })),
           pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
           pointBorderColor: '#ffffff',
-          pointBorderWidth: 1,
+          pointBorderWidth: 0,
           pointRadius: 6,
           pointHoverRadius: 8,
           pointStyle: 'circle',
           showLine: false,
           order: -1 // Lower order = drawn on top in Chart.js
+        },
+        // Highlighted point dataset
+        {
+          label: 'Selected Point',
+          data: props.editingIndex >= 0 && props.editingIndex < props.dataPoints.length ? [
+            {
+              x: props.dataPoints[props.editingIndex].age,
+              y: props.dataPoints[props.editingIndex].htlv,
+              id: props.dataPoints[props.editingIndex].id
+            }
+          ] : [],
+          pointBackgroundColor: 'transparent',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 4,
+          pointRadius: 8,
+          pointHoverRadius: 11,
+          pointStyle: 'circle',
+          showLine: false,
+          order: -2 // Even lower order = drawn above other data points
         }
        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false, // Set back to false to allow explicit CSS height
+        events: ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'],
         scales: {
           x: {
             type: 'linear',
@@ -301,7 +371,7 @@ const initChart = () => {
 };
 
 // Function to update the chart data
-const updateChart = () => {
+const updateChart = (shouldAnimate = true) => {
   if (!chartInstance) return;
   const pdIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Patient Data');
   if (pdIndex === -1) return;
@@ -312,7 +382,19 @@ const updateChart = () => {
     group: p.group,
     backgroundColor: p.groupColor || '#180C0C'
   }));
-  chartInstance.update();
+  
+  if (shouldAnimate) {
+    // Animate point additions with fly-in effect from bottom
+    chartInstance.update({ 
+      animation: { 
+        duration: 750,
+        easing: 'easeInOutQuart'
+      } 
+    });
+  } else {
+    // No animation for certain updates
+    chartInstance.update('none');
+  }
 };
 
 // Function to update a specific point's appearance (e.g., color, group info for tooltips)
@@ -329,22 +411,38 @@ const updateChartPoint = (index, sample) => {
 };
 
 // Function to download the chart as PNG
-const downloadChart = async () => {
+const downloadChart = () => {
   // Ensure the ref is available and chart instance exists
   if (!chartCanvas.value || !chartInstance) {
     console.error('Canvas element or chart instance not available for download.');
     return;
   }
 
-  // Create PNG
-  const canvas = await html2canvas(chartCanvas.value);
-  const pngUrl = canvas.toDataURL('image/png');
-  let downloadLink = document.createElement('a');
-  downloadLink.href = pngUrl;
-  downloadLink.download = 'pld-progression-chart.png';
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
+  // Temporarily hide the "Selected Point" dataset
+  const spIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Selected Point');
+  let originalData = null;
+  if (spIndex !== -1) {
+    originalData = chartInstance.data.datasets[spIndex].data;
+    chartInstance.data.datasets[spIndex].data = [];
+  }
+
+  // Pure draw() - zero shudder
+  chartInstance.draw();
+
+  // Read pixels directly from the canvas
+  const pngUrl = chartCanvas.value.toDataURL('image/png');
+
+  // Restore the "Selected Point" dataset immediately
+  if (spIndex !== -1 && originalData !== null) {
+    chartInstance.data.datasets[spIndex].data = originalData;
+    chartInstance.draw();
+  }
+
+  // Trigger download
+  const link = document.createElement('a');
+  link.href = pngUrl;
+  link.download = 'pld-progression-chart.png';
+  link.click();
 };
 
 // Expose downloadChart and updateChartPoint functions so they can be called from parent if needed
@@ -367,7 +465,25 @@ watch([
   () => props.enableGrouping,
   () => props.group,
   () => props.groupColor
-], updateChart, { deep: true });
+], () => {
+  if (!isInitialLoad) {
+    // After initial load, always animate data changes
+    previousDataLength = props.dataPoints.length;
+    updateChart(true);
+  } else {
+    // On initial load, mark it as done and animate if there's data
+    isInitialLoad = false;
+    previousDataLength = props.dataPoints.length;
+    // Animate on initial load if data is present
+    updateChart(props.dataPoints.length > 0);
+  }
+}, { deep: true });
+
+// Separate watcher for editingIndex to only update the selected point without re-rendering patient data
+// Uses pure SVG overlay - no chart modifications, no shudder
+watch(() => props.editingIndex, () => {
+  drawRingOverlay();
+});
 
 </script>
 
@@ -377,9 +493,13 @@ watch([
   justify-content: center;
   align-items: center;
   margin-top: 20px;
+  width: 100%;
+  position: relative;
 }
-canvas {
-  max-width: 100%;
-  height: auto;
+
+.ring-overlay {
+  position: absolute;
+  pointer-events: none;
+  display: block;
 }
 </style>

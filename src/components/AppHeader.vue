@@ -136,7 +136,7 @@ defineEmits(['reset-form', 'toggle-theme', 'open-faq', 'print-page']);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  background: #2c3e50;
   padding: 10px 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   position: sticky;
@@ -157,6 +157,7 @@ defineEmits(['reset-form', 'toggle-theme', 'open-faq', 'print-page']);
 .title-container {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
 }
 
 .app-logo {
@@ -175,6 +176,7 @@ defineEmits(['reset-form', 'toggle-theme', 'open-faq', 'print-page']);
   margin: 0;
   color: #ffffff;
   line-height: 1.2;
+  text-align: left;
 }
 
 .app-version {

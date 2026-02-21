@@ -24,13 +24,22 @@
 
     <!-- Age Input -->
     <div class="input-group">
-      <label for="ageInput">Age [y]:</label>
+      <label for="ageInput">Age (y):</label>
       <input
         id="ageInput"
         :value="age"
         type="text"
         placeholder="15-80"
-        @input="(e) => $emit('update:age', e.target.value === '' ? null : Number(e.target.value))"
+        @input="(e) => {
+          const val = e.target.value;
+          if (val === '') {
+            $emit('update:age', null);
+          } else if (!isNaN(val) && val.trim() !== '') {
+            $emit('update:age', Number(val));
+          } else {
+            $emit('update:age', val);
+          }
+        }"
         @focus="$emit('field-touched', 'age')"
       >
     </div>
@@ -43,7 +52,7 @@
 
     <!-- Height Input -->
     <div class="input-group">
-      <label for="heightInput">Height [m]:</label>
+      <label for="heightInput">Height (m):</label>
       <input
         id="heightInput"
         :value="height"
@@ -51,7 +60,13 @@
         placeholder="e.g. 1.75 or 1,75"
         @input="(e) => {
           const v = e.target.value.replace(',', '.');
-          $emit('update:height', v === '' ? null : Number(v));
+          if (v === '') {
+            $emit('update:height', null);
+          } else if (!isNaN(v) && v.trim() !== '') {
+            $emit('update:height', Number(v));
+          } else {
+            $emit('update:height', v);
+          }
         }"
         @focus="$emit('field-touched', 'height')"
       >
@@ -65,13 +80,22 @@
 
     <!-- TLV Input -->
     <div class="input-group">
-      <label for="liverInput">Total Liver Volume [ml]:</label>
+      <label for="liverInput">Total Liver Volume (ml):</label>
       <input
         id="liverInput"
         :value="totalLiverVolume"
         type="text"
         placeholder="0-20,000"
-        @input="(e) => $emit('update:totalLiverVolume', e.target.value === '' ? null : Number(e.target.value))"
+        @input="(e) => {
+          const val = e.target.value;
+          if (val === '') {
+            $emit('update:totalLiverVolume', null);
+          } else if (!isNaN(val) && val.trim() !== '') {
+            $emit('update:totalLiverVolume', Number(val));
+          } else {
+            $emit('update:totalLiverVolume', val);
+          }
+        }"
         @focus="$emit('field-touched', 'tlv')"
       >
     </div>
@@ -224,30 +248,49 @@
         {{ enableGrouping ? 'Disable Grouping' : 'Enable Grouping' }}
       </button>
       <button @click="$emit('trigger-load')">
-        Load
-      </button>
-      <button @click="$emit('print-page')">
-        Print Page
+        Load Data
       </button>
     </div>
 
-    <!-- Save + Download actions on their own row -->
+    <!-- Download actions -->
     <div
       class="action-buttons secondary-actions"
       style="margin-top:6px;"
     >
-      <button
-        :disabled="dataPointsLength === 0"
-        @click="$emit('save-data-as-json')"
-      >
-        Save
-      </button>
-      <button
-        :disabled="dataPointsLength === 0"
-        @click="$emit('download-data-as-excel')"
-      >
-        Download (Excel)
-      </button>
+      <!-- Download Data with Dropdown -->
+      <div class="download-dropdown-container">
+        <button
+          :disabled="dataPointsLength === 0"
+          @click="showDownloadMenu = !showDownloadMenu"
+          class="download-button"
+        >
+          Download Data ▼
+        </button>
+        <div v-if="showDownloadMenu" class="download-menu">
+          <button
+            :disabled="dataPointsLength === 0"
+            @click="downloadFormat('json'); showDownloadMenu = false"
+            class="menu-item"
+          >
+            JSON
+          </button>
+          <button
+            :disabled="dataPointsLength === 0"
+            @click="downloadFormat('csv'); showDownloadMenu = false"
+            class="menu-item"
+          >
+            CSV
+          </button>
+          <button
+            :disabled="dataPointsLength === 0"
+            @click="downloadFormat('excel'); showDownloadMenu = false"
+            class="menu-item"
+          >
+            Excel
+          </button>
+        </div>
+      </div>
+
       <button
         :disabled="dataPointsLength === 0"
         @click="$emit('download-chart')"
@@ -259,7 +302,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 // Props received from App.vue
 defineProps({
@@ -294,9 +337,10 @@ const emit = defineEmits([
   'calculate-data-point',
   'print-page',
   'download-chart',
-  'save-data-as-json',
+  'download-data',
   'trigger-load', // Renamed from trigger-file-input for clarity
   'download-data-as-excel',
+  'download-data-as-csv',
   'field-touched',
   'request-next-id',
 ]);
@@ -311,6 +355,17 @@ const suggestionList = [
 ];
 
 const showSuggestions = ref(false);
+const showDownloadMenu = ref(false);
+
+function downloadFormat(format) {
+  if (format === 'json') {
+    emit('download-data');
+  } else if (format === 'excel') {
+    emit('download-data-as-excel');
+  } else if (format === 'csv') {
+    emit('download-data-as-csv');
+  }
+}
 
 function selectSuggestion(hex) {
   emit('update:groupColor', hex);
@@ -324,6 +379,16 @@ function handleGroupColorInput(e) {
   // if the typed value doesn't exactly match a suggestion, hide suggestions
   showSuggestions.value = match;
 }
+
+// Close color menu when clicking outside
+onMounted(() => {
+  document.addEventListener('click', (event) => {
+    const colorWrapper = document.querySelector('.color-suggest-wrapper');
+    if (colorWrapper && !colorWrapper.contains(event.target)) {
+      showSuggestions.value = false;
+    }
+  });
+});
 </script>
 
 <style scoped>

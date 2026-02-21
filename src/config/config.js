@@ -13,4 +13,5 @@ export const CONFIG = {
     NORMALIZATION_FACTOR: 850,  // According to normal value at age 20
     HEIGHT_MIN: 0.5,
     HEIGHT_MAX: 2.5,
+    AGE_MIN_LGR: 0,  // Minimum age to calculate LGR
   };

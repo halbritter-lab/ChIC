@@ -23,7 +23,7 @@ The principle of the "Charité Imaging Classification" tool has been first publi
 
 - **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
 - **Trend Analysis:** The app plots four key trend lines based on the formulas derived from the study, offering visual insight into the Charité Imaging Classes as defined in the research.
-- **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories.
+- **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories. Points can be edited after input by clicking on the data row or point, and can be removed using the remove button.
 - **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
 
 ## Technical Overview
@@ -40,39 +40,44 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - **(1a) Logo**: Displays the logo of the Charité Imaging Classification application.
    - **(1b) Title**: Shows the name of the application.
    - **(1c) Version Tag**: Indicates the current version of the application.
+   - **(1d) Reset Button**: Clears all data and input fields to start a new session.
+   - **(1e) Night Mode Toggle**: Switches the application between light and dark theme for better visibility in different lighting conditions.
+   - **(1f) Print Button**: Opens the print dialog to print the current page with all visualizations.
+   - **(1g) FAQ Button**: Opens the frequently asked questions panel with helpful information about using the application.
 
 2. **User Input Area**
    - **(2a) ID Field**: Where users can enter a unique identifier for the data point they are entering or analyzing.
    - **(2b) Age Input**: Users can input the age of the patient in years (15-80 years).
-   - **(2c) Total Liver Volume (TLV) Input**: Users can input the total liver volume measured in milliliters.
+   - **(2c) Height Input**: Users can input the patient's height in meters (for calculating height-adjusted TLV).
+   - **(2d) Total Liver Volume (TLV) Input**: Users can input the total liver volume measured in milliliters.
 
 3. **Computed Outputs**
    - **(3a) Height-adjusted Total Liver Volume (htTLV)**: This field displays the calculated height-adjusted total liver volume based on the input TLV divided by height in meters.
    - **(3b) Charité Imaging Class (Class) Indicator**: Shows the Charité Imaging Class classification based on the computed htTLV and age.
+   - **(3c) Liver Growth Rate (LGR)**: Displays the percentage change in liver volume per year (%/y) based on serial measurements.
 
 4. **Action Buttons**
-   - **(4a) Plot Point**: Submits the entered data and plots the point on the graph.
+   - **(4a) Calculate**: Submits the entered data and plots the point on the graph.
    - **(4b) Print Page**: Allows the user to print the current page.
-   - **(4c) Download Plot**: Enables the user to download the displayed plot as an image.
-   - **(4d) Save (JSON)**: Saves the current data table into a JSON file.
-   - **(4e) Load (JSON)**: Loads data from a selected JSON file and updates the table and plot accordingly.
-   - **(4f) Download (Excel)**: Exports the data table into an Excel spreadsheet.
+   - **(4c) Download Chart**: Enables the user to download the displayed plot as an image.
+   - **(4d) Download Data**: Exports the data table in JSON, CSV, or Excel format with consistent column formatting.
+   - **(4e) Load Data**: Loads data from a selected JSON file and updates the table and plot accordingly.
 
 5. **Chart Area**
    - Displays a scatter plot graph illustrating the relationship between age and htTLV, with trend lines indicating progression thresholds.
 
 6. **Charité Imaging Classes Legend**
-   - **Class A** — &lt;1%/y — Very slow progression
-   - **Class B** — 1–2%/y — Slow progression
-   - **Class C** — 2–3%/y — Moderate progression
-   - **Class D** — 3–4%/y — Rapid progression
-   - **Class E** — &gt;4%/y — Very rapid progression
+   - **Class A** — <1% growth per year — Very slow progression
+   - **Class B** — 1–2% growth per year — Slow progression
+   - **Class C** — 2–3% growth per year — Moderate progression
+   - **Class D** — 3–4% growth per year — Rapid progression
+   - **Class E** — >4% growth per year — Very rapid progression
 
-7. **Documentation Link**
-   - Provides a link to the GitHub README for detailed documentation of the application and its methodologies.
-
-8. **Citation Information**
+7. **Citation Information**
    - Contains bibliographic information to cite when using the application for research or publication purposes.
+
+8. **Documentation Link**
+   - Provides a link to the GitHub README for detailed documentation of the application and its methodologies. Includes a feedback form for user suggestions and bug reports.
 
 9. **Footer**
    - **(9a) Institution Logo**: Shows the logo of the associated medical institution.
@@ -94,12 +99,13 @@ The tool accepts the following query parameters:
 
 1. `patientId`: Sets the patient's ID.
 2. `age`: Sets the patient's age.
-3. `tlv`: Sets the Total Liver Volume (TLV) in milliliters.
-4. `acknowledgeBanner`: Sets the banner acknowledgement state. Accepts `true` or `false`.
-5. `showFooter`: Controls the visibility of the footer. Accepts `true` or `false`.
-6. `showCitation`: Toggles the display of citation information. Accepts `true` or `false`.
-7. `showDocumentation`: Determines if the documentation link is shown. Accepts `true` or `false`.
-8. `showControls`: Enables or disables the display of the user input controls. Accepts `true` or `false`.
+3. `height`: Sets the patient's height in meters (for calculating height-adjusted TLV).
+4. `tlv`: Sets the Total Liver Volume (TLV) in milliliters.
+5. `acknowledgeBanner`: Sets the banner acknowledgement state. Accepts `true` or `false`.
+6. `showFooter`: Controls the visibility of the footer. Accepts `true` or `false`.
+7. `showCitation`: Toggles the display of citation information. Accepts `true` or `false`.
+8. `showDocumentation`: Determines if the documentation link is shown. Accepts `true` or `false`.
+9. `showControls`: Enables or disables the display of the user input controls. Accepts `true` or `false`.
 
 ### Usage examples
 - **Setting ID and age**: 
@@ -122,13 +128,26 @@ The Charité Imaging Classification is designed to prioritize user privacy and d
 - **Client-Side Data Storage**: All data input into the application is stored locally on the user's device. No personal or sensitive data is sent to or stored on a server.
 - **Data Security**: By keeping data client-side, the risk of data breaches is minimized, ensuring user data remains private and secure.
 
+## Input Formats
+
+### Batch Upload
+The application supports batch uploading of multiple patient records at once using the following formats:
+- **Excel (XLSX)**: Upload patient data from Excel spreadsheets. Each row should contain: ID, Age (years), Height (meters), TLV (milliliters), and optionally Group and GroupColor.
+- **CSV**: Import comma-separated values files with the same column structure as Excel files. This format is universally compatible with all spreadsheet applications.
+- **JSON**: Upload data in JSON format for technical users. The file should contain an array of patient objects with properties: id, age, height, tlv, group (optional), and groupColor (optional).
+
+All batch uploads will add the records to the chart and data table, allowing for immediate visualization and analysis of multiple patients.
+
 ## Output Formats
 
 ### Export Options
 Users can export their data in various formats for ease of use and flexibility:
-- **Excel (XLSX)**: For users who prefer spreadsheet analysis, data can be exported in Excel format.
+- **Excel (XLSX)**: For users who prefer spreadsheet analysis, data can be exported in Excel format with proper number formatting.
+- **CSV**: Comma-separated values format for universal compatibility with all spreadsheet applications.
 - **JSON**: Offering a more technical format, data can be saved as JSON files, which are ideal for further processing or integration with other applications.
 - **PNG**: The application allows users to download charts as PNG images, perfect for presentations or reports.
+
+All export formats include the complete data table columns: ID, Age (y), Height (m), TLV (ml), htTLV, Class, and LGR (%/y), with consistent number formatting.
 
 
 ## Progressive Web App (PWA) support
@@ -197,6 +216,11 @@ This tool is an open-source project, and contributions are welcome. Whether it's
 - <https://github.com/halbrijp>
 - <https://orcid.org/0000-0002-1377-9880>
 - <https://scholar.google.com/citations?user=Jt1S5fkAAAAJ>
+
+**Carolin Brigl**
+
+- <https://github.com/CBrigl>
+- <https://orcid.org/0009-0008-2094-3440>
 
 ## Contact
 
