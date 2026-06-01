@@ -33,7 +33,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
 ## Webapp usage and application components
 
 <p align="left">
-   <img src="public/pld-app_application-components.svg" alt="Charité Imaging Classification application components description" width="600">
+   <img src="public/pld-app_application-components.png" alt="Charité Imaging Classification application components description" width="600">
 </p>
 
 1. **Application Header**
