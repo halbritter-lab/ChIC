@@ -9,7 +9,7 @@ Please explore the [Charité Imaging Classification](https://halbritter-lab.gith
 
 ## Introduction
 
-"Polycystic Liver Disease (PLD) - Charité Imaging Classification" is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on two recents studies titled "Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease" and "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis" (PMID: 36246085), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver-related hospitalization in individuals with PLD.
+The Charité Imaging Classification for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on two recents studies titled "Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease" and "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis" (PMID: 36246085), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver-related hospitalization in individuals with PLD.
 
 PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The application leverages data from a single-center and a multicenter study to introduce novel clinical endpoints, such as height-adjusted total liver volume (htTLV) and PLD-related hospitalization, for prognostic risk stratification.
 
@@ -22,7 +22,7 @@ The principle of the "Charité Imaging Classification" tool has been first publi
 ## Features
 
 - **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
-- **Trend Analysis:** The app plots four key trend lines based on the formulas derived from the study, offering visual insight into the Charité Imaging Classes as defined in the research.
+- **Data Analysis:** The app plots four key trend lines based on the formulas derived from the study, offering visual insight into the Charité Imaging Classes as defined in the research.
 - **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories. Points can be edited after input by clicking on the data row or point, and can be removed using the remove button.
 - **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
 
