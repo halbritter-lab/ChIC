@@ -33,7 +33,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
 ## Webapp usage and application components
 
 <p align="left">
-   <img src="public/pld-app_application-components.png" alt="Charité Imaging Classification application components description" width="600">
+   <img src="public/pld-app_application-components.svg" alt="Charité Imaging Classification application components description" width="600">
 </p>
 
 1. **Application Header**
@@ -73,17 +73,13 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - **Class D** — 3–4% growth per year — Rapid progression
    - **Class E** — >4% growth per year — Very rapid progression
 
-7. **Citation Information**
-   - Contains bibliographic information to cite when using the application for research or publication purposes.
+7. **Additional Information and Footer**
+   - **(7a) Citation Information**: Contains bibliographic information to cite when using the application for research or publication purposes.
+   - **(7b) Documentation Link**: Provides a link to the GitHub README for detailed documentation of the application and its methodologies. Includes a feedback form for user suggestions and bug reports.
+   - **(7c) Institution Logo**: Shows the logo of the associated medical institution.
+   - **(7d) Funder Logo**: Displays the logo of the funding organization.
 
-8. **Documentation Link**
-   - Provides a link to the GitHub README for detailed documentation of the application and its methodologies. Includes a feedback form for user suggestions and bug reports.
-
-9. **Footer**
-   - **(9a) Institution Logo**: Shows the logo of the associated medical institution.
-   - **(9b) Funder Logo**: Displays the logo of the funding organization.
-
-10. **Data Table** *(not visible in the screenshot)*
+8. **Data Table** *(not visible in the screenshot)*
    - If present, this would display a table of all data points entered, including ID, age, height, TLV, htTLV, Charité Imaging Class, and an option to remove data points.
 
 Each numbered item refers to a different component or section of the app. Users interact with these components to input data, receive computed outputs, manage the data points, and utilize the results for further analysis or documentation.
@@ -110,15 +106,15 @@ The tool accepts the following query parameters:
 ### Usage examples
 - **Setting ID and age**: 
 This URL sets the patient's ID to "12345" and age to "50".
-https://halbritter-lab.github.io/pld-progression-grouper/?patientId=12345&age=50
+`https://[YOUR_DOMAIN]/pld-progression-grouper/?patientId=12345&age=50`
 
 - **Setting all parameters**:
 This URL sets the patient's ID to "12345", age to "50", and Total Liver Volume to "15000 ml" and acknowledges the banner.
-https://halbritter-lab.github.io/pld-progression-grouper/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true
+`https://[YOUR_DOMAIN]/pld-progression-grouper/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true`
 
 - **Setting view controls**:
 This URL will hide the footer and controls but display the citation information and documentation link.
-https://halbritter-lab.github.io/pld-progression-grouper/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false
+`https://[YOUR_DOMAIN]/pld-progression-grouper/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false`
 
 
 ## Data Privacy and Storage
