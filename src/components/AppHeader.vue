@@ -12,13 +12,7 @@
           Charité Imaging Classification
         </h1>
         <span class="app-version">
-          v{{ version }}-<span
-            v-if="!fetchError"
-            class="app-commit"
-          >{{ lastCommitHash }}</span><span
-            v-else
-            class="offline-indicator"
-          >offline</span>
+          v{{ version }}
         </span>
       </div>
     </div>
@@ -111,14 +105,6 @@
 const props = defineProps({
   version: {
     type: String,
-    required: true,
-  },
-  lastCommitHash: {
-    type: String,
-    required: true,
-  },
-  fetchError: {
-    type: Boolean,
     required: true,
   },
   isDark: {

@@ -87,8 +87,6 @@
     <!-- Use the AppHeader component -->
     <AppHeader
       :version="version"
-      :last-commit-hash="lastCommitHash"
-      :fetch-error="fetchError"
       :is-dark="isDark"
       @reset-form="resetForm"
       @toggle-theme="toggleTheme"
@@ -310,8 +308,6 @@ export default {
     } = useDataPersistence();
 
     const version = packageInfo.version;
-    const lastCommitHash = ref('loading...');
-    const fetchError = ref(false);
     const showFooter = ref(true);
     const showCitation = ref(true);
     const showDocumentation = ref(true);
@@ -334,21 +330,6 @@ export default {
       showCitation.value = route.query.showCitation !== 'false';
       showDocumentation.value = route.query.showDocumentation !== 'false';
       showControls.value = route.query.showControls !== 'false';
-    };
-
-    const fetchLastCommit = async () => {
-      try {
-        const response = await fetch('https://api.github.com/repos/halbritter-lab/pld-progression-grouper/commits?per_page=1');
-        if (!response.ok) throw new Error('Network response was not ok.');
-        const commits = await response.json();
-        if (commits.length) {
-          lastCommitHash.value = commits[0].sha.substring(0, 7);
-        }
-      } catch (error) {
-        console.error('Error fetching last commit:', error);
-        fetchError.value = true;
-        lastCommitHash.value = 'offline';
-      }
     };
 
     const idWarningMessage = ref('');
@@ -799,7 +780,6 @@ export default {
       getUrlQueryParams(); 
       document.documentElement.style.setProperty('--modal-max-width', CONFIG.MODAL_MAX_WIDTH);
       document.documentElement.style.setProperty('--modal-max-height', CONFIG.MODAL_MAX_HEIGHT);
-      fetchLastCommit(); // Call fetchLastCommit here
       document.title = 'Charité Imaging Classification';
       // Do not auto-run validation on mount; validation messages appear after the user focuses a field.
       updateMetaTag('description', 'Charité Imaging Classification is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.');
@@ -827,7 +807,6 @@ export default {
 
     return {
       version,
-      lastCommitHash,
       idWarningMessage,
       ageValidationMessage,
       tlvValidationMessage,
@@ -860,7 +839,6 @@ export default {
       saveDataAsJson,
       downloadDataAsExcel,
       downloadDataAsCsv,
-      fetchError,
       showFooter,
       showCitation,
       showDocumentation,
