@@ -954,7 +954,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  background: #2c3e50;
   color: white;
 }
 

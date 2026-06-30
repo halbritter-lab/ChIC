@@ -168,29 +168,33 @@ html, body {
   position: absolute;
   top: 100%;
   left: 0;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
   min-width: 120px;
   z-index: 20;
   margin-top: 4px;
+  padding: 6px 8px;
 }
 
 .menu-item {
   display: block;
   width: 100%;
-  padding: 8px 12px;
-  border: none;
-  background: none;
+  padding: 8px 10px;
+  border: none !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  border-radius: 0;
   text-align: left;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: background-color 0.2s;
 }
 
 .menu-item:hover:not(:disabled) {
-  background-color: #f0f0f0;
+  background-color: rgba(0,0,0,0.06) !important;
 }
 
 .menu-item:disabled {
@@ -204,6 +208,16 @@ html, body {
 
 .menu-item:last-child {
   border-radius: 0 0 4px 4px;
+}
+
+body.dark-theme .download-menu {
+  background: #0f2138;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+}
+
+body.dark-theme .menu-item:hover:not(:disabled) {
+  background: rgba(255,255,255,0.03) !important;
 }
 
 /* Explicit spacer used in InputControls to force vertical gaps for Safari */
@@ -415,6 +429,50 @@ button {
 .controls button.calculate-button:active {
   background-color: #0f2b5a;
   border-color: #0b2148;
+}
+
+/* Force Download Data dropdown options to use list-style menu appearance,
+   not the global blue button style from `.controls button` */
+.controls .download-menu .menu-item,
+.controls button.menu-item,
+.controls .download-menu button.menu-item {
+  background: transparent !important;
+  color: #111 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 8px 10px !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+
+.controls .download-menu .menu-item:hover:not(:disabled),
+.controls button.menu-item:hover:not(:disabled),
+.controls .download-menu button.menu-item:hover:not(:disabled) {
+  background: rgba(0,0,0,0.06) !important;
+  color: #111 !important;
+}
+
+.controls .download-menu .menu-item:disabled,
+.controls button.menu-item:disabled,
+.controls .download-menu button.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: transparent !important;
+  color: #666 !important;
+}
+
+body.dark-theme .controls .download-menu .menu-item,
+body.dark-theme .controls button.menu-item,
+body.dark-theme .controls .download-menu button.menu-item {
+  color: #dfe7f2 !important;
+  background: transparent !important;
+}
+
+body.dark-theme .controls .download-menu .menu-item:hover:not(:disabled),
+body.dark-theme .controls button.menu-item:hover:not(:disabled),
+body.dark-theme .controls .download-menu button.menu-item:hover:not(:disabled) {
+  background: rgba(255,255,255,0.03) !important;
 }
 
 /* Center action buttons (Plot, Print, Download, etc.) */
