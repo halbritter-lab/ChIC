@@ -23,8 +23,9 @@ The principle of the "Charité Imaging Classification" tool has been first publi
 
 - **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
 - **Data Analysis:** The app plots four key trend lines based on the formulas derived from the study, offering visual insight into the Charité Imaging Classes as defined in the research.
-- **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual individual trajectories. Points can be edited after input by clicking on the data row or point, and can be removed using the remove button.
+- **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual trajectories. Points can be edited after input by clicking on the data row or point, and can be removed using the remove button.
 - **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
+- **Batch Analysis:** Batch analysis is also possible via the enable grouping button.
 
 ## Technical Overview
 
@@ -172,7 +173,7 @@ While the tool is based on a large cohort study, it's important to acknowledge t
 
 ## Contributions
 
-This tool is an open-source project, and contributions are welcome. Whether it's feature enhancement, bug fixing, or improvements in the algorithm, your input is valuable.
+This tool is an open-source project and contributions are welcome. Whether it's feature enhancement, bug fixing, or improvements in the algorithm, your input is valuable.
 
 
 ## Citation policy
@@ -190,6 +191,11 @@ This tool is an open-source project, and contributions are welcome. Whether it's
 
 ## Creators and contributors
 
+**Carolin Brigl**
+
+- <https://github.com/CBrigl>
+- <https://orcid.org/0009-0008-2094-3440>
+
 **Bernt Popp**
 
 - <https://twitter.com/berntpopp>
@@ -197,15 +203,14 @@ This tool is an open-source project, and contributions are welcome. Whether it's
 - <https://orcid.org/0000-0002-3679-1081>
 - <https://scholar.google.com/citations?user=Uvhu3t0AAAAJ>
 
-**Ria Schönauer**
-
-- <https://github.com/RARSchoen>
-- <https://orcid.org/0000-0001-7609-3061>
-
 **Dana Sierks**
 - <https://github.com/SIERKSd>
 - <https://orcid.org/0000-0002-3850-7646>
 
+**Ria Schönauer**
+
+- <https://github.com/RARSchoen>
+- <https://orcid.org/0000-0001-7609-3061>
 
 **Jan Halbritter**
 
@@ -213,10 +218,6 @@ This tool is an open-source project, and contributions are welcome. Whether it's
 - <https://orcid.org/0000-0002-1377-9880>
 - <https://scholar.google.com/citations?user=Jt1S5fkAAAAJ>
 
-**Carolin Brigl**
-
-- <https://github.com/CBrigl>
-- <https://orcid.org/0009-0008-2094-3440>
 
 ## Contact
 
