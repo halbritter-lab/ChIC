@@ -8,21 +8,12 @@
       <div class="footer-text">
         <p><strong>Please cite the following publications for this tool:</strong></p>
         <p>
-          For ADPKD: <a
-            href="https://pubmed.ncbi.nlm.nih.gov/36246085/"
+          <a
+            href="https://pubmed.ncbi.nlm.nih.gov/TBD/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Irazabal MV, et al. Imaging Classification of Autosomal Dominant Polycystic Kidney Disease: A Simple Model for Selecting Patients for Clinical Trials. J Am Soc Nephrol. 2015.
-          </a>
-        </p>
-        <p>
-          For ADPLD: <a
-            href="https://pubmed.ncbi.nlm.nih.gov/37086841/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Schönauer R. & Sierks D, et al. Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease. Gastroenterology. 2023.
+            ChIC Paper Citation
           </a>
         </p>
         <p
