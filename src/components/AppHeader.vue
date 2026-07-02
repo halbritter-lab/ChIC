@@ -3,7 +3,7 @@
   <nav class="ribbon">
     <div class="ribbon-left">
       <img
-        src="@/assets/logo.webp" 
+        src="@/assets/logo.png" 
         alt="Charité Imaging Classification Logo"
         class="app-logo"
       >

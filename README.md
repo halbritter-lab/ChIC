@@ -1,6 +1,6 @@
 
 <p align="center">
-   <img src="public/logo.png" alt="Charité Imaging Classification logo" width="192" height="192">
+   <img src="public/ChICLogo_Full_2026-07-02.png" alt="Charité Imaging Classification logo" width="192" height="192">
 </p>
 
 # Charité Imaging Classification
