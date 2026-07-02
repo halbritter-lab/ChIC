@@ -148,7 +148,10 @@ defineEmits(['reset-form', 'toggle-theme', 'open-faq', 'print-page']);
 
 .app-logo {
   max-width: 48px;
-  height: auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
   animation: fadeIn 2s ease-out forwards;
 }
 
