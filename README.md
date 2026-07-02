@@ -9,15 +9,18 @@ Please explore the [Charité Imaging Classification](https://halbritter-lab.gith
 
 ## Introduction
 
-The Charité Imaging Classification (ChIC) for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on two recents studies titled "Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease" and "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis" (PMID: 36246085), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver-related hospitalization in individuals with PLD.
+The Charité Imaging Classification (ChIC) for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on a recent study titled "ChIC Paper" [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver events in individuals with PLD.
 
-PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The application leverages data from a single-center and a multicenter study to introduce novel clinical endpoints, such as height-adjusted total liver volume (htTLV) and PLD-related hospitalization, for prognostic risk stratification.
+PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The presentation of PLD can vary widely with some patients never expieriencing symptoms and others requiring medication or procedural intervention, in rare cases even liver transplantation. The application uses height-adjusted total liver volume (htTLV) and age and leverages data from three tertiary care centers and two previous studies for prognostic risk stratification in PLD.
 
 
-## References
+## Tool Development
 
-The principle of the "Charité Imaging Classification" tool has been first published in 2022, highlighting its application in the study of PLD within the context of both Autosomal Dominant Polycystic Kidney Disease (ADPKD) and Autosomal Dominant Polycystic Liver Disease (ADPLD). This underscores the tool's relevance and adaptability for assessing PLD progression not only in isolated cases but also when it occurs in conjunction with ADPKD. For more details on the publication, see [PMID:36246085](https://pubmed.ncbi.nlm.nih.gov/36246085/).
+The principle of the "Charité Imaging Classification" tool was first published in 2022, highlighting its application in the study of PLD within the context of both Autosomal Dominant Polycystic Kidney Disease (ADPKD) and Autosomal Dominant Polycystic Liver Disease (ADPLD). This version of the tool had a three-group system and used the endpoint "liver hospitalizations". For more details on the publication, see [PMID:36246085](https://pubmed.ncbi.nlm.nih.gov/36246085/).
 
+The tool was validated in a second study of only ADPLD patients in 2024. For more details on the publication, see [PMID:38101549](https://pubmed.ncbi.nlm.nih.gov/38101549/).
+
+In 2026 the calssification underwent significant revision. The new classification system has expanded to a five-group system to better cover the range of disease presentation. It also uses htTLV and an expanded endpoint "liver events" to better align with progress in the PLD field. Additionally, the classification has expanded to cover the ages 15-85 and shows improved stratification of paitents under 30. For more details on the publication, see [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/).
 
 ## Features
 
@@ -178,10 +181,8 @@ This tool is an open-source project and contributions are welcome. Whether it's 
 
 ## Citation policy
 
-- Please cite the following publication for this tool and autosomal dominant polycystic kidney disease (ADPKD):
-[Sierks D, et al. Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis. JHEP Rep. 2022.](https://pubmed.ncbi.nlm.nih.gov/36246085/)
-- Please cite the following publication for this tool and autosomal dominant polycystic liver disease (ADPLD):
-[Schönauer R. &amp; Sierks D, et al. Sex, genotype, and liver volume progression as risk of hospitalization determinants in autosomal dominant polycystic liver disease. Gastroenterology. 2023.](https://www.gastrojournal.org/article/S0016-5085(23)05603-2/fulltext)
+- Please cite the following publication for this tool:
+[ChIC Paper Citation](https://pubmed.ncbi.nlm.nih.gov/tbd/)
 
 
 ## Copyright and license
