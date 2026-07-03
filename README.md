@@ -169,9 +169,13 @@ The PWA is compatible with most modern browsers on both desktop and mobile devic
 - **Regular updates**: The app will update automatically with the latest features and improvements when online.
 
 
-## Limitations and Relevance
+## Disclaimer and Usage Guidelines
 
-While the tool is based on a large cohort study, it's important to acknowledge the limitations in generalizability due to the cohort size. The tool serves a research purpose, offering a new approach to understanding the progression of ADPLD and assisting in decision-making for individuals with PLD.
+Disclaimer for Charité Imaging Classification
+- **Important Information for All Users:** The Charité Imaging Classification application is intended for informational, educational and research purposes only and should not be used as a substitute for professional medical advice or for direct diagnostic use. The tool is designed to provide insights into PLD progression but is not meant to replace clinical decision-making or genetic consultation.
+- **Usage Guidelines:** The information provided by this application is not intended for medical diagnosis or treatment decisions without the oversight of qualified healthcare professionals. Users are advised not to base any health-related decisions solely on the results obtained from this application. The data and information presented are provided without any warranty of accuracy, completeness, or usefulness. Users should exercise their own judgment in the interpretation and use of the information. For medical relevance of the application's content, please consult with a healthcare professional.
+- **Liability and Risk:** The application is provided 'as is,' without any guarantees or obligations for support, updates or accuracy. Under no circumstances shall the creators or affiliates of the Charité Imaging Classification be liable for any direct, indirect, incidental or consequential damages arising from the use of the application.
+- **Acknowledgment and Consent:** By using the Charité Imaging Classification, you acknowledge having read, understood and agreed to the terms stated in this disclaimer. If you do not agree to these terms, you should not use the application.
 
 
 ## Contributions
@@ -219,6 +223,7 @@ This tool is an open-source project and contributions are welcome. Whether it's 
 - <https://orcid.org/0000-0002-1377-9880>
 - <https://scholar.google.com/citations?user=Jt1S5fkAAAAJ>
 
+This project was developed with extensive assistance from multiple AI tools, including GPT‑4.5 Mini, Claude Haiku, GPT‑5.3 Codex, GPT‑5.5 and other AI models used throughout the development process. These tools supported code generation, debugging, refactoring and architectural guidance. The project logo was created using ChatGPT’s image generation tools.
 
 ## Contact
 
