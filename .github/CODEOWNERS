@@ -1,0 +1,6 @@
+# Default reviewers for everything in the repo.
+* @berntpopp @halbrijp @CBrigl
+
+# Clinical model — require extra care on changes to the classifier/config.
+/src/domain/ @berntpopp @halbrijp @CBrigl
+/src/config/ @berntpopp @halbrijp @CBrigl
