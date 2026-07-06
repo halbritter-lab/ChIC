@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "typecheck": "vue-tsc --noEmit -p jsconfig.json"
   },
   "dependencies": {
     "canvas2svg": "^1.0.16",
@@ -40,9 +41,11 @@
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.4",
+    "typescript": "^6.0.3",
     "vite": "^6.2.5",
     "vite-plugin-pwa": "^1.0.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.6"
   },
   "browserslist": [
     "> 1%",
