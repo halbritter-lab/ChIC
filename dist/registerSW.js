@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/pld-progression-grouper/sw.js', { scope: '/pld-progression-grouper/' })})}
