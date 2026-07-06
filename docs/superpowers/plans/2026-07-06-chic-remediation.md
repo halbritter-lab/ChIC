@@ -19,7 +19,8 @@
 - **Node ≥ 20.** Every code change ends green on `npm run lint`, `npm test`, `npm run build`.
 - **Commit frequently**, one deliverable per task. Commit trailer:
   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` + `Claude-Session: …`.
-- **D8 age range is OPEN** — until the author confirms (15–80 / 15–81 / 15–85), keep `AGE_MAX=80` (current behavior) and centralize it in `CONFIG` so the confirmed value is a one-line change (Task 10).
+- **NO HARDCODING — everything configurable.** Every clinical and display constant lives in `src/config/config.js` and is read from there: the model itself (baseline `600` ml/m, growth-rate cutoffs `[0.01,0.02,0.03,0.04]`), age/TLV/height validation ranges, chart x/y domain, tick marks, and class colors. No magic numbers in components or the domain module — they import from config. Config is the single source of truth (Task 10 builds it; it is created **first** in Phase B).
+- **D8 age range — RESOLVED to fit the manuscript: `AGE_MIN=15`, `AGE_MAX=85`** (paper extends the lower bound to 15; README states 85; cohort max 81). Chart x-axis matches (`CHART_X_MIN=15`, `CHART_X_MAX=85`). All read from `CONFIG`.
 
 ## Execution phases (order matters)
 
@@ -251,8 +252,11 @@ git commit -m "chore: stop tracking dist/, modernize jsconfig target"
 ## Phase B — Correctness (TDD)
 
 > Read spec §2. All thresholds/labels come from the manuscript.
+> **Task order within Phase B: build the central config (Task 10) FIRST**, then the domain module (Tasks 6–9, which import model constants from config), then wiring (Tasks 11–14).
 
 ### Task 6: Domain — height-adjusted TLV
+
+> Depends on Task 10's `CONFIG.MODEL`.
 
 **Files:**
 - Create: `src/domain/classification.js`, `src/domain/__tests__/classification.test.js`
@@ -276,13 +280,14 @@ describe('heightAdjustedTLV', () => {
 
 - [ ] **Step 2: Run — expect FAIL** (`npm test`) — "heightAdjustedTLV is not a function".
 
-- [ ] **Step 3: Implement in `classification.js`**
+- [ ] **Step 3: Implement in `classification.js`** — model constants come from config (no hardcoding):
 ```js
 // src/domain/classification.js
 // Pure ChIC classification domain per manuscript (spec §2). No Vue reactivity.
+import { CONFIG } from '@/config/config.js'
 
-export const CLASS_BASELINE = 600 // ml/m at age 0
-export const GROWTH_RATES = [0.01, 0.02, 0.03, 0.04] // A/B, B/C, C/D, D/E cutoffs
+export const CLASS_BASELINE = CONFIG.MODEL.CLASS_BASELINE_ML_PER_M // 600 ml/m at age 0
+export const GROWTH_RATES = CONFIG.MODEL.GROWTH_RATE_CUTOFFS       // [0.01,0.02,0.03,0.04]
 
 export function heightAdjustedTLV(tlv, height) {
   const t = Number(tlv)
@@ -291,6 +296,7 @@ export function heightAdjustedTLV(tlv, height) {
   return t / h
 }
 ```
+> Tests import `CLASS_BASELINE`/`GROWTH_RATES` from the module, so they track config automatically.
 
 - [ ] **Step 4: Run — expect PASS.**
 
@@ -327,20 +333,21 @@ describe('classify', () => {
 
 - [ ] **Step 2: Run — expect FAIL.**
 
-- [ ] **Step 3: Implement `classify`**
+- [ ] **Step 3: Implement `classify`** — derived from `GROWTH_RATES` (config), not hardcoded rates:
 ```js
+const CLASS_LETTERS = ['B', 'C', 'D', 'E'] // class cleared once the i-th ascending cutoff is met
 export function classify(htTLV, age) {
   const h = Number(htTLV)
   const a = Number(age)
   if (!Number.isFinite(h) || !Number.isFinite(a)) return null
-  const t = (rate) => CLASS_BASELINE * Math.pow(1 + rate, a)
-  if (h >= t(0.04)) return 'E'
-  if (h >= t(0.03)) return 'D'
-  if (h >= t(0.02)) return 'C'
-  if (h >= t(0.01)) return 'B'
+  const curve = (rate) => CLASS_BASELINE * Math.pow(1 + rate, a)
+  for (let i = GROWTH_RATES.length - 1; i >= 0; i--) {
+    if (h >= curve(GROWTH_RATES[i])) return CLASS_LETTERS[i]
+  }
   return 'A'
 }
 ```
+> `CLASS_LETTERS` length must equal `GROWTH_RATES` length (4 cutoffs → B/C/D/E, with A below all). If the config grows the model, extend both.
 
 - [ ] **Step 4: Run — expect PASS.**
 
@@ -419,23 +426,54 @@ export function legacyPgToLetter(code) {
 
 - [ ] **Step 4: Run — expect PASS.** **Step 5: Commit** `git commit -am "feat(domain): class labels + legacy PG shim"`
 
-### Task 10: CONFIG changes (retire 850, add assumed height, y-domain, age)
+### Task 10: Central config — single source of truth (RUN FIRST in Phase B)
 
-**Files:** Modify `src/config/config.js`.
+**Files:** Rewrite `src/config/config.js` as the one place all clinical + display constants live. Removes hardcoding across domain, chart, validation.
 
-- [ ] **Step 1: Edit `CONFIG`** — remove `NORMALIZATION_FACTOR` and `CHART_Y_AXIS_MAX`; add:
+- [ ] **Step 1: Rewrite `src/config/config.js`**
 ```js
-    ASSUMED_HEIGHT_M: 1.70,   // fallback for height-less imported rows (flagged as estimate)
-    CHART_Y_MIN: 100,         // log-axis floor; do not clip small htTLV (<600)
-    CHART_Y_MAX: 10500,       // above cohort max htTLV (10344, Table S1)
-    // AGE_MAX stays 80 pending author sign-off on D8 (15–80 / 15–81 / 15–85)
+// src/config/config.js — single source of truth for all ChIC parameters.
+export const CONFIG = {
+  // --- Clinical model (ChIC, per manuscript; spec §2) ---
+  MODEL: {
+    CLASS_BASELINE_ML_PER_M: 600,               // htTLV baseline at age 0
+    GROWTH_RATE_CUTOFFS: [0.01, 0.02, 0.03, 0.04], // A/B, B/C, C/D, D/E boundaries
+    ASSUMED_HEIGHT_M: 1.70,                      // fallback for height-less imports (flagged)
+  },
+
+  // --- Input validation ranges (D8: 15–85, fits manuscript + README) ---
+  AGE_MIN: 15,
+  AGE_MAX: 85,
+  AGE_MIN_LGR: 0,
+  TLV_MIN: 0,
+  TLV_MAX: 20000,
+  HEIGHT_MIN: 0.5,
+  HEIGHT_MAX: 2.5,
+
+  // --- Chart domain ---
+  CHART_X_MIN: 15,
+  CHART_X_MAX: 85,
+  CHART_Y_MIN: 100,     // log floor; must not clip small htTLV (<600)
+  CHART_Y_MAX: 10500,   // above cohort max htTLV 10344 (Table S1)
+  CHART_Y_TICKS: [600, 800, 1000, 2000, 4000, 6000, 8000, 10000],
+
+  // --- Class band + series colors (moved out of ChartDisplay) ---
+  CLASS_COLORS: {
+    A: '#2ecc71', B: '#a3d977', C: '#f1c40f', D: '#e67e22', E: '#e74c3c',
+  },
+
+  // --- UI ---
+  MODAL_MAX_WIDTH: '500px',
+  MODAL_MAX_HEIGHT: '90%',
+}
 ```
+> **Removed:** `NORMALIZATION_FACTOR` (850) and `CHART_Y_AXIS_MAX` (25) — dead nTLV artifacts. `CHART_X_AXIS_MIN/MAX` renamed to `CHART_X_MIN/MAX`; `AGE_INI` dropped (unused). Copy the real class-band colors from the current `ChartDisplay.vue` datasets into `CLASS_COLORS` verbatim.
 
-- [ ] **Step 2: Grep for removed keys**
-Run: `grep -rn "NORMALIZATION_FACTOR\|CHART_Y_AXIS_MAX" src`
-Expected: only the (about-to-change) usages in `useDataPersistence.js`/`ChartDisplay.vue` — fixed in Tasks 12–13.
+- [ ] **Step 2: Grep for removed/renamed keys across the app**
+Run: `grep -rn "NORMALIZATION_FACTOR\|CHART_Y_AXIS_MAX\|CHART_X_AXIS_MIN\|CHART_X_AXIS_MAX\|AGE_INI" src`
+Expected: hits only in `ChartDisplay.vue`/`useDataPersistence.js` — all fixed in Tasks 12–13. No other consumer.
 
-- [ ] **Step 3: Commit** `git commit -am "refactor(config): retire nTLV 850 baseline, add assumed height + explicit chart y-domain"`
+- [ ] **Step 3: Commit** `git commit -am "refactor(config): single source of truth — model, ranges, chart domain, colors (15–85, no /850)"`
 
 ### Task 11: Wire `App.vue` to the domain module + PG→letter migration
 
@@ -504,7 +542,7 @@ describe('processLoadedRow', () => {
 
 - [ ] **Step 1:** Implement `updatePointStyle(index, color, group)` (updates the patient dataset point's color/label) and `clearChart()` (empties datasets + redraws); add both to `defineExpose` (`:449`). Confirm `App.vue:644` (`updatePointStyle`) and `:692` (`clearChart`) now resolve.
 
-- [ ] **Step 2:** Replace hardcoded `min: 600` / `max: 10100` / `CEILING_Y = 10100` with `CONFIG.CHART_Y_MIN` / `CONFIG.CHART_Y_MAX`. Keep log scale; verify a synthetic htTLV of 450 (below 600) renders on-axis, and 10344 renders below the ceiling.
+- [ ] **Step 2:** Remove ALL hardcoded chart constants — read from config (no magic numbers): y-domain `min`/`max`/`CEILING_Y` ← `CONFIG.CHART_Y_MIN`/`CONFIG.CHART_Y_MAX`; the duplicated tick arrays (`ChartDisplay.vue:334` and `:342`) ← `CONFIG.CHART_Y_TICKS`; x-axis `min`/`max` ← `CONFIG.CHART_X_MIN`/`CONFIG.CHART_X_MAX`; class-band colors ← `CONFIG.CLASS_COLORS`; threshold curve base ← `CONFIG.MODEL.CLASS_BASELINE_ML_PER_M` (or the domain module's `formulas`). Keep log scale; verify a synthetic htTLV of 450 (below 600) renders on-axis, and 10344 renders below the ceiling.
 
 - [ ] **Step 3: Manual smoke** — add a point, edit its group/color in the table, confirm the chart marker updates; add a very small and a very large TLV, confirm neither clips.
 
@@ -676,6 +714,7 @@ git push origin --delete copilot/start-from-version-1 yml-edit-2
 ## Self-Review (run before execution)
 
 - **Spec coverage:** WS-1→Tasks 6–14; WS-2→15–23; WS-3→2–5; WS-4→4,6–9,12; WS-5→24–26,33; WS-6→27–31; WS-7→32. All covered.
-- **D8 age range:** parametrized in Task 10, kept at 80 pending sign-off — surfaced to author.
+- **D8 age range:** RESOLVED to 15–85 (fits manuscript + README), fully config-driven in Task 10; chart x-axis + validation + README all read `CONFIG`.
+- **No-hardcoding:** all model/display constants centralized in `CONFIG` (Task 10, built first); domain (Tasks 6–9) and chart (Task 13) import from it — verified by the Task 10 Step 2 grep leaving no stray consumers.
 - **Type consistency:** `classify`→letters `'A'..'E'`; consumed as such in Tasks 11–14; `htlvEstimated`/`estimatedClass`/`estimatedHtTLV` names consistent across Tasks 12/14/20.
 - **Ordering:** tests (Phase B) precede refactor (Phase C); branch surgery last.

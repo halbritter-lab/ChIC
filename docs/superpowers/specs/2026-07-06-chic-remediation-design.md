@@ -66,7 +66,8 @@ The `pgLabelMap` translation layer is removed once callers use letters. A single
 | D5 | Default branch | Make `main` the GitHub default; fast-forward it to current tip; switch local; delete `copilot/start-from-version-1` and stale `yml-edit-2`. Executed on the remote. |
 | D6 | Deploy base path | `vite` build base → `/ChIC/` |
 | D7 | Estimated rows | Estimate rendered in a **distinct visual treatment** (e.g. italic + `≈` + "unvalidated estimate" tooltip), never in the validated class column; export carries `htTLV_estimated` boolean + estimated columns; summary notice "N of M rows used an estimated height". |
-| D8 | **Age range** (open — needs author sign-off) | One of `15–80` / `15–81` / `15–85`, applied consistently to input validation, chart x-axis, README, query-param clamping, and tests. **Blocking checkpoint for WS-1.** |
+| D8 | **Age range** — RESOLVED | **`15–85`** to fit the manuscript (lower bound extended to 15) + README (85); cohort max 81. Applied consistently to input validation, chart x-axis, README, query-param clamping, and tests, all reading `CONFIG`. |
+| D9 | **No hardcoding** | Every clinical + display constant lives in `src/config/config.js` (model baseline/growth cutoffs, ranges, chart x/y domain, ticks, class colors). Domain module and chart import from config; no magic numbers in components. |
 
 ---
 
