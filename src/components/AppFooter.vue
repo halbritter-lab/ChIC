@@ -45,7 +45,7 @@
           target="_blank"
         >
           <img
-            :src="link.img"
+            :src="withBase(link.img)"
             :alt="link.alt"
             class="institution-logo"
           >
@@ -70,6 +70,11 @@ defineProps({
     default: () => [], // Default to an empty array
   },
 });
+
+// Resolve public/ asset filenames against the Vite base path (/ChIC/ in production)
+// so footer logos load correctly on the GitHub Pages subpath. Absolute URLs pass through.
+const withBase = (path) =>
+  /^https?:\/\//.test(path) ? path : `${import.meta.env.BASE_URL}${path}`;
 </script>
 
 <style scoped>

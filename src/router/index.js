@@ -1,5 +1,5 @@
 // router/index.js
-import { createWebHistory, createRouter, useRoute } from "vue-router";
+import { createWebHistory, createRouter } from "vue-router";
 import Home from "@/App.vue";
 
 const routes = [
@@ -11,7 +11,8 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  // Respect the Vite base path (/ChIC/ in production) so deep links/refresh work.
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 

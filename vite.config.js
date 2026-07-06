@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
-  const base = command === 'build' ? '/pld-progression-grouper/' : '/';
+  const base = command === 'build' ? '/ChIC/' : '/';
 
   return {
     base: base,
