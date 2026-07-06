@@ -1,6 +1,7 @@
 <template>
   <div class="chart-container">
     <canvas ref="chartCanvas" />
+    <svg ref="overlayCanvas" class="ring-overlay"></svg>
   </div>
 </template>
 
@@ -10,7 +11,6 @@ import { Chart, registerables, Filler } from 'chart.js'; // Added Filler for bac
 import annotationPlugin from 'chartjs-plugin-annotation'; // Import annotation plugin
 import { formulas } from '@/config/formulasConfig'; // Import formulas
 import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits
-import html2canvas from 'html2canvas';
 
 // Register Chart.js components and plugins
 Chart.register(...registerables);
@@ -23,87 +23,282 @@ const props = defineProps({
   dataPoints: { type: Array, required: true },
   enableGrouping: { type: Boolean, default: false },
   group: { type: String, default: '' },
-  groupColor: { type: String, default: '' }
+  groupColor: { type: String, default: '' },
+  editingIndex: { type: Number, default: -1 }
 });
 
 const chartCanvas = ref(null);
+const overlayCanvas = ref(null);
 let chartInstance = null;
+let isInitialLoad = true; // Track if this is the first render
+let previousDataLength = 0; // Track previous data length to detect batch uploads
+
+// Function to draw ring overlay around selected point
+const drawRingOverlay = () => {
+  const overlay = overlayCanvas.value;
+  if (!overlay || !chartInstance) return;
+
+  // Clear overlay
+  while (overlay.firstChild) {
+    overlay.removeChild(overlay.firstChild);
+  }
+
+  // If no editing index, nothing to draw
+  if (props.editingIndex < 0 || props.editingIndex >= props.dataPoints.length) return;
+
+  const point = props.dataPoints[props.editingIndex];
+  const canvas = chartCanvas.value;
+  const canvasRect = canvas.getBoundingClientRect();
+  const containerRect = overlayCanvas.value.parentElement.getBoundingClientRect();
+  
+  // Get pixel coordinates from Chart.js
+  const dataX = chartInstance.scales.x.getPixelForValue(point.age);
+  const dataY = chartInstance.scales.y.getPixelForValue(point.htlv);
+  
+  // Set overlay canvas size and viewBox to match chart canvas exactly
+  overlay.setAttribute('width', canvas.width);
+  overlay.setAttribute('height', canvas.height);
+  overlay.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+  
+  // Position SVG to match canvas position
+  const offsetX = canvasRect.left - containerRect.left;
+  const offsetY = canvasRect.top - containerRect.top;
+  overlay.style.left = offsetX + 'px';
+  overlay.style.top = offsetY + 'px';
+  
+  // Draw white ring
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', dataX);
+  circle.setAttribute('cy', dataY);
+  circle.setAttribute('r', '7');
+  circle.setAttribute('fill', 'none');
+  circle.setAttribute('stroke', 'white');
+  circle.setAttribute('stroke-width', '3');
+  circle.setAttribute('pointer-events', 'none');
+  
+  overlay.appendChild(circle);
+};
 
 // Function to initialize the chart
 const initChart = () => {
   if (chartCanvas.value) {
     const ctx = chartCanvas.value.getContext('2d', { willReadFrequently: true });
+    // Detect dark theme and set grid/tick colors accordingly
+    const isDark = typeof document !== 'undefined' && document.body.classList.contains('dark-theme');
+    // Only override grid/tick colors in dark theme. Leave light theme to Chart.js defaults.
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : undefined;
+    const tickColor = isDark ? '#dfeaf7' : undefined;
+
     // Generate data for background lines/areas based on formulas
     const lineLength = CONFIG.CHART_X_AXIS_MAX - CONFIG.CHART_X_AXIS_MIN + 1;
     const startAge = CONFIG.CHART_X_AXIS_MIN;
-    const lineDataPG3 = formulas.generateLineData1(lineLength, startAge); // PG3 Threshold Data
-    const lineDataPG2 = formulas.generateLineData2(lineLength, startAge); // PG2 Threshold Data
+    // Generate line data for each threshold curve (T1..T4)
+    const lineDataT1 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold01(a) };
+    });
+    const lineDataT2 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold02(a) };
+    });
+    const lineDataT3 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold03(a) };
+    });
+    const lineDataT4 = Array.from({ length: lineLength }, (_, i) => {
+      const a = startAge + i;
+      return { x: a, y: formulas.calculateThreshold04(a) };
+    });
 
     // Dataset for the absolute top of the chart area (used for filling down)
-    const ceilingData = Array.from({ length: (CONFIG.CHART_X_AXIS_MAX - CONFIG.CHART_X_AXIS_MIN) + 1 }, (_, i) => ({ x: CONFIG.CHART_X_AXIS_MIN + i, y: CONFIG.CHART_Y_AXIS_MAX }));
+    // Use the chart's y-axis max (10100) so the ceiling sits above threshold curves
+    const CEILING_Y = 10100;
+    const ceilingData = Array.from({ length: lineLength }, (_, i) => ({ x: startAge + i, y: CEILING_Y }));
+
+    // Note: using a dataset for the left-side (T4->y-axis) fill so it animates with the chart.
 
     chartInstance = new Chart(ctx, {
       type: 'scatter',
       data: {
         datasets: [
+        // (Thresholds, fills and baseline datasets are listed first so they render below patient points)
+        // Ceiling for top fill (area above T4)
         {
-          label: 'Patient Data',
-          data: props.dataPoints.map(p => ({
-            x: p.age,
-            y: p.ntlv,
-            id: p.id,
-            group: p.group,
-            backgroundColor: p.groupColor || '#180C0C' // Original default color
-          })),
-          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'), // Use original default
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          showLine: false,
-          order: 4 // Ensure patient data is drawn on top
-        },
-        // Replicating original background shading using datasets and simpler fills
-        {
-          label: 'Ceiling Line (for PG3 fill)', // Top boundary
+          label: 'Ceiling',
           data: ceilingData,
           borderColor: 'transparent',
           borderWidth: 0,
           showLine: true,
           pointRadius: 0,
-          fill: '+1', // Fill down to next dataset (PG3 Line)
-          backgroundColor: '#B2241C33', // PG3 Area Color
-          order: 1 // Draw first
+          fill: '+1', // fill down to T4
+          backgroundColor: '#BFE9FF33', // pastel blue (unchanged)
+          order: 1
         },
+        // Threshold T4 (highest) - visible line only (no fill)
         {
-          label: 'PG3 Threshold Line',
-          data: lineDataPG3,
-          borderColor: '#B2241C', // Original color for PG3 line
-          borderWidth: 3, // Original width
+          label: 'Threshold 4',
+          data: lineDataT4,
+          borderColor: '#BFE9FF',
+          borderWidth: 3,
           showLine: true,
           pointRadius: 0,
-          fill: '+1', // Fill down to next dataset (PG2 Line)
-          backgroundColor: '#F64C4633', // PG2 Area Color
-          order: 2 // Draw second
+          fill: false,
+          order: 2
         },
+        // Animated polygon dataset to shade the area between T4 curve and the y-axis (CHART_X_AXIS_MIN)
         {
-          label: 'PG2 Threshold Line',
-          data: lineDataPG2,
-          borderColor: '#F64C46', // Original color for PG2 line
-          borderWidth: 2, // Original width
+          type: 'line',
+          label: '',
+          data: (function(){
+            const leftX = CONFIG.CHART_X_AXIS_MIN;
+            const rightSide = lineDataT4.map(p => ({ x: p.x, y: p.y }));
+            const leftSide = lineDataT4.map(p => ({ x: leftX, y: p.y })).reverse();
+            return rightSide.concat(leftSide);
+          })(),
+          borderColor: 'transparent',
+          borderWidth: 0,
           showLine: true,
           pointRadius: 0,
-          fill: 'origin', // Fill down to origin (0)
-          backgroundColor: '#FDA3A133', // PG1 Area Color
-          order: 3 // Draw third
+          pointHoverRadius: 0,
+          tension: 0,
+          spanGaps: true,
+          fill: true,
+          backgroundColor: '#BFE9FF33',
+          isFill: true,
+          order: 1.5
+        },
+        
+        // Threshold T3
+        {
+          label: 'Threshold 3',
+          data: lineDataT3,
+          borderColor: '#64C8FF',
+          borderWidth: 2,
+          showLine: true,
+          pointRadius: 0,
+          fill: '-1', // fill up to previous dataset (T4) — band between T3 and T4
+          backgroundColor: '#64C8FF33', // match PG4 box shading (sky blue translucent)
+          order: 3
+        },
+        // Threshold T2
+        {
+          label: 'Threshold 2',
+          data: lineDataT2,
+          borderColor: '#8E9BFF',
+          borderWidth: 2,
+          showLine: true,
+          pointRadius: 0,
+          fill: '-1', // fill up to previous dataset (T3)
+          backgroundColor: '#8E9BFF33', // match PG3 box shading (periwinkle translucent)
+          order: 4
+        },
+        // T1: two separate fill datasets to control above/below fills, plus baseline and visible line
+        // Fill between T1 and T2 (PG2 color)
+        {
+          type: 'line',
+          label: 'T1 Above Fill',
+          data: lineDataT1,
+          borderColor: 'transparent',
+          borderWidth: 0,
+          showLine: false,
+          pointRadius: 0,
+          spanGaps: true,
+          tension: 0,
+          fill: '-1', // fill up to previous dataset (T2)
+          backgroundColor: 'rgba(43,27,111,0.20)', // PG2 box shading (slightly darker to match PG2 box)
+          order: 4.5
+        },
+        // Fill between T1 and baseline (PG1 color)
+        {
+          type: 'line',
+          label: 'T1 Below Fill',
+          data: lineDataT1,
+          borderColor: 'transparent',
+          borderWidth: 0,
+          showLine: false,
+          pointRadius: 0,
+          spanGaps: true,
+          tension: 0,
+          fill: '+1', // fill down to next dataset (baseline)
+          backgroundColor: 'rgba(60,60,60,0.24)', // PG1 translucent (match .PG1 color, darker)
+          order: 4.6
+        },
+        // Baseline dataset used as fill target for T1 below-fill
+        {
+          type: 'line',
+          label: 'Baseline',
+          data: Array.from({ length: lineLength }, (_, i) => ({ x: startAge + i, y: 600 })),
+          borderColor: 'transparent',
+          borderWidth: 0,
+          showLine: false,
+          pointRadius: 0,
+          fill: false,
+          order: 4.7
+        },
+        // Visible Threshold T1 line drawn on top of fills
+        {
+          type: 'line',
+          label: 'Threshold 1',
+          data: lineDataT1,
+          borderColor: '#2B1B6F',
+          borderWidth: 2,
+          showLine: true,
+          pointRadius: 0,
+          fill: false,
+          order: 5
+        }
+        ,
+        // Patient Data: render this dataset last so points appear above fills and lines
+        {
+          label: 'Patient Data',
+          data: props.dataPoints.map(p => ({
+            x: p.age,
+            y: p.htlv,
+            id: p.id,
+            group: p.group,
+            backgroundColor: p.groupColor || '#180C0C'
+          })),
+          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 0,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointStyle: 'circle',
+          showLine: false,
+          order: -1 // Lower order = drawn on top in Chart.js
+        },
+        // Highlighted point dataset
+        {
+          label: 'Selected Point',
+          data: props.editingIndex >= 0 && props.editingIndex < props.dataPoints.length ? [
+            {
+              x: props.dataPoints[props.editingIndex].age,
+              y: props.dataPoints[props.editingIndex].htlv,
+              id: props.dataPoints[props.editingIndex].id
+            }
+          ] : [],
+          pointBackgroundColor: 'transparent',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 4,
+          pointRadius: 8,
+          pointHoverRadius: 11,
+          pointStyle: 'circle',
+          showLine: false,
+          order: -2 // Even lower order = drawn above other data points
         }
        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false, // Set back to false to allow explicit CSS height
+        events: ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'],
         scales: {
           x: {
             type: 'linear',
             position: 'bottom',
+            grid: {
+              color: gridColor,
+            },
             title: {
               display: true,
               text: 'Age (years)',
@@ -112,39 +307,61 @@ const initChart = () => {
                 weight: 'bold'
               }
             },
+            ticks: {
+              color: tickColor
+            },
             min: CONFIG.CHART_X_AXIS_MIN, // Use config value
             max: CONFIG.CHART_X_AXIS_MAX  // Use config value
           },
           y: {
-            type: 'linear',
+            type: 'logarithmic',
             position: 'left',
+            grid: {
+              color: gridColor,
+            },
             title: {
               display: true,
-              text: 'Normalized Total Liver Volume (nTLV)',
+              text: 'Height-Adjusted Total Liver Volume (htTLV)',
               font: {
                 size: 16,
                 weight: 'bold'
               }
             },
-            min: 0, // Original used beginAtZero: true
-            max: CONFIG.CHART_Y_AXIS_MAX // Use config value
+            ticks: {
+              color: tickColor,
+              autoSkip: false,
+              callback: function(value) {
+                const marks = [600, 800, 1000, 2000, 4000, 6000, 8000, 10000];
+                return marks.includes(value) ? value.toLocaleString() : '';
+              }
+            },
+            min: 600,
+            max: 10100,
+            // Force specific tick marks on the logarithmic axis
+            afterBuildTicks: function(scale) {
+                const marks = [600, 800, 1000, 2000, 4000, 6000, 8000, 10000];
+              // Replace automatically generated ticks with our marks
+              scale.ticks = marks.map(v => ({ value: v }));
+            }
           }
         },
         plugins: {
           legend: {
-            display: false // Hide dataset label legend
+            display: false
           },
           tooltip: {
             callbacks: {
               label: function(context) {
-                let label = context.dataset.label || '';
-                if (label) label += ': ';
-                if (context.parsed.x !== null) label += context.parsed.x;
-                if (context.parsed.y !== null) label += ', ' + context.parsed.y.toFixed(2);
-                const dataPoint = context.raw;
-                if (dataPoint && dataPoint.id) label += `; ID: ${dataPoint.id}`;
-                return label;
-              }
+                    // Hide fill-only datasets from the tooltip
+                    if (context.dataset && context.dataset.isFill) return null;
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.parsed.x !== null) label += context.parsed.x;
+                    if (context.parsed.y !== null) label += ', ' + context.parsed.y.toFixed(2);
+                    const dataPoint = context.raw;
+                    if (dataPoint && dataPoint.id) label += `; ID: ${dataPoint.id}`;
+                    return label;
+                  }
             }
           }
         }
@@ -154,23 +371,39 @@ const initChart = () => {
 };
 
 // Function to update the chart data
-const updateChart = () => {
+const updateChart = (shouldAnimate = true) => {
   if (!chartInstance) return;
-  chartInstance.data.datasets[0].data = props.dataPoints.map(p => ({
+  const pdIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Patient Data');
+  if (pdIndex === -1) return;
+  chartInstance.data.datasets[pdIndex].data = props.dataPoints.map(p => ({
     x: p.age,
-    y: p.ntlv,
+    y: p.htlv,
     id: p.id,
     group: p.group,
-    backgroundColor: p.groupColor || '#180C0C' // Use group color or default
+    backgroundColor: p.groupColor || '#180C0C'
   }));
-  chartInstance.update();
+  
+  if (shouldAnimate) {
+    // Animate point additions with fly-in effect from bottom
+    chartInstance.update({ 
+      animation: { 
+        duration: 750,
+        easing: 'easeInOutQuart'
+      } 
+    });
+  } else {
+    // No animation for certain updates
+    chartInstance.update('none');
+  }
 };
 
 // Function to update a specific point's appearance (e.g., color, group info for tooltips)
 const updateChartPoint = (index, sample) => {
-  if (!chartInstance || !chartInstance.data.datasets[0].data[index]) return;
+  if (!chartInstance) return;
+  const pdIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Patient Data');
+  if (pdIndex === -1 || !chartInstance.data.datasets[pdIndex].data[index]) return;
 
-  const chartPoint = chartInstance.data.datasets[0].data[index];
+  const chartPoint = chartInstance.data.datasets[pdIndex].data[index];
   chartPoint.backgroundColor = sample.groupColor || '#180C0C'; // Update color (original default)
   chartPoint.group = sample.group; // Update group info for tooltip
 
@@ -178,22 +411,38 @@ const updateChartPoint = (index, sample) => {
 };
 
 // Function to download the chart as PNG
-const downloadChart = async () => {
+const downloadChart = () => {
   // Ensure the ref is available and chart instance exists
   if (!chartCanvas.value || !chartInstance) {
     console.error('Canvas element or chart instance not available for download.');
     return;
   }
 
-  // Create PNG
-  const canvas = await html2canvas(chartCanvas.value);
-  const pngUrl = canvas.toDataURL('image/png');
-  let downloadLink = document.createElement('a');
-  downloadLink.href = pngUrl;
-  downloadLink.download = 'pld-progression-chart.png';
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
+  // Temporarily hide the "Selected Point" dataset
+  const spIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Selected Point');
+  let originalData = null;
+  if (spIndex !== -1) {
+    originalData = chartInstance.data.datasets[spIndex].data;
+    chartInstance.data.datasets[spIndex].data = [];
+  }
+
+  // Pure draw() - zero shudder
+  chartInstance.draw();
+
+  // Read pixels directly from the canvas
+  const pngUrl = chartCanvas.value.toDataURL('image/png');
+
+  // Restore the "Selected Point" dataset immediately
+  if (spIndex !== -1 && originalData !== null) {
+    chartInstance.data.datasets[spIndex].data = originalData;
+    chartInstance.draw();
+  }
+
+  // Trigger download
+  const link = document.createElement('a');
+  link.href = pngUrl;
+  link.download = 'pld-progression-chart.png';
+  link.click();
 };
 
 // Expose downloadChart and updateChartPoint functions so they can be called from parent if needed
@@ -216,7 +465,25 @@ watch([
   () => props.enableGrouping,
   () => props.group,
   () => props.groupColor
-], updateChart, { deep: true });
+], () => {
+  if (!isInitialLoad) {
+    // After initial load, always animate data changes
+    previousDataLength = props.dataPoints.length;
+    updateChart(true);
+  } else {
+    // On initial load, mark it as done and animate if there's data
+    isInitialLoad = false;
+    previousDataLength = props.dataPoints.length;
+    // Animate on initial load if data is present
+    updateChart(props.dataPoints.length > 0);
+  }
+}, { deep: true });
+
+// Separate watcher for editingIndex to only update the selected point without re-rendering patient data
+// Uses pure SVG overlay - no chart modifications, no shudder
+watch(() => props.editingIndex, () => {
+  drawRingOverlay();
+});
 
 </script>
 
@@ -226,9 +493,13 @@ watch([
   justify-content: center;
   align-items: center;
   margin-top: 20px;
+  width: 100%;
+  position: relative;
 }
-canvas {
-  max-width: 100%;
-  height: auto;
+
+.ring-overlay {
+  position: absolute;
+  pointer-events: none;
+  display: block;
 }
 </style>

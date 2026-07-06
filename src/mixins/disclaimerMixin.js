@@ -5,7 +5,7 @@ export default {
         disclaimerSections: [
           {
             title: "Important Information for All Users",
-            content: "The PLD-Progression Grouper application is intended for informational, educational, and research purposes only and should not be used as a substitute for professional medical advice or for direct diagnostic use. The tool is designed to provide insights into Polycystic Liver Disease (PLD) progression but is not meant to replace clinical decision-making or genetic consultation."
+            content: "The Charité Imaging Classification application is intended for informational, educational, and research purposes only and should not be used as a substitute for professional medical advice or for direct diagnostic use. The tool is designed to provide insights into Polycystic Liver Disease (PLD) progression but is not meant to replace clinical decision-making or genetic consultation."
           },
           {
             title: "Usage Guidelines",
@@ -13,7 +13,7 @@ export default {
           },
           {
             title: "Liability and Risk",
-            content: "The application is provided 'as is,' without any guarantees or obligations for support, updates, or accuracy. Under no circumstances shall the creators or affiliates of the PLD-Progression Grouper be liable for any direct, indirect, incidental, or consequential damages arising from the use of the application."
+            content: "The application is provided 'as is,' without any guarantees or obligations for support, updates, or accuracy. Under no circumstances shall the creators or affiliates of the Charité Imaging Classification be liable for any direct, indirect, incidental, or consequential damages arising from the use of the application."
           },
           {
             title: "Contact and Queries",
@@ -21,7 +21,7 @@ export default {
           },
           {
             title: "Acknowledgment and Consent",
-            content: "By using the PLD-Progression Grouper, you acknowledge having read, understood, and agreed to the terms stated in this disclaimer. If you do not agree to these terms, you should not use the application."
+            content: "By using the Charité Imaging Classification, you acknowledge having read, understood, and agreed to the terms stated in this disclaimer. If you do not agree to these terms, you should not use the application."
           }
           // You can add more sections as needed
         ]
