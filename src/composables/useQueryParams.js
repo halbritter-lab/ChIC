@@ -1,6 +1,8 @@
 // useQueryParams.js — embed/kiosk query-param API (see AGENTS.md invariant #6).
-// Reads ?patientId=&age=&tlv= (auto-calculates when all three present),
-// ?acknowledgeBanner=true, and showFooter/showCitation/showDocumentation/showControls=false.
+// Reads ?patientId=&age=&height=&tlv= (auto-calculates when patientId+age+tlv present;
+// a Charité Imaging Class is only produced when a valid height is also supplied, since
+// the model classifies on height-adjusted TLV), ?acknowledgeBanner=true, and
+// showFooter/showCitation/showDocumentation/showControls=false.
 import { ref } from 'vue';
 import { CONFIG } from '@/config/config';
 
@@ -9,6 +11,7 @@ export function useQueryParams({
   route,
   patientId,
   age,
+  height,
   totalLiverVolume,
   calculateDataPoint,
   showModal,
@@ -34,6 +37,7 @@ export function useQueryParams({
         ? Math.min(Math.max(parsed, CONFIG.AGE_MIN), CONFIG.AGE_MAX)
         : q.age;
     }
+    if (q.height) height.value = q.height;
     if (q.tlv) totalLiverVolume.value = q.tlv;
     if (q.patientId && q.age && q.tlv) {
       calculateDataPoint();

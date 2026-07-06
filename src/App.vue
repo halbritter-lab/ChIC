@@ -333,6 +333,7 @@ export default {
         route,
         patientId,
         age,
+        height,
         totalLiverVolume,
         calculateDataPoint,
         showModal,
