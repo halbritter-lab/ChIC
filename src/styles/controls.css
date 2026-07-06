@@ -501,3 +501,31 @@ body.dark-theme .footer-text p {
 body.dark-theme .footer-divider {
   border-top-color: rgba(255,255,255,0.06) !important;
 }
+
+/* Dark theme base rules (moved verbatim from App.vue). Applies to #app.dark-theme and body.dark-theme. */
+/* Dark theme styles */
+.dark-theme {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.dark-theme .controls,
+.dark-theme .data-points-table,
+.dark-theme .progression-group {
+  background-color: #16213e;
+  color: #e0e0e0;
+}
+
+.dark-theme .data-points-table th {
+  background-color: #0f3460;
+}
+
+.dark-theme .data-points-table td {
+  background-color: #1a1a2e;
+}
+
+.dark-theme input {
+  background-color: #16213e;
+  color: #e0e0e0;
+  border-color: #0f3460;
+}

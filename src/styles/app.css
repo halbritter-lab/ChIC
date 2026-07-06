@@ -1,2 +1,0 @@
-/* Barrel shim — real styles live in the per-concern modules imported by index.css. */
-@import './index.css';
