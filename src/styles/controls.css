@@ -42,9 +42,9 @@
   top: 100%;
   left: 0;
   background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   min-width: 120px;
   z-index: 20;
   margin-top: 4px;
@@ -67,7 +67,7 @@
 }
 
 .menu-item:hover:not(:disabled) {
-  background-color: rgba(0,0,0,0.06) !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
 }
 
 .menu-item:disabled {
@@ -85,12 +85,12 @@
 
 body.dark-theme .download-menu {
   background: #0f2138;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: none;
 }
 
 body.dark-theme .menu-item:hover:not(:disabled) {
-  background: rgba(255,255,255,0.03) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
 }
 
 /* Explicit spacer used in InputControls to force vertical gaps for Safari */
@@ -135,12 +135,12 @@ body.dark-theme .menu-item:hover:not(:disabled) {
 }
 
 /* Normalize number inputs (remove browser spinner) for consistent width */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type="number"] {
+input[type='number'] {
   -moz-appearance: textfield;
 }
 .output-group {
@@ -155,7 +155,8 @@ input[type="number"] {
   flex-grow: 1;
   width: 100%;
 }
-.output-field, .progression-group-output {
+.output-field,
+.progression-group-output {
   flex-grow: 1;
   border: none;
   padding: 5px 12px;
@@ -179,7 +180,7 @@ input[type="number"] {
   box-sizing: border-box;
 }
 .output-fields > * + * {
-  border-left: 1px solid rgba(0,0,0,0.12);
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
   position: relative;
   z-index: 1;
 }
@@ -189,18 +190,38 @@ input[type="number"] {
   min-height: 20px;
 }
 /* Charité Imaging Class output text colors match the progression box outlines */
-.output-fields .progression-group-output.class-a { color: #BDBDBD; }
-.output-fields .progression-group-output.class-b { color: #2B1B6F; }
-.output-fields .progression-group-output.class-c { color: #8E9BFF; }
-.output-fields .progression-group-output.class-d { color: #64C8FF; }
-.output-fields .progression-group-output.class-e { color: #BFE9FF; }
+.output-fields .progression-group-output.class-a {
+  color: #bdbdbd;
+}
+.output-fields .progression-group-output.class-b {
+  color: #2b1b6f;
+}
+.output-fields .progression-group-output.class-c {
+  color: #8e9bff;
+}
+.output-fields .progression-group-output.class-d {
+  color: #64c8ff;
+}
+.output-fields .progression-group-output.class-e {
+  color: #bfe9ff;
+}
 
 /* Ensure htTLV numeric output text matches Charité Imaging Class colors */
-.output-fields .output-field.class-a { color: #BDBDBD; }
-.output-fields .output-field.class-b { color: #2B1B6F; }
-.output-fields .output-field.class-c { color: #8E9BFF; }
-.output-fields .output-field.class-d { color: #64C8FF; }
-.output-fields .output-field.class-e { color: #BFE9FF; }
+.output-fields .output-field.class-a {
+  color: #bdbdbd;
+}
+.output-fields .output-field.class-b {
+  color: #2b1b6f;
+}
+.output-fields .output-field.class-c {
+  color: #8e9bff;
+}
+.output-fields .output-field.class-d {
+  color: #64c8ff;
+}
+.output-fields .output-field.class-e {
+  color: #bfe9ff;
+}
 
 /* Ensure the htTLV numeric output uses a neutral color instead of PG highlighting */
 .output-fields #heightAdjustedTLV.output-field {
@@ -322,7 +343,7 @@ button {
 .controls .download-menu .menu-item:hover:not(:disabled),
 .controls button.menu-item:hover:not(:disabled),
 .controls .download-menu button.menu-item:hover:not(:disabled) {
-  background: rgba(0,0,0,0.06) !important;
+  background: rgba(0, 0, 0, 0.06) !important;
   color: #111 !important;
 }
 
@@ -345,7 +366,7 @@ body.dark-theme .controls .download-menu button.menu-item {
 body.dark-theme .controls .download-menu .menu-item:hover:not(:disabled),
 body.dark-theme .controls button.menu-item:hover:not(:disabled),
 body.dark-theme .controls .download-menu button.menu-item:hover:not(:disabled) {
-  background: rgba(255,255,255,0.03) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
 }
 
 /* Center action buttons (Plot, Print, Download, etc.) */
@@ -362,10 +383,10 @@ body.dark-theme .controls .download-menu button.menu-item:hover:not(:disabled) {
   color: #a94442;
   background-color: #f2dede;
   border-color: #ebccd1;
-  padding: .75rem 1.25rem;
+  padding: 0.75rem 1.25rem;
   margin-bottom: 1rem;
   border: 1px solid transparent;
-  border-radius: .25rem;
+  border-radius: 0.25rem;
   min-height: 20px;
   text-align: center;
 }
@@ -375,14 +396,14 @@ body.dark-theme .controls .download-menu button.menu-item:hover:not(:disabled) {
   position: fixed;
   right: 12px;
   bottom: 12px;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid #ddd;
   padding: 8px 12px;
   font-size: 12px;
   color: #111;
   z-index: 4000;
   max-width: 260px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 .debug-panel pre {
   margin: 6px 0 0;
@@ -422,7 +443,7 @@ button:disabled {
 .dark-theme textarea:focus,
 .dark-theme select:focus,
 .dark-theme .controls button:focus {
-  outline: 2px solid rgba(255,255,255,0.12) !important;
+  outline: 2px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 2px;
 }
 
@@ -454,7 +475,7 @@ body.dark-theme input,
 body.dark-theme textarea,
 body.dark-theme select,
 body.dark-theme .input-group input {
-  border: 1px solid rgba(223,231,242,0.08) !important;
+  border: 1px solid rgba(223, 231, 242, 0.08) !important;
   border-radius: 4px;
   background-color: transparent !important;
 }
@@ -464,7 +485,7 @@ body.dark-theme input:focus,
 body.dark-theme textarea:focus,
 body.dark-theme select:focus,
 body.dark-theme .input-group input:focus {
-  outline: 2px solid rgba(223,231,242,0.14) !important;
+  outline: 2px solid rgba(223, 231, 242, 0.14) !important;
   outline-offset: 2px;
 }
 
@@ -499,7 +520,7 @@ body.dark-theme .footer-text p {
   color: #dfe7f2 !important;
 }
 body.dark-theme .footer-divider {
-  border-top-color: rgba(255,255,255,0.06) !important;
+  border-top-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Dark theme base rules (moved verbatim from App.vue). Applies to #app.dark-theme and body.dark-theme. */

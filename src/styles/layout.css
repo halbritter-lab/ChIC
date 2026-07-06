@@ -25,7 +25,7 @@
   .two-column-layout {
     flex-direction: column;
   }
-  
+
   .left-column,
   .right-column {
     max-width: 100%;
@@ -47,4 +47,3 @@
     height: 100% !important;
   }
 }
-

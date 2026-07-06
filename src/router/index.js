@@ -1,11 +1,11 @@
 // router/index.js
-import { createWebHistory, createRouter } from "vue-router";
-import Home from "@/App.vue";
+import { createWebHistory, createRouter } from 'vue-router';
+import Home from '@/App.vue';
 
 const routes = [
   {
-    path: "/",
-    name: "Home",
+    path: '/',
+    name: 'Home',
     component: Home,
   },
 ];

@@ -75,7 +75,7 @@
     max-width: 500px;
   }
 
-  .controls button[class*="print"],
+  .controls button[class*='print'],
   .controls .secondary-actions {
     display: none !important;
   }
@@ -194,7 +194,8 @@
   }
 
   /* Force single page print */
-  html, body {
+  html,
+  body {
     margin: 0;
     padding: 0;
     height: 100%;

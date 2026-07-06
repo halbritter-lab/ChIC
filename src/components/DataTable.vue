@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="dataPoints.length > 0"
-    class="data-points-table-container"
-  >
+  <div v-if="dataPoints.length > 0" class="data-points-table-container">
     <table class="data-points-table">
       <thead>
         <tr>
@@ -13,12 +10,8 @@
           <th>htTLV</th>
           <th>Class</th>
           <th>LGR (%/y)</th>
-          <th v-if="enableGrouping">
-            Group
-          </th>
-          <th v-if="enableGrouping">
-            Color
-          </th>
+          <th v-if="enableGrouping">Group</th>
+          <th v-if="enableGrouping">Color</th>
           <th>Edit</th>
           <th>Remove</th>
         </tr>
@@ -45,7 +38,8 @@
               v-if="point.htlvEstimated"
               class="estimated"
               title="Unvalidated estimate — measured height missing"
-            >≈ {{ formatHtTLV(point.estimatedHtTLV) }}</span>
+              >≈ {{ formatHtTLV(point.estimatedHtTLV) }}</span
+            >
             <template v-else>{{ formatHtTLV(point.htlv) }}</template>
           </td>
           <!-- Charité Imaging Class: measured, or estimated (not a validated ChIC class) -->
@@ -54,7 +48,8 @@
               v-if="point.htlvEstimated"
               class="estimated"
               title="Unvalidated estimate — measured height missing"
-            >≈ {{ formatClassLabel(point.estimatedClass) }}</span>
+              >≈ {{ formatClassLabel(point.estimatedClass) }}</span
+            >
             <template v-else>{{ formatClassLabel(point.class) }}</template>
           </td>
           <td>{{ point.lgr }}</td>
@@ -63,14 +58,14 @@
               v-model="point.group"
               placeholder="Group"
               @change="$emit('update-chart-point', index)"
-            >
+            />
           </td>
           <td v-if="enableGrouping">
             <input
               v-model="point.groupColor"
               placeholder="Color"
               @change="$emit('update-chart-point', index)"
-            >
+            />
           </td>
           <td>
             <button
@@ -82,10 +77,7 @@
             </button>
           </td>
           <td>
-            <button
-              @click.stop="$emit('remove-point', index)"
-              aria-label="Remove data point"
-            >
+            <button @click.stop="$emit('remove-point', index)" aria-label="Remove data point">
               -
             </button>
           </td>
@@ -93,11 +85,9 @@
       </tbody>
     </table>
 
-    <p
-      v-if="estimatedCount > 0"
-      class="estimate-note"
-    >
-      {{ estimatedCount }} of {{ dataPoints.length }} rows used an estimated height — not a validated ChIC class
+    <p v-if="estimatedCount > 0" class="estimate-note">
+      {{ estimatedCount }} of {{ dataPoints.length }} rows used an estimated height — not a
+      validated ChIC class
     </p>
   </div>
 </template>

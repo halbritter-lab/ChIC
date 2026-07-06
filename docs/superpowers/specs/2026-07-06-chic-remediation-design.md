@@ -12,6 +12,7 @@
 ChIC is a Vue 3 + Vite SPA implementing the **Charité Imaging Classification** for Polycystic Liver Disease (PLD) progression. A repository review found correctness bugs, an incomplete rebrand that breaks deployment, no quality gates, and a monolithic component structure. This spec defines a single program to fix them, make the repo safe for sustained multi-agent development, and align the app precisely with the manuscript.
 
 **Success criteria (program-level):**
+
 - Classification is single-source and matches the manuscript exactly; imported and manually-entered patients get identical classes.
 - App builds and deploys correctly to GitHub Pages at the real URL.
 - Modern lint/format/typecheck/test/CI gates exist and pass.
@@ -24,18 +25,18 @@ ChIC is a Vue 3 + Vite SPA implementing the **Charité Imaging Classification** 
 
 ## 2. Authoritative Clinical Model (ground truth for WS-1)
 
-Extracted from `ChIC_3rdDraft_Clean_2026-07-06.docx` (Methods → *New ChIC Model*; Fig. 1 legend) and `ChIC_3rdDraft_Supplement_2026-07-06.docx` (Table S1). **This section is the contract WS-1 must satisfy.**
+Extracted from `ChIC_3rdDraft_Clean_2026-07-06.docx` (Methods → _New ChIC Model_; Fig. 1 legend) and `ChIC_3rdDraft_Supplement_2026-07-06.docx` (Table S1). **This section is the contract WS-1 must satisfy.**
 
 - **Metric:** height-adjusted TLV, `htTLV = TLV(ml) / height(m)`. Manuscript requires **measured height**.
 - **Model:** compound exponential growth, analogous to the Mayo Imaging Classification (Irazabal, kidney htTKV), with a **baseline principle of 600 ml/m at age 0**.
 - **Classes A–E** by compound annual growth rate:
   | Class | Annual growth rate | Threshold curve (lower bound) |
-  |---|---|---|
-  | A | `< 1%` | below `600·1.01^age` |
-  | B | `≥1% – <2%` | `≥ 600·1.01^age` |
-  | C | `≥2% – <3%` | `≥ 600·1.02^age` |
-  | D | `≥3% – <4%` | `≥ 600·1.03^age` |
-  | E | `≥4%` | `≥ 600·1.04^age` |
+  | ----- | ------------------ | ----------------------------- |
+  | A     | `< 1%`             | below `600·1.01^age`          |
+  | B     | `≥1% – <2%`        | `≥ 600·1.01^age`              |
+  | C     | `≥2% – <3%`        | `≥ 600·1.02^age`              |
+  | D     | `≥3% – <4%`        | `≥ 600·1.03^age`              |
+  | E     | `≥4%`              | `≥ 600·1.04^age`              |
 - **Growth rate (LGR):** `LGR = (htTLV / 600)^(1/age) − 1` (fraction; ×100 for %). This is algebraically the compound annual growth rate `g` where `htTLV = 600·(1+g)^age`. The current code is correct; only the `/100` comment in `formulasConfig.js:31` is wrong.
 - **`850` is retired.** The manuscript states the reform explicitly "replaced normalized liver volumes against a standard baseline of 850 ml at age 20 with htTLV" (per KDIGO 2025 / ERN 2026 recommendations). `CONFIG.NORMALIZATION_FACTOR = 850` and `CONFIG.CHART_Y_AXIS_MAX = 25` are dead artifacts of the predecessor (Sierks 2022) nTLV model. **Delete both.**
 - **Data scale (Table S1):** cohort htTLV mean 1922 ml/m, **range 632–10344**. The chart Y-axis max of 10100 clips the top of the real range → raise ceiling to ~10500.
@@ -43,13 +44,13 @@ Extracted from `ChIC_3rdDraft_Clean_2026-07-06.docx` (Methods → *New ChIC Mode
 
 **Class code decision & migration (revised per review):** the domain classifier returns the class **letter `A`–`E` directly** (manuscript nomenclature). Because the current `PG1`–`PG5` codes are load-bearing in CSS and templates, this requires an explicit migration map, not a silent swap:
 
-| Layer | Old | New |
-|---|---|---|
-| Domain return value | `'PG1'..'PG5'` | `'A'..'E'` |
-| CSS selector (`app.css:100`, `.progression-group PGx` in `App.vue:158-170`) | `.PG1..PG5` | `.class-a..class-e` |
-| UI/display label | via `pgLabelMap` | `Class A..E` (formatter takes a letter) |
-| Export column value | `PG1..PG5` | `Class A..E` |
-| **Legacy import compatibility** | — | Import must still accept old files carrying `pg: 'PG1'..'PG5'` and map them to `A..E` (one-way shim) |
+| Layer                                                                       | Old              | New                                                                                                  |
+| --------------------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| Domain return value                                                         | `'PG1'..'PG5'`   | `'A'..'E'`                                                                                           |
+| CSS selector (`app.css:100`, `.progression-group PGx` in `App.vue:158-170`) | `.PG1..PG5`      | `.class-a..class-e`                                                                                  |
+| UI/display label                                                            | via `pgLabelMap` | `Class A..E` (formatter takes a letter)                                                              |
+| Export column value                                                         | `PG1..PG5`       | `Class A..E`                                                                                         |
+| **Legacy import compatibility**                                             | —                | Import must still accept old files carrying `pg: 'PG1'..'PG5'` and map them to `A..E` (one-way shim) |
 
 The `pgLabelMap` translation layer is removed once callers use letters. A single `formatClassLabel('A') → 'Class A'` helper lives with the domain module.
 
@@ -57,17 +58,17 @@ The `pgLabelMap` translation layer is removed once callers use letters. A single
 
 ## 3. Decisions Log (locked)
 
-| # | Decision | Choice |
-|---|---|---|
-| D1 | Program structure | One comprehensive plan covering all workstreams |
-| D2 | Canonical classifier | 5-class A–E, `htTLV = TLV/height`, base 600, thresholds 1.01–1.04; one shared function used by manual + import paths |
-| D3 | Height-less imported rows | **Coherent normalisation**: estimate htTLV using an assumed height. Stored in **separate `estimatedHtTLV`/`estimatedClass` fields** — the validated `class` field stays empty. Never `/850`. |
-| D4 | Assumed-height source | Prefer **cohort mean** of rows in the same file that carry height; fall back to `CONFIG.ASSUMED_HEIGHT_M = 1.70` m if none |
-| D5 | Default branch | Make `main` the GitHub default; fast-forward it to current tip; switch local; delete `copilot/start-from-version-1` and stale `yml-edit-2`. Executed on the remote. |
-| D6 | Deploy base path | `vite` build base → `/ChIC/` |
-| D7 | Estimated rows | Estimate rendered in a **distinct visual treatment** (e.g. italic + `≈` + "unvalidated estimate" tooltip), never in the validated class column; export carries `htTLV_estimated` boolean + estimated columns; summary notice "N of M rows used an estimated height". |
-| D8 | **Age range** — RESOLVED | **`15–85`** to fit the manuscript (lower bound extended to 15) + README (85); cohort max 81. Applied consistently to input validation, chart x-axis, README, query-param clamping, and tests, all reading `CONFIG`. |
-| D9 | **No hardcoding** | Every clinical + display constant lives in `src/config/config.js` (model baseline/growth cutoffs, ranges, chart x/y domain, ticks, class colors). Domain module and chart import from config; no magic numbers in components. |
+| #   | Decision                  | Choice                                                                                                                                                                                                                                                               |
+| --- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Program structure         | One comprehensive plan covering all workstreams                                                                                                                                                                                                                      |
+| D2  | Canonical classifier      | 5-class A–E, `htTLV = TLV/height`, base 600, thresholds 1.01–1.04; one shared function used by manual + import paths                                                                                                                                                 |
+| D3  | Height-less imported rows | **Coherent normalisation**: estimate htTLV using an assumed height. Stored in **separate `estimatedHtTLV`/`estimatedClass` fields** — the validated `class` field stays empty. Never `/850`.                                                                         |
+| D4  | Assumed-height source     | Prefer **cohort mean** of rows in the same file that carry height; fall back to `CONFIG.ASSUMED_HEIGHT_M = 1.70` m if none                                                                                                                                           |
+| D5  | Default branch            | Make `main` the GitHub default; fast-forward it to current tip; switch local; delete `copilot/start-from-version-1` and stale `yml-edit-2`. Executed on the remote.                                                                                                  |
+| D6  | Deploy base path          | `vite` build base → `/ChIC/`                                                                                                                                                                                                                                         |
+| D7  | Estimated rows            | Estimate rendered in a **distinct visual treatment** (e.g. italic + `≈` + "unvalidated estimate" tooltip), never in the validated class column; export carries `htTLV_estimated` boolean + estimated columns; summary notice "N of M rows used an estimated height". |
+| D8  | **Age range** — RESOLVED  | **`15–85`** to fit the manuscript (lower bound extended to 15) + README (85); cohort max 81. Applied consistently to input validation, chart x-axis, README, query-param clamping, and tests, all reading `CONFIG`.                                                  |
+| D9  | **No hardcoding**         | Every clinical + display constant lives in `src/config/config.js` (model baseline/growth cutoffs, ranges, chart x/y domain, ticks, class colors). Domain module and chart import from config; no magic numbers in components.                                        |
 
 ---
 
@@ -78,7 +79,8 @@ The `pgLabelMap` translation layer is removed once callers use letters. A single
 **Problem:** Classification logic is duplicated and divergent. `App.vue:399-418` implements the correct 5-class model; `useDataPersistence.js:71-79` implements an obsolete 2-threshold/3-class model with a broken `/850` fallback that always yields Class A for height-less rows. Two chart methods called from `App.vue` do not exist.
 
 **Changes:**
-1. **New pure domain module `src/domain/classification.js`** — the single source of truth (a *module*, not a composable: it holds no Vue reactivity, per review finding #7):
+
+1. **New pure domain module `src/domain/classification.js`** — the single source of truth (a _module_, not a composable: it holds no Vue reactivity, per review finding #7):
    - `heightAdjustedTLV(tlv, height) → number`
    - `classify(htTLV, age) → 'A'|'B'|'C'|'D'|'E'` (thresholds 1.01–1.04, base 600, `≥` boundaries per §2; operates on **unrounded numeric** htTLV)
    - `liverGrowthRate(age, htTLV) → number` (fraction; moved from `formulasConfig.js`, comment fixed)
@@ -91,7 +93,7 @@ The `pgLabelMap` translation layer is removed once callers use letters. A single
 6. **Chart method fix:** implement `updatePointStyle(index, color, group)` and `clearChart()` in `ChartDisplay.vue` and add to `defineExpose`, OR reroute `App.vue:644` through the existing `updateChartPoint(index, sample)`. Table group/color edits must visibly update the chart marker.
 7. **Chart y-domain (review findings #1/#3):** raise ceiling to ~10500 (cohort max 10344) **and** stop clipping low values — `min: 600` currently hides valid htTLV < 600 (a small/young liver, e.g. TLV 800 / 1.8 m = 444, is off-scale on the log axis). Lower the log-axis `min` to a clinically sensible floor (e.g. 100) or render out-of-domain points with an explicit floor indicator. Define the y-domain explicitly in config, not as inline magic numbers.
 8. **Config:** remove `CONFIG.NORMALIZATION_FACTOR` and `CONFIG.CHART_Y_AXIS_MAX`; add `CONFIG.ASSUMED_HEIGHT_M = 1.70` and explicit chart y-domain (`CHART_Y_MIN`, `CHART_Y_MAX`).
-9. **Age-range checkpoint (D8):** *blocking* — the confirmed range drives `AGE_MIN`/`AGE_MAX`, chart x-axis, validation, README, query-param clamping, and the boundary tests. Do not proceed past WS-1 with a divergent range.
+9. **Age-range checkpoint (D8):** _blocking_ — the confirmed range drives `AGE_MIN`/`AGE_MAX`, chart x-axis, validation, README, query-param clamping, and the boundary tests. Do not proceed past WS-1 with a divergent range.
 
 **Acceptance:** manual entry and file import of the same {age, height, tlv} yield identical `class` + htTLV + LGR; a height-less row produces an `estimatedClass` (flagged), and its validated `class` stays empty; legacy `PG1–PG5` import files still load; unit tests cover all five class boundaries with epsilon policy; editing a point's group/color in the table updates the chart; no htTLV value in the cohort range (632–10344) or below 600 is clipped.
 
@@ -100,6 +102,7 @@ The `pgLabelMap` translation layer is removed once callers use letters. A single
 **Problem:** `src/App.vue` (~1020 ln) and `src/styles/app.css` (~914 ln) exceed the 600-LOC cap and mix many responsibilities.
 
 **Changes — `App.vue` decomposition (all behavior-preserving; move, don't rewrite):**
+
 - Domain module: `domain/classification.js` (WS-1, pure). Composables: `usePatientForm` (input refs + validation), `useDataPoints` (add/edit/remove, `editingIndex`), `useTheme` (toggle + persistence), `useQueryParams` (the `?patientId=&age=&tlv=` embed/kiosk API — **preserved verbatim**).
 - Template-download helpers folded into `useDataPersistence.js` (removes the `downloadCSVTemplate`/`downloadTemplateAsCsv` duplicate).
 - Components: `FaqModal.vue` (extract inline FAQ modal), `DataTable.vue` (results table + a11y: row `role`/`tabindex`/keyboard handler, `aria-label` on the remove button).
@@ -124,7 +127,7 @@ The `pgLabelMap` translation layer is removed once callers use letters. A single
 
 - **Add dev deps** (not yet installed): `vitest`, `@vue/test-utils`, `jsdom`, `@vitest/coverage-v8`. `vitest.config.js` (jsdom env, globals); scripts `test`, `test:watch`, `coverage`.
 - **Unit (must pass before WS-1/WS-2 land):**
-  - `domain/classification`: htTLV; each class boundary A/B/C/D/E. **Epsilon/rounding policy (finding #8):** classifier consumes *unrounded* htTLV with `≥` thresholds; tests assert at `threshold`, `threshold − ε`, `threshold + ε` for each cutoff, and test **display rounding separately** from classification. LGR equals the compound growth rate for synthetic `600·(1+g)^age` inputs.
+  - `domain/classification`: htTLV; each class boundary A/B/C/D/E. **Epsilon/rounding policy (finding #8):** classifier consumes _unrounded_ htTLV with `≥` thresholds; tests assert at `threshold`, `threshold − ε`, `threshold + ε` for each cutoff, and test **display rounding separately** from classification. LGR equals the compound growth rate for synthetic `600·(1+g)^age` inputs.
   - `useDataPersistence`: import→classify→export round-trip; height-less estimation populates `estimatedClass` and leaves `class` empty; legacy `PG1–PG5` mapping; malformed-row handling.
 - **Smoke:** `App.vue` mounts; disclaimer gate; add-a-point flow updates table + chart.
 
@@ -164,13 +167,13 @@ Even as one plan, internal order de-risks: **WS-3 (lint/format base) + WS-4 (tes
 
 ## 6. Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Refactor changes behavior | Behavior-preserving extraction + smoke tests + build gate; move code, don't rewrite |
-| Classifier change alters existing users' results | It *corrects* import path to match the manuscript + manual path; documented in changelog; unit tests encode the §2 contract |
-| Estimated-height rows misread as validated | Explicit flag, summary notice, export column, caveat text (D7) |
-| Branch surgery disrupts collaborators | `main` FF is non-destructive (ancestor); announce; delete only fully-merged branches |
-| Removing "unused" deps breaks a lazy path | grep-confirm zero references before removal; build after each removal |
+| Risk                                             | Mitigation                                                                                                                  |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Refactor changes behavior                        | Behavior-preserving extraction + smoke tests + build gate; move code, don't rewrite                                         |
+| Classifier change alters existing users' results | It _corrects_ import path to match the manuscript + manual path; documented in changelog; unit tests encode the §2 contract |
+| Estimated-height rows misread as validated       | Explicit flag, summary notice, export column, caveat text (D7)                                                              |
+| Branch surgery disrupts collaborators            | `main` FF is non-destructive (ancestor); announce; delete only fully-merged branches                                        |
+| Removing "unused" deps breaks a lazy path        | grep-confirm zero references before removal; build after each removal                                                       |
 
 ## 7. Out of Scope
 
@@ -181,6 +184,7 @@ New clinical features; statistical re-fit; endpoint/event computation; full Type
 ## 8. Review History
 
 **Rev 2 — 2026-07-06, Codex (GPT-5.x, high reasoning), dual-lens (data scientist + SPA engineer).** Incorporated:
+
 - P0 height-less rows → estimate stored in **separate `estimatedHtTLV`/`estimatedClass`** fields; validated `class` left empty (D3/D7, WS-1.4/5).
 - P0 age range → **blocking decision D8** with all consumers aligned (WS-1.9).
 - P1 chart low-value clipping (`min: 600`) → explicit y-domain, floor handling (WS-1.7).

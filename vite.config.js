@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -14,7 +14,7 @@ export default defineConfig(({ command }) => {
         registerType: 'autoUpdate', // Or 'prompt' based on preference
         // injectRegister: 'auto', // or null or 'script'
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'] // Ensure all needed assets are cached
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'], // Ensure all needed assets are cached
         },
         manifest: {
           name: 'Charité Imaging Classification Tool',
@@ -28,88 +28,88 @@ export default defineConfig(({ command }) => {
             {
               src: 'img/icons/favicon-16x16.png',
               sizes: '16x16',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/favicon-32x32.png',
               sizes: '32x32',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'favicon.png',
               sizes: '64x64',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/apple-touch-icon-120x120.png',
               sizes: '120x120',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/apple-touch-icon-152x152.png',
               sizes: '152x152',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/apple-touch-icon-180x180.png',
               sizes: '180x180',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/apple-touch-icon.png',
               sizes: '180x180',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/android-chrome-192x192.png',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/android-chrome-512x512.png',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/android-chrome-maskable-192x192.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'maskable',
             },
             {
               src: 'img/icons/android-chrome-maskable-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'maskable',
             },
             {
               src: 'img/icons/msapplication-icon-144x144.png',
               sizes: '144x144',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'img/icons/mstile-150x150.png',
               sizes: '150x150',
-              type: 'image/png'
-            }
-          ]
+              type: 'image/png',
+            },
+          ],
         },
         devOptions: {
-          enabled: true // Enable PWA features in dev mode if needed
-        }
-      })
+          enabled: true, // Enable PWA features in dev mode if needed
+        },
+      }),
     ],
     resolve: {
       alias: {
-        '@': '/src' // If you use '@' alias
-      }
+        '@': '/src', // If you use '@' alias
+      },
     },
     server: {
-        port: 8080, // Or your preferred port
-        open: true, // Automatically open browser
-        watch: {
-          usePolling: true
-        }
-    }
-  }
-})
+      port: 8080, // Or your preferred port
+      open: true, // Automatically open browser
+      watch: {
+        usePolling: true,
+      },
+    },
+  };
+});

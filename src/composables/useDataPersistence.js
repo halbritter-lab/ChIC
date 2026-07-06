@@ -55,9 +55,12 @@ export function processRows(rawRows) {
     const age = Number(row.age);
     const tlv = Number(row.tlv);
     if (
-      !Number.isFinite(age) || !Number.isFinite(tlv) ||
-      age < CONFIG.AGE_MIN || age > CONFIG.AGE_MAX ||
-      tlv < CONFIG.TLV_MIN || tlv > CONFIG.TLV_MAX
+      !Number.isFinite(age) ||
+      !Number.isFinite(tlv) ||
+      age < CONFIG.AGE_MIN ||
+      age > CONFIG.AGE_MAX ||
+      tlv < CONFIG.TLV_MIN ||
+      tlv > CONFIG.TLV_MAX
     ) {
       continue;
     }
@@ -105,18 +108,18 @@ export function processRows(rawRows) {
 export function buildExportRows(points) {
   if (!Array.isArray(points)) return [];
   return points.map((p) => ({
-    'ID': p.id,
+    ID: p.id,
     'Age (y)': p.age,
     'Height (m)': p.height ?? '',
     'TLV (ml)': p.tlv,
-    'htTLV': p.htlv != null ? formatHtTLV(p.htlv) : '',
-    'Class': p.class ?? '',
+    htTLV: p.htlv != null ? formatHtTLV(p.htlv) : '',
+    Class: p.class ?? '',
     'LGR (%/y)': p.lgr,
-    'htTLV_estimated': !!p.htlvEstimated,
-    'estimatedHtTLV': p.estimatedHtTLV != null ? formatHtTLV(p.estimatedHtTLV) : '',
-    'estimatedClass': p.estimatedClass ?? '',
-    'Group': p.group || '',
-    'GroupColor': p.groupColor || '',
+    htTLV_estimated: !!p.htlvEstimated,
+    estimatedHtTLV: p.estimatedHtTLV != null ? formatHtTLV(p.estimatedHtTLV) : '',
+    estimatedClass: p.estimatedClass ?? '',
+    Group: p.group || '',
+    GroupColor: p.groupColor || '',
   }));
 }
 
@@ -157,7 +160,8 @@ export function useDataPersistence() {
     // Create a temporary file input element
     fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = '.json, .xlsx, .xls, .csv, application/json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv';
+    fileInput.accept =
+      '.json, .xlsx, .xls, .csv, application/json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv';
     fileInput.style.display = 'none';
     fileInput.addEventListener('change', handleFileSelected);
     document.body.appendChild(fileInput); // Add to body to ensure it's clickable
@@ -239,7 +243,7 @@ export function useDataPersistence() {
         }
 
         // Parse header row
-        const headers = lines[0].split(',').map(h => h.trim());
+        const headers = lines[0].split(',').map((h) => h.trim());
         const jsonData = [];
 
         // Parse data rows
@@ -247,7 +251,7 @@ export function useDataPersistence() {
           const line = lines[i].trim();
           if (!line) continue; // Skip empty lines
 
-          const values = line.split(',').map(v => v.trim());
+          const values = line.split(',').map((v) => v.trim());
           const rowData = {};
 
           headers.forEach((header, index) => {
@@ -313,19 +317,21 @@ export function useDataPersistence() {
         'Age (y)': '0',
         'Height (m)': '0.00',
         'TLV (ml)': '0',
-        'htTLV': '0.00',
+        htTLV: '0.00',
         'LGR (%/y)': '0.00',
-        'estimatedHtTLV': '0.00',
+        estimatedHtTLV: '0.00',
       };
-      worksheet.columns = EXPORT_COLUMNS.map((col) => (
+      worksheet.columns = EXPORT_COLUMNS.map((col) =>
         numFmts[col] ? { header: col, key: col, numFmt: numFmts[col] } : { header: col, key: col }
-      ));
+      );
 
       worksheet.addRows(worksheetData);
 
       // Generate buffer and download
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const url = window.URL.createObjectURL(blob);
       const fileName = `pld_data_${new Date().toISOString().split('T')[0]}.xlsx`;
 
@@ -350,10 +356,7 @@ export function useDataPersistence() {
       const rows = buildExportRows(dataToSave).map((row) => EXPORT_COLUMNS.map((col) => row[col]));
 
       // Create CSV string with headers and rows
-      const csvContent = [
-        EXPORT_COLUMNS.join(','),
-        ...rows.map(row => row.join(','))
-      ].join('\n');
+      const csvContent = [EXPORT_COLUMNS.join(','), ...rows.map((row) => row.join(','))].join('\n');
 
       // Use the same approach as JSON - data URI
       const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
@@ -377,6 +380,6 @@ export function useDataPersistence() {
     downloadDataAsExcel,
     downloadDataAsCsv,
     loadedData, // The reactive ref containing successfully loaded data
-    errorLoading // Reactive ref for displaying loading errors
+    errorLoading, // Reactive ref for displaying loading errors
   };
 }

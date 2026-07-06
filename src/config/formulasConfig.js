@@ -2,12 +2,12 @@
 // Threshold constants come from CONFIG (no hardcoded 600 / 1.01–1.04); LGR delegates
 // to the single domain implementation. Existing callers (App.vue, ChartDisplay.vue,
 // useDataPersistence.js) keep working until they are migrated to the domain module.
-import { CONFIG } from '@/config/config.js'
-import { liverGrowthRate } from '@/domain/classification.js'
+import { CONFIG } from '@/config/config.js';
+import { liverGrowthRate } from '@/domain/classification.js';
 
-const BASE = CONFIG.MODEL.CLASS_BASELINE_ML_PER_M
-const [R1, R2, R3, R4] = CONFIG.MODEL.GROWTH_RATE_CUTOFFS
-const curveAt = (rate, age) => BASE * Math.pow(1 + rate, age)
+const BASE = CONFIG.MODEL.CLASS_BASELINE_ML_PER_M;
+const [R1, R2, R3, R4] = CONFIG.MODEL.GROWTH_RATE_CUTOFFS;
+const curveAt = (rate, age) => BASE * Math.pow(1 + rate, age);
 
 export const formulas = {
   // Four threshold curves (config-driven).
@@ -26,4 +26,4 @@ export const formulas = {
 
   // Single source of truth for LGR (domain module).
   calculateLiverGrowthRate: liverGrowthRate,
-}
+};

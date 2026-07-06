@@ -38,4 +38,4 @@ export const CONFIG = {
   // --- UI ---
   MODAL_MAX_WIDTH: '500px',
   MODAL_MAX_HEIGHT: '90%',
-}
+};

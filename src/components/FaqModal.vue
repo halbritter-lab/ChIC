@@ -1,66 +1,122 @@
 <template>
-  <div
-    v-if="show"
-    class="faq-modal-overlay"
-    @click.self="$emit('close')"
-  >
+  <div v-if="show" class="faq-modal-overlay" @click.self="$emit('close')">
     <div class="faq-modal">
       <div class="faq-header">
         <h2>How to Use & FAQ</h2>
-        <button
-          class="faq-close"
-          @click="$emit('close')"
-        >
-          ×
-        </button>
+        <button class="faq-close" @click="$emit('close')">×</button>
       </div>
       <div class="faq-content">
         <h3>How to Use</h3>
         <ol>
           <li><strong>Enter Patient ID:</strong> Provide a unique identifier for the patient.</li>
-          <li><strong>Enter Age:</strong> Input the patient's age ({{ CONFIG.AGE_MIN }}-{{ CONFIG.AGE_MAX }} years).</li>
-          <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
+          <li>
+            <strong>Enter Age:</strong> Input the patient's age ({{ CONFIG.AGE_MIN }}-{{
+              CONFIG.AGE_MAX
+            }}
+            years).
+          </li>
+          <li>
+            <strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000
+            ml).
+          </li>
           <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
-          <li><strong>View Results:</strong> The height-adjusted TLV (htTLV) and Charité Imaging Classes (A–E) will be displayed.</li>
+          <li>
+            <strong>View Results:</strong> The height-adjusted TLV (htTLV) and Charité Imaging
+            Classes (A–E) will be displayed.
+          </li>
         </ol>
 
         <h3>Frequently Asked Questions</h3>
         <div class="faq-item">
           <h4>What is htTLV?</h4>
-          <p>Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in meters, improving comparison across patients of different body sizes.</p>
+          <p>
+            Height-adjusted Total Liver Volume (htTLV) is the TLV divided by the patient's height in
+            meters, improving comparison across patients of different body sizes.
+          </p>
         </div>
         <div class="faq-item">
           <h4>What is LGR?</h4>
-          <p>LGR (Liver Growth Rate) represents the percentage change in liver volume per year (%/y). It indicates how quickly the liver is growing or shrinking over time, with higher values suggesting more rapid disease progression.</p>
+          <p>
+            LGR (Liver Growth Rate) represents the percentage change in liver volume per year (%/y).
+            It indicates how quickly the liver is growing or shrinking over time, with higher values
+            suggesting more rapid disease progression.
+          </p>
         </div>
         <div class="faq-item">
           <h4>What do the Charité Imaging Classes mean?</h4>
           <p>
-            <strong>Class A:</strong> Very slow progression (&lt;1% growth/y)<br>
-            <strong>Class B:</strong> Slow progression (1–2% growth/y)<br>
-            <strong>Class C:</strong> Moderate progression (2–3% growth/y)<br>
-            <strong>Class D:</strong> Rapid progression (3–4% growth/y)<br>
+            <strong>Class A:</strong> Very slow progression (&lt;1% growth/y)<br />
+            <strong>Class B:</strong> Slow progression (1–2% growth/y)<br />
+            <strong>Class C:</strong> Moderate progression (2–3% growth/y)<br />
+            <strong>Class D:</strong> Rapid progression (3–4% growth/y)<br />
             <strong>Class E:</strong> Very rapid progression (&gt;4% growth/y)
           </p>
         </div>
         <div class="faq-item">
           <h4>What is the grouping feature?</h4>
-          <p>Enable grouping to categorize multiple patients and assign different colors for visualization.</p>
+          <p>
+            Enable grouping to categorize multiple patients and assign different colors for
+            visualization.
+          </p>
         </div>
         <div class="faq-item">
           <h4>Can I edit data after entering it?</h4>
-          <p>Yes! Click on any row in the data table below the chart to load it into the input fields for editing. The selected row will highlight in dark blue. You can also click the <button style="background-color: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 2px 6px; font-size: 12px; vertical-align: middle;">✎</button> (edit) button in the Edit column. Modify any fields (ID, Age, TLV, Height, Group, or Color) and then click "Calculate" to save your changes to that row. The row will be updated with the new values. To remove a data point from the table, click the <button style="background-color: #ff4d4d; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 2px 6px; font-size: 12px; vertical-align: middle;">−</button> (remove) button in the Remove column.</p>
+          <p>
+            Yes! Click on any row in the data table below the chart to load it into the input fields
+            for editing. The selected row will highlight in dark blue. You can also click the
+            <button
+              style="
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                padding: 2px 6px;
+                font-size: 12px;
+                vertical-align: middle;
+              "
+            >
+              ✎
+            </button>
+            (edit) button in the Edit column. Modify any fields (ID, Age, TLV, Height, Group, or
+            Color) and then click "Calculate" to save your changes to that row. The row will be
+            updated with the new values. To remove a data point from the table, click the
+            <button
+              style="
+                background-color: #ff4d4d;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                padding: 2px 6px;
+                font-size: 12px;
+                vertical-align: middle;
+              "
+            >
+              −
+            </button>
+            (remove) button in the Remove column.
+          </p>
         </div>
         <div class="faq-item">
           <h4>How does batch uploading work?</h4>
-          <p>You can upload multiple patient records at once using a CSV, JSON, or Excel file. Each row should contain a patient's ID, age (years), total liver volume (ml), and height (m). Group and group color are optional fields for organizing and color-coding your data. Download a template to get started:
-          <a href="#" @click.prevent="downloadTemplateAsJson" style="margin-right: 12px;">JSON</a>
-          <a href="#" @click.prevent="downloadTemplateAsCsv" style="margin-right: 12px;">CSV</a>
-          <a href="#" @click.prevent="downloadTemplateAsExcel">Excel</a></p>
+          <p>
+            You can upload multiple patient records at once using a CSV, JSON, or Excel file. Each
+            row should contain a patient's ID, age (years), total liver volume (ml), and height (m).
+            Group and group color are optional fields for organizing and color-coding your data.
+            Download a template to get started:
+            <a href="#" @click.prevent="downloadTemplateAsJson" style="margin-right: 12px">JSON</a>
+            <a href="#" @click.prevent="downloadTemplateAsCsv" style="margin-right: 12px">CSV</a>
+            <a href="#" @click.prevent="downloadTemplateAsExcel">Excel</a>
+          </p>
         </div>
         <div class="faq-item">
           <h4>Can I save my data?</h4>
-          <p>Yes! Use the "Download Data" button to export as JSON, CSV, or Excel format. All files include the same columns as the data table: ID, Age (y), Height (m), TLV (ml), htTLV, Class, and LGR (%/y).</p>
+          <p>
+            Yes! Use the "Download Data" button to export as JSON, CSV, or Excel format. All files
+            include the same columns as the data table: ID, Age (y), Height (m), TLV (ml), htTLV,
+            Class, and LGR (%/y).
+          </p>
         </div>
       </div>
     </div>
@@ -85,8 +141,8 @@ const downloadTemplateAsJson = () => {
       tlv: '',
       height: '',
       group: '',
-      groupColor: ''
-    }
+      groupColor: '',
+    },
   ];
   const jsonContent = JSON.stringify(templateData, null, 2);
   const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonContent);
@@ -120,12 +176,14 @@ const downloadTemplateAsExcel = async () => {
       { header: 'tlv', key: 'tlv' },
       { header: 'height', key: 'height' },
       { header: 'group', key: 'group' },
-      { header: 'groupColor', key: 'groupColor' }
+      { header: 'groupColor', key: 'groupColor' },
     ];
 
     // Generate and download
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);

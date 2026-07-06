@@ -1,4 +1,3 @@
-
 <p align="center">
    <img src="public/ChICLogo_Full_2026-07-02.png" alt="Charité Imaging Classification logo" width="320" height="320">
 </p>
@@ -12,7 +11,6 @@ Please explore the [Charité Imaging Classification](https://halbritter-lab.gith
 The Charité Imaging Classification (ChIC) for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on a recent study titled "ChIC Paper" [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver events in individuals with PLD.
 
 PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The presentation of PLD can vary widely with some patients never experiencing symptoms and others requiring medication or procedural intervention, in rare cases even liver transplantation. The application uses height-adjusted total liver volume (htTLV) and age and leverages data from three tertiary care centers and two previous studies for prognostic risk stratification in PLD.
-
 
 ## Tool Development
 
@@ -83,18 +81,19 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
    - **(7c) Institution Logo**: Shows the logo of the associated medical institution.
    - **(7d) Funder Logo**: Displays the logo of the funding organization.
 
-8. **Data Table** *(not visible in the screenshot)*
+8. **Data Table** _(not visible in the screenshot)_
    - If present, this would display a table of all data points entered, including ID, age, height, TLV, htTLV, Charité Imaging Class, and an option to remove data points.
 
 Each numbered item refers to a different component or section of the app. Users interact with these components to input data, receive computed outputs, manage the data points, and utilize the results for further analysis or documentation.
 
-
 ## URL API Documentation
 
 ### Overview
+
 The Charité Imaging Classification tool supports URL query parameters, allowing users to preset input fields directly through the URL. This feature enables easy sharing of specific configurations and faster access to the tool with predefined settings.
 
 ### Query flags
+
 The tool accepts the following query parameters:
 
 1. `patientId`: Sets the patient's ID.
@@ -108,30 +107,34 @@ The tool accepts the following query parameters:
 9. `showControls`: Enables or disables the display of the user input controls. Accepts `true` or `false`.
 
 ### Usage examples
-- **Setting ID and age**: 
-This URL sets the patient's ID to "12345" and age to "50".
-`https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50`
+
+- **Setting ID and age**:
+  This URL sets the patient's ID to "12345" and age to "50".
+  `https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50`
 
 - **Setting all parameters**:
-This URL sets the patient's ID to "12345", age to "50", and Total Liver Volume to "15000 ml" and acknowledges the banner.
-`https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true`
+  This URL sets the patient's ID to "12345", age to "50", and Total Liver Volume to "15000 ml" and acknowledges the banner.
+  `https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true`
 
 - **Setting view controls**:
-This URL will hide the footer and controls but display the citation information and documentation link.
-`https://[YOUR_DOMAIN]/ChIC/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false`
-
+  This URL will hide the footer and controls but display the citation information and documentation link.
+  `https://[YOUR_DOMAIN]/ChIC/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false`
 
 ## Data Privacy and Storage
 
 ### Local Data Storage
+
 The Charité Imaging Classification is designed to prioritize user privacy and data security:
+
 - **Client-Side Data Storage**: All data input into the application is stored locally on the user's device. No personal or sensitive data is sent to or stored on a server.
 - **Data Security**: By keeping data client-side, the risk of data breaches is minimized, ensuring user data remains private and secure.
 
 ## Input Formats
 
 ### Batch Upload
+
 The application supports batch uploading of multiple patient records at once using the following formats:
+
 - **Excel (XLSX)**: Upload patient data from Excel spreadsheets. Each row should contain: ID, Age (years), Height (meters), TLV (milliliters), and optionally Group and GroupColor.
 - **CSV**: Import comma-separated values files with the same column structure as Excel files. This format is universally compatible with all spreadsheet applications.
 - **JSON**: Upload data in JSON format for technical users. The file should contain an array of patient objects with properties: id, age, height, tlv, group (optional), and groupColor (optional).
@@ -141,14 +144,15 @@ All batch uploads will add the records to the chart and data table, allowing for
 ## Output Formats
 
 ### Export Options
+
 Users can export their data in various formats for ease of use and flexibility:
+
 - **Excel (XLSX)**: For users who prefer spreadsheet analysis, data can be exported in Excel format with proper number formatting.
 - **CSV**: Comma-separated values format for universal compatibility with all spreadsheet applications.
 - **JSON**: Offering a more technical format, data can be saved as JSON files, which are ideal for further processing or integration with other applications.
 - **PNG**: The application allows users to download charts as PNG images, perfect for presentations or reports.
 
 All export formats include the complete data table columns: ID, Age (y), Height (m), TLV (ml), htTLV, Class, and LGR (%/y), with consistent number formatting.
-
 
 ## Progressive Web App (PWA) support
 
@@ -168,15 +172,14 @@ The PWA is compatible with most modern browsers on both desktop and mobile devic
 - **Faster load times**: As a PWA, the application loads faster, providing a smoother user experience.
 - **Regular updates**: The app will update automatically with the latest features and improvements when online.
 
-
 ## Disclaimer and Usage Guidelines
 
 Disclaimer for Charité Imaging Classification
+
 - **Important Information for All Users:** The Charité Imaging Classification application is intended for informational, educational and research purposes only and should not be used as a substitute for professional medical advice or for direct diagnostic use. The tool is designed to provide insights into PLD progression but is not meant to replace clinical decision-making or genetic consultation.
 - **Usage Guidelines:** The information provided by this application is not intended for medical diagnosis or treatment decisions without the oversight of qualified healthcare professionals. Users are advised not to base any health-related decisions solely on the results obtained from this application. The data and information presented are provided without any warranty of accuracy, completeness, or usefulness. Users should exercise their own judgment in the interpretation and use of the information. For medical relevance of the application's content, please consult with a healthcare professional.
 - **Liability and Risk:** The application is provided 'as is,' without any guarantees or obligations for support, updates or accuracy. Under no circumstances shall the creators or affiliates of the Charité Imaging Classification be liable for any direct, indirect, incidental or consequential damages arising from the use of the application.
 - **Acknowledgment and Consent:** By using the Charité Imaging Classification, you acknowledge having read, understood and agreed to the terms stated in this disclaimer. If you do not agree to these terms, you should not use the application.
-
 
 ## Development
 
@@ -206,17 +209,14 @@ architecture, conventions, and the 600-LOC / DRY-KISS-SOLID rules.
 
 This tool is an open-source project and contributions are welcome. Whether it's feature enhancement, bug fixing, or improvements in the algorithm, your input is valuable. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
-
 ## Citation policy
 
 - Please cite the following publication for this tool:
-[ChIC Paper Citation](https://pubmed.ncbi.nlm.nih.gov/tbd/)
-
+  [ChIC Paper Citation](https://pubmed.ncbi.nlm.nih.gov/tbd/)
 
 ## Copyright and license
 
 - All code from this project is licensed under the MIT License. For more information, please refer to the [LICENSE](LICENSE) file.
-
 
 ## Creators and contributors
 
@@ -233,6 +233,7 @@ This tool is an open-source project and contributions are welcome. Whether it's 
 - <https://scholar.google.com/citations?user=Uvhu3t0AAAAJ>
 
 **Dana Sierks**
+
 - <https://github.com/SIERKSd>
 - <https://orcid.org/0000-0002-3850-7646>
 

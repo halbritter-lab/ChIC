@@ -31,24 +31,24 @@ npm run preview   # serve the production build locally
 npm run lint      # ⚠️ runs eslint WITH --fix — mutates files. See below.
 ```
 
-- **`npm run lint` auto-fixes in place.** There is no check-only lint script yet. In CI or when you want to *see* violations without changing files, run:
+- **`npm run lint` auto-fixes in place.** There is no check-only lint script yet. In CI or when you want to _see_ violations without changing files, run:
   `npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore`
 - There are **no tests**. Do not claim a change is verified by tests. Verify by running `npm run build` (must succeed) and exercising the affected flow in `npm run dev`.
 
 ## Architecture map — where things live
 
-| Path | Role |
-|---|---|
-| `src/App.vue` (~1020 ln) | **The app.** Root component *and* the only router destination. Holds nearly all state (inputs, validation, `dataPoints`, theme, modals, query-param init, template downloads). **Almost every feature change touches this file.** |
-| `src/components/InputControls.vue` | Patient-input form. `<script setup>`, `defineProps`/`defineEmits`, v-model via `update:*` events. |
-| `src/components/ChartDisplay.vue` (~505 ln) | Chart.js scatter plot. Builds the threshold curves + class bands + patient points. Exposes imperative methods via `defineExpose`. |
-| `src/composables/useDataPersistence.js` | File import/export (JSON/CSV/Excel). Re-computes htTLV/class/LGR for loaded rows. |
-| `src/components/AppHeader.vue` / `AppFooter.vue` / `DisclaimerModal.vue` | Chrome: nav ribbon, footer/citation, disclaimer gate. |
-| `src/config/config.js` | `CONFIG` constants: input limits, chart X-axis, modal sizing. |
-| `src/config/formulasConfig.js` | Threshold curves and LGR math. |
-| `src/mixins/disclaimerMixin.js` / `footerMixin.js` | **Static content** (disclaimer text, footer links) as Options-API `data()` mixins. Edit content *here*, not in the components. |
-| `src/router/index.js` | Single `/` → `App.vue` route. |
-| `src/styles/app.css` (~914 ln) | Global styles + theming CSS variables + print rules. |
+| Path                                                                     | Role                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/App.vue` (~1020 ln)                                                 | **The app.** Root component _and_ the only router destination. Holds nearly all state (inputs, validation, `dataPoints`, theme, modals, query-param init, template downloads). **Almost every feature change touches this file.** |
+| `src/components/InputControls.vue`                                       | Patient-input form. `<script setup>`, `defineProps`/`defineEmits`, v-model via `update:*` events.                                                                                                                                 |
+| `src/components/ChartDisplay.vue` (~505 ln)                              | Chart.js scatter plot. Builds the threshold curves + class bands + patient points. Exposes imperative methods via `defineExpose`.                                                                                                 |
+| `src/composables/useDataPersistence.js`                                  | File import/export (JSON/CSV/Excel). Re-computes htTLV/class/LGR for loaded rows.                                                                                                                                                 |
+| `src/components/AppHeader.vue` / `AppFooter.vue` / `DisclaimerModal.vue` | Chrome: nav ribbon, footer/citation, disclaimer gate.                                                                                                                                                                             |
+| `src/config/config.js`                                                   | `CONFIG` constants: input limits, chart X-axis, modal sizing.                                                                                                                                                                     |
+| `src/config/formulasConfig.js`                                           | Threshold curves and LGR math.                                                                                                                                                                                                    |
+| `src/mixins/disclaimerMixin.js` / `footerMixin.js`                       | **Static content** (disclaimer text, footer links) as Options-API `data()` mixins. Edit content _here_, not in the components.                                                                                                    |
+| `src/router/index.js`                                                    | Single `/` → `App.vue` route.                                                                                                                                                                                                     |
+| `src/styles/app.css` (~914 ln)                                           | Global styles + theming CSS variables + print rules.                                                                                                                                                                              |
 
 ## Conventions
 

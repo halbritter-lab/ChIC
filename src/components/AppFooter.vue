@@ -1,54 +1,37 @@
 <template>
   <!-- Footer section with institution and funder logos -->
-  <footer
-    v-if="showFooter"
-    class="footer"
-  >
+  <footer v-if="showFooter" class="footer">
     <div class="footer-box">
       <div class="footer-text">
         <p><strong>Please cite the following publications for this tool:</strong></p>
         <p>
-          <a
-            href="https://pubmed.ncbi.nlm.nih.gov/TBD/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="https://pubmed.ncbi.nlm.nih.gov/TBD/" target="_blank" rel="noopener noreferrer">
             ChIC Paper Citation
           </a>
         </p>
-        <p
-          class="footer-break"
-          aria-hidden="true"
-        />
+        <p class="footer-break" aria-hidden="true" />
         <p>
           <a
             href="https://github.com/halbritter-lab/ChIC/blob/main/README.md"
             target="_blank"
             rel="noopener noreferrer"
-          ><strong>Documentation Page</strong></a>
+            ><strong>Documentation Page</strong></a
+          >
           &nbsp;|&nbsp;
           <a
             href="https://docs.google.com/forms/d/1MM4g1Ukjiy73ThWUMHARDcyQg-PwOWuI46kQV5HwXmY/viewform?edit_requested=true"
             target="_blank"
             rel="noopener noreferrer"
-          ><strong>Feedback Form</strong></a>
+            ><strong>Feedback Form</strong></a
+          >
         </p>
       </div>
 
-      <hr class="footer-divider">
+      <hr class="footer-divider" />
 
       <div class="footer-logos">
-        <a
-          v-for="link in footerLinks"
-          :key="link.name"
-          :href="link.url"
-          target="_blank"
-        >
-          <img
-            :src="withBase(link.img)"
-            :alt="link.alt"
-            class="institution-logo"
-          >
+        <a v-for="link in footerLinks" :key="link.name" :href="link.url" target="_blank">
+          <img :src="withBase(link.img)" :alt="link.alt" class="institution-logo" />
         </a>
       </div>
     </div>
@@ -88,7 +71,8 @@ const withBase = (path) =>
   margin-top: 20px; /* Add some space above the footer */
 }
 
-.institution-logo, .funder-logo {
+.institution-logo,
+.funder-logo {
   max-width: 120px;
   margin: 0 20px;
   vertical-align: middle; /* Align logos nicely */
@@ -122,7 +106,9 @@ const withBase = (path) =>
   color: var(--banner-right);
   text-decoration: underline;
   text-underline-offset: 2px;
-  transition: color 120ms ease-in-out, text-decoration-color 120ms ease-in-out;
+  transition:
+    color 120ms ease-in-out,
+    text-decoration-color 120ms ease-in-out;
 }
 .footer-logos {
   display: flex;
@@ -134,7 +120,7 @@ const withBase = (path) =>
 .footer-divider {
   width: 90%;
   border: none;
-  border-top: 1px solid rgba(0,0,0,0.12);
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
   margin: 6px 0;
 }
 

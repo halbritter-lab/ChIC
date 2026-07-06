@@ -36,7 +36,8 @@ export function usePatientForm() {
   const formattedHeightAdjustedTLV = computed(() => {
     if (
       !isAgeValid() ||
-      totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX ||
+      totalLiverVolume.value < CONFIG.TLV_MIN ||
+      totalLiverVolume.value > CONFIG.TLV_MAX ||
       !isHeightValid()
     ) {
       return null;
@@ -73,7 +74,10 @@ export function usePatientForm() {
     if (totalLiverVolume.value !== null) {
       if (!Number.isFinite(totalLiverVolume.value)) {
         tlvValidationMessage.value = 'Total Liver Volume must be a number';
-      } else if (totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX) {
+      } else if (
+        totalLiverVolume.value < CONFIG.TLV_MIN ||
+        totalLiverVolume.value > CONFIG.TLV_MAX
+      ) {
         tlvValidationMessage.value = `Total Liver Volume must be between ${CONFIG.TLV_MIN} and ${CONFIG.TLV_MAX} ml`;
       }
     }

@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="controls"
-    :class="{ 'grouping-enabled': enableGrouping }"
-  >
+  <div class="controls" :class="{ 'grouping-enabled': enableGrouping }">
     <!-- ID Input -->
     <div class="input-group">
       <label for="idInput">ID:</label>
@@ -12,13 +9,13 @@
         type="text"
         placeholder="Enter ID"
         @input="$emit('update:patientId', $event.target.value)"
-        @focus="$emit('request-next-id'); $emit('field-touched', 'id')"
-      >
+        @focus="
+          $emit('request-next-id');
+          $emit('field-touched', 'id');
+        "
+      />
     </div>
-    <div
-      v-if="idWarningMessage"
-      class="validation-message"
-    >
+    <div v-if="idWarningMessage" class="validation-message">
       {{ idWarningMessage }}
     </div>
 
@@ -30,23 +27,22 @@
         :value="age"
         type="text"
         :placeholder="`${CONFIG.AGE_MIN}-${CONFIG.AGE_MAX}`"
-        @input="(e) => {
-          const val = e.target.value;
-          if (val === '') {
-            $emit('update:age', null);
-          } else if (!isNaN(val) && val.trim() !== '') {
-            $emit('update:age', Number(val));
-          } else {
-            $emit('update:age', val);
+        @input="
+          (e) => {
+            const val = e.target.value;
+            if (val === '') {
+              $emit('update:age', null);
+            } else if (!isNaN(val) && val.trim() !== '') {
+              $emit('update:age', Number(val));
+            } else {
+              $emit('update:age', val);
+            }
           }
-        }"
+        "
         @focus="$emit('field-touched', 'age')"
-      >
+      />
     </div>
-    <div
-      v-if="ageValidationMessage"
-      class="validation-message"
-    >
+    <div v-if="ageValidationMessage" class="validation-message">
       {{ ageValidationMessage }}
     </div>
 
@@ -58,23 +54,22 @@
         :value="height"
         type="text"
         placeholder="e.g. 1.75 or 1,75"
-        @input="(e) => {
-          const v = e.target.value.replace(',', '.');
-          if (v === '') {
-            $emit('update:height', null);
-          } else if (!isNaN(v) && v.trim() !== '') {
-            $emit('update:height', Number(v));
-          } else {
-            $emit('update:height', v);
+        @input="
+          (e) => {
+            const v = e.target.value.replace(',', '.');
+            if (v === '') {
+              $emit('update:height', null);
+            } else if (!isNaN(v) && v.trim() !== '') {
+              $emit('update:height', Number(v));
+            } else {
+              $emit('update:height', v);
+            }
           }
-        }"
+        "
         @focus="$emit('field-touched', 'height')"
-      >
+      />
     </div>
-    <div
-      v-if="heightValidationMessage"
-      class="validation-message"
-    >
+    <div v-if="heightValidationMessage" class="validation-message">
       {{ heightValidationMessage }}
     </div>
 
@@ -86,23 +81,22 @@
         :value="totalLiverVolume"
         type="text"
         placeholder="0-20,000"
-        @input="(e) => {
-          const val = e.target.value;
-          if (val === '') {
-            $emit('update:totalLiverVolume', null);
-          } else if (!isNaN(val) && val.trim() !== '') {
-            $emit('update:totalLiverVolume', Number(val));
-          } else {
-            $emit('update:totalLiverVolume', val);
+        @input="
+          (e) => {
+            const val = e.target.value;
+            if (val === '') {
+              $emit('update:totalLiverVolume', null);
+            } else if (!isNaN(val) && val.trim() !== '') {
+              $emit('update:totalLiverVolume', Number(val));
+            } else {
+              $emit('update:totalLiverVolume', val);
+            }
           }
-        }"
+        "
         @focus="$emit('field-touched', 'tlv')"
-      >
+      />
     </div>
-    <div
-      v-if="tlvValidationMessage"
-      class="validation-message"
-    >
+    <div v-if="tlvValidationMessage" class="validation-message">
       {{ tlvValidationMessage }}
     </div>
 
@@ -118,10 +112,7 @@
       </button>
     </div>
 
-    <div
-      class="spacer"
-      aria-hidden="true"
-    />
+    <div class="spacer" aria-hidden="true" />
     <!-- Extra Grouping Controls (Conditional) -->
     <template v-if="enableGrouping">
       <div class="grouping-controls">
@@ -133,7 +124,7 @@
             type="text"
             placeholder="Enter group name"
             @input="$emit('update:group', $event.target.value)"
-          >
+          />
         </div>
         <div class="input-group color-suggest">
           <label for="groupColorInput">Group Color:</label>
@@ -145,7 +136,7 @@
               placeholder="e.g. #000000"
               @input="handleGroupColorInput"
               @focus="showSuggestions = true"
-            >
+            />
             <div
               class="color-suggestions"
               :class="{ 'visible-suggestions': showSuggestions }"
@@ -157,10 +148,7 @@
                 title="Black"
                 @click="selectSuggestion('#000000')"
               >
-                <span
-                  class="swatch-dot"
-                  style="background:#000000"
-                />
+                <span class="swatch-dot" style="background: #000000" />
                 <span class="swatch-label">Black</span>
                 <span class="swatch-hex">#000000</span>
               </button>
@@ -170,10 +158,7 @@
                 title="Red"
                 @click="selectSuggestion('#ff4d4d')"
               >
-                <span
-                  class="swatch-dot"
-                  style="background:#ff4d4d"
-                />
+                <span class="swatch-dot" style="background: #ff4d4d" />
                 <span class="swatch-label">Red</span>
                 <span class="swatch-hex">#ff4d4d</span>
               </button>
@@ -183,10 +168,7 @@
                 title="Blue"
                 @click="selectSuggestion('#3498db')"
               >
-                <span
-                  class="swatch-dot"
-                  style="background:#3498db"
-                />
+                <span class="swatch-dot" style="background: #3498db" />
                 <span class="swatch-label">Blue</span>
                 <span class="swatch-hex">#3498db</span>
               </button>
@@ -200,10 +182,7 @@
     <div class="input-group output-group httlv-box">
       <label for="heightAdjustedTLV">Height-adjusted Total Liver Volume (htTLV):</label>
       <div class="output-fields">
-        <output
-          id="heightAdjustedTLV"
-          :class="`output-field ${classToCssClass(progressionGroup)}`"
-        >
+        <output id="heightAdjustedTLV" :class="`output-field ${classToCssClass(progressionGroup)}`">
           <template v-if="formattedHeightAdjustedTlv">
             {{ formattedHeightAdjustedTlv + ' ml/m' }}
           </template>
@@ -236,27 +215,17 @@
       </div>
     </div>
 
-
-
-    <div
-      class="spacer"
-      aria-hidden="true"
-    />
+    <div class="spacer" aria-hidden="true" />
     <!-- Action Buttons -->
     <div class="action-buttons">
       <button @click="$emit('toggle-grouping')">
         {{ enableGrouping ? 'Disable Grouping' : 'Enable Grouping' }}
       </button>
-      <button @click="$emit('trigger-load')">
-        Load Data
-      </button>
+      <button @click="$emit('trigger-load')">Load Data</button>
     </div>
 
     <!-- Download actions -->
-    <div
-      class="action-buttons secondary-actions"
-      style="margin-top:6px;"
-    >
+    <div class="action-buttons secondary-actions" style="margin-top: 6px">
       <!-- Download Data with Dropdown -->
       <div class="download-dropdown-container">
         <button
@@ -269,21 +238,30 @@
         <div v-if="showDownloadMenu" class="download-menu">
           <button
             :disabled="dataPointsLength === 0"
-            @click="downloadFormat('json'); showDownloadMenu = false"
+            @click="
+              downloadFormat('json');
+              showDownloadMenu = false;
+            "
             class="menu-item"
           >
             JSON
           </button>
           <button
             :disabled="dataPointsLength === 0"
-            @click="downloadFormat('csv'); showDownloadMenu = false"
+            @click="
+              downloadFormat('csv');
+              showDownloadMenu = false;
+            "
             class="menu-item"
           >
             CSV
           </button>
           <button
             :disabled="dataPointsLength === 0"
-            @click="downloadFormat('excel'); showDownloadMenu = false"
+            @click="
+              downloadFormat('excel');
+              showDownloadMenu = false;
+            "
             class="menu-item"
           >
             Excel
@@ -291,10 +269,7 @@
         </div>
       </div>
 
-      <button
-        :disabled="dataPointsLength === 0"
-        @click="$emit('download-chart')"
-      >
+      <button :disabled="dataPointsLength === 0" @click="$emit('download-chart')">
         Download Plot
       </button>
     </div>
@@ -377,7 +352,11 @@ function selectSuggestion(hex) {
 function handleGroupColorInput(e) {
   const v = e.target.value || '';
   emit('update:groupColor', v);
-  const match = suggestionList.some(s => s.hex.toLowerCase() === String(v).toLowerCase() || s.label.toLowerCase() === String(v).toLowerCase());
+  const match = suggestionList.some(
+    (s) =>
+      s.hex.toLowerCase() === String(v).toLowerCase() ||
+      s.label.toLowerCase() === String(v).toLowerCase()
+  );
   // if the typed value doesn't exactly match a suggestion, hide suggestions
   showSuggestions.value = match;
 }
@@ -396,7 +375,8 @@ onMounted(() => {
 <style scoped>
 /* Styles for controls are now in the global app.css */
 /* This style block can be removed if no component-specific styles are needed */
-.validation-message { /* Style specifically for this component if needed */
+.validation-message {
+  /* Style specifically for this component if needed */
   margin-top: -5px; /* Example adjustment */
   margin-bottom: 10px;
 }
@@ -430,8 +410,8 @@ onMounted(() => {
   box-sizing: border-box;
   align-items: stretch;
   background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.12);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   border-radius: 6px;
   z-index: 50;
 }
@@ -469,15 +449,15 @@ onMounted(() => {
   border-radius: 50%;
   margin-right: 8px;
   vertical-align: middle;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 .color-swatch:hover {
-  background: rgba(0,0,0,0.06); /* light gray on hover */
+  background: rgba(0, 0, 0, 0.06); /* light gray on hover */
 }
 .color-swatch:focus-visible {
   outline: none !important;
   box-shadow: none !important;
-  background: rgba(0,0,0,0.06); /* same visual as hover */
+  background: rgba(0, 0, 0, 0.06); /* same visual as hover */
 }
 
 /* Force remove any browser default button background/focus styling for color options */
@@ -489,17 +469,17 @@ onMounted(() => {
   appearance: none !important;
 }
 .color-suggest .color-suggestions .color-swatch:active {
-  background-color: rgba(0,0,0,0.06) !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
 }
 :deep(.dark-theme) .color-suggest .color-suggestions .color-swatch:active {
-  background-color: rgba(255,255,255,0.03) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
 }
 .swatch-label {
   margin-right: 8px;
   color: #000000 !important;
 }
 .swatch-hex {
-  color: rgba(0,0,0,0.54);
+  color: rgba(0, 0, 0, 0.54);
   font-size: 12px;
 }
 .color-suggest:hover .color-suggestions,
@@ -515,7 +495,7 @@ onMounted(() => {
 /* Dark mode adjustments for the suggestion box */
 :deep(.dark-theme) .color-suggestions {
   background: #0f2138;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: none;
 }
 /* Keep label text readable per user request (force black) */
@@ -524,13 +504,11 @@ onMounted(() => {
 }
 /* Dark mode: make swatch dot borders lighter for contrast */
 :deep(.dark-theme) .swatch-dot {
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 /* Dark-mode: neutral hover for color options */
 :deep(.dark-theme) .color-swatch:hover,
 :deep(.dark-theme) .color-swatch:focus-visible {
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
 }
-
-
 </style>

@@ -5,7 +5,7 @@
   margin: 20px 0;
 }
 .progression-group {
-  border: 3px solid #BDBDBD;
+  border: 3px solid #bdbdbd;
   border-radius: 0px;
   padding: 10px;
   text-align: center;
@@ -14,30 +14,30 @@
 }
 /* Class A: below all thresholds */
 .class-a {
-  background-color: rgba(60,60,60,0.24); /* slightly darker translucent gray */
+  background-color: rgba(60, 60, 60, 0.24); /* slightly darker translucent gray */
   border-color: #000000;
   color: #222;
 }
 .class-b {
-  background-color: rgba(43,27,111,0.20); /* slightly darker pastel navy translucent */
-  border-color: #2B1B6F; /* T1 border color */
+  background-color: rgba(43, 27, 111, 0.2); /* slightly darker pastel navy translucent */
+  border-color: #2b1b6f; /* T1 border color */
   color: #062c46;
 }
 /* Class C: corresponds to Threshold T2 (periwinkle) */
 .class-c {
-  background-color: #8E9BFF33; /* periwinkle translucent */
-  border-color: #8E9BFF;
+  background-color: #8e9bff33; /* periwinkle translucent */
+  border-color: #8e9bff;
   color: #062c46;
 }
 /* Class D: corresponds to Threshold T3 (sky blue) */
 .class-d {
-  background-color: #64C8FF33; /* sky blue translucent */
-  border-color: #64C8FF;
+  background-color: #64c8ff33; /* sky blue translucent */
+  border-color: #64c8ff;
   color: #062c46;
 }
 /* Class E: corresponds to Threshold T4 (pastel blue) */
 .class-e {
-  background-color: #BFE9FF33; /* pastel blue translucent */
-  border-color: #BFE9FF;
+  background-color: #bfe9ff33; /* pastel blue translucent */
+  border-color: #bfe9ff;
   color: #062c46;
 }

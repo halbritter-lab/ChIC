@@ -1,36 +1,21 @@
 <template>
   <div>
     <!-- Acknowledgment message displayed when disclaimer is accepted -->
-    <div
-      v-if="disclaimerAcknowledged && !showModal"
-      class="acknowledgment-message"
-    >
-      <button @click="reopenModal">
-        Disclaimer
-      </button> acknowledged on this device at: {{ acknowledgmentTime }}.
+    <div v-if="disclaimerAcknowledged && !showModal" class="acknowledgment-message">
+      <button @click="reopenModal">Disclaimer</button> acknowledged on this device at:
+      {{ acknowledgmentTime }}.
     </div>
 
     <!-- Modal for displaying the disclaimer -->
-    <div
-      v-if="showModal"
-      class="modal"
-    >
+    <div v-if="showModal" class="modal">
       <div class="modal-content">
         <h2>Disclaimer for Charité Imaging Classification</h2>
-        <section
-          v-for="(section, index) in disclaimerSections"
-          :key="index"
-        >
+        <section v-for="(section, index) in disclaimerSections" :key="index">
           <h3>{{ section.title }}</h3>
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p v-html="section.content" />
         </section>
-        <button
-          class="modal-action-button"
-          @click="closeModal"
-        >
-          I Acknowledge
-        </button>
+        <button class="modal-action-button" @click="closeModal">I Acknowledge</button>
       </div>
     </div>
   </div>

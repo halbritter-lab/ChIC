@@ -1,10 +1,6 @@
 <template>
   <!-- Main application container -->
-  <div
-    id="app"
-    class="container"
-    :class="{ 'dark-theme': isDark }"
-  >
+  <div id="app" class="container" :class="{ 'dark-theme': isDark }">
     <!-- Note: disclaimerSections prop is provided by the disclaimerMixin -->
     <!-- Use the DisclaimerModal component -->
     <DisclaimerModal
@@ -17,10 +13,7 @@
     />
 
     <!-- FAQ / Help modal -->
-    <FaqModal
-      :show="showFAQ"
-      @close="closeFAQ"
-    />
+    <FaqModal :show="showFAQ" @close="closeFAQ" />
 
     <!-- Use the AppHeader component -->
     <AppHeader
@@ -71,10 +64,7 @@
           />
 
           <!-- Loading Error Display -->
-          <div
-            v-if="loadingError"
-            class="validation-message"
-          >
+          <div v-if="loadingError" class="validation-message">
             {{ loadingError }}
           </div>
         </div>
@@ -93,21 +83,11 @@
 
           <!-- Charité Imaging Classes (A - E) -->
           <div class="progression-groups">
-            <div class="progression-group class-a">
-              <strong>Class A</strong><br>&lt;1%/y
-            </div>
-            <div class="progression-group class-b">
-              <strong>Class B</strong><br>1-2%/y
-            </div>
-            <div class="progression-group class-c">
-              <strong>Class C</strong><br>2-3%/y
-            </div>
-            <div class="progression-group class-d">
-              <strong>Class D</strong><br>3-4%/y
-            </div>
-            <div class="progression-group class-e">
-              <strong>Class E</strong><br>&gt;4%/y
-            </div>
+            <div class="progression-group class-a"><strong>Class A</strong><br />&lt;1%/y</div>
+            <div class="progression-group class-b"><strong>Class B</strong><br />1-2%/y</div>
+            <div class="progression-group class-c"><strong>Class C</strong><br />2-3%/y</div>
+            <div class="progression-group class-d"><strong>Class D</strong><br />3-4%/y</div>
+            <div class="progression-group class-e"><strong>Class E</strong><br />&gt;4%/y</div>
           </div>
         </div>
       </div>
@@ -130,10 +110,7 @@
 
     <!-- Use the AppFooter component -->
     <!-- Note: footerLinks prop is provided by the footerMixin -->
-    <AppFooter
-      :show-footer="showFooter"
-      :footer-links="footerLinks"
-    />
+    <AppFooter :show-footer="showFooter" :footer-links="footerLinks" />
   </div>
 </template>
 
@@ -145,7 +122,11 @@ import packageInfo from '../package.json';
 import { CONFIG } from '@/config/config';
 import disclaimerMixin from './mixins/disclaimerMixin';
 import footerMixin from './mixins/footerMixin';
-import { classify, formatClassLabel, liverGrowthRate as calcLiverGrowthRate } from '@/domain/classification.js';
+import {
+  classify,
+  formatClassLabel,
+  liverGrowthRate as calcLiverGrowthRate,
+} from '@/domain/classification.js';
 import { useDataPersistence } from '@/composables/useDataPersistence';
 import { useTheme } from '@/composables/useTheme';
 import { useQueryParams } from '@/composables/useQueryParams';
@@ -172,7 +153,7 @@ export default {
     InputControls,
     ChartDisplay,
     FaqModal,
-    DataTable
+    DataTable,
   },
   mixins: [disclaimerMixin, footerMixin],
   setup() {
@@ -187,7 +168,7 @@ export default {
       downloadDataAsExcel,
       downloadDataAsCsv,
       loadedData,
-      errorLoading: loadingError // Rename for template clarity
+      errorLoading: loadingError, // Rename for template clarity
     } = useDataPersistence();
 
     const version = packageInfo.version;
@@ -214,18 +195,12 @@ export default {
       heightAdjustedTLV,
       formattedHeightAdjustedTLV,
       validateInput,
-      isInvalidInput
+      isInvalidInput,
     } = usePatientForm();
 
     // --- Data points collection ---
-    const {
-      dataPoints,
-      editingIndex,
-      addOrUpdatePoint,
-      removeDataPoint,
-      computeNextId,
-      padId
-    } = useDataPoints();
+    const { dataPoints, editingIndex, addOrUpdatePoint, removeDataPoint, computeNextId, padId } =
+      useDataPoints();
 
     // --- Disclaimer gate ---
     const disclaimerAcknowledged = ref(localStorage.getItem('disclaimerAcknowledged') === 'true');
@@ -260,7 +235,8 @@ export default {
     const progressionGroup = computed(() => {
       if (
         !isAgeValid() ||
-        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX ||
+        totalLiverVolume.value < CONFIG.TLV_MIN ||
+        totalLiverVolume.value > CONFIG.TLV_MAX ||
         !isHeightValid()
       ) {
         return null;
@@ -270,7 +246,8 @@ export default {
     const liverGrowthRate = computed(() => {
       if (
         !isAgeValid() ||
-        totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX ||
+        totalLiverVolume.value < CONFIG.TLV_MIN ||
+        totalLiverVolume.value > CONFIG.TLV_MAX ||
         !isHeightValid()
       ) {
         return null;
@@ -290,7 +267,7 @@ export default {
         return;
       }
       if (!patientId.value.trim()) {
-        idWarningMessage.value = "Please enter an ID before calculating";
+        idWarningMessage.value = 'Please enter an ID before calculating';
         return;
       }
       // Ensure required numeric inputs are present and valid
@@ -304,7 +281,12 @@ export default {
         heightValidationMessage.value = `Height must be between ${CONFIG.HEIGHT_MIN} and ${CONFIG.HEIGHT_MAX} m`;
         return;
       }
-      if (totalLiverVolume.value === null || !Number.isFinite(Number(totalLiverVolume.value)) || totalLiverVolume.value < CONFIG.TLV_MIN || totalLiverVolume.value > CONFIG.TLV_MAX) {
+      if (
+        totalLiverVolume.value === null ||
+        !Number.isFinite(Number(totalLiverVolume.value)) ||
+        totalLiverVolume.value < CONFIG.TLV_MIN ||
+        totalLiverVolume.value > CONFIG.TLV_MAX
+      ) {
         tlvValidationMessage.value = `Total Liver Volume must be between ${CONFIG.TLV_MIN} and ${CONFIG.TLV_MAX} ml`;
         return;
       }
@@ -312,7 +294,8 @@ export default {
       displayFormattedHTLV.value = formattedHeightAdjustedTLV.value;
       displayProgressionGroup.value = progressionGroup.value;
       // liverGrowthRate is a fraction (e.g. 0.01); ×100 for %/y display.
-      displayLiverGrowthRate.value = liverGrowthRate.value !== null ? (liverGrowthRate.value * 100) : null;
+      displayLiverGrowthRate.value =
+        liverGrowthRate.value !== null ? liverGrowthRate.value * 100 : null;
 
       // Interactive path always has a measured height (guarded above), so this is a
       // validated ChIC class — never an estimate.
@@ -328,7 +311,7 @@ export default {
         estimatedClass: null,
         lgr: liverGrowthRate.value !== null ? (liverGrowthRate.value * 100).toFixed(2) : 'N/A',
         group: enableGrouping.value ? group.value : '',
-        groupColor: enableGrouping.value ? groupColor.value : null
+        groupColor: enableGrouping.value ? groupColor.value : null,
       };
       if (enableGrouping.value && groupColor.value) {
         newData.backgroundColor = groupColor.value;
@@ -344,15 +327,16 @@ export default {
     };
 
     // --- Query-param init (embed/kiosk mode) ---
-    const { showFooter, showCitation, showDocumentation, showControls, initFromQuery } = useQueryParams({
-      router,
-      route,
-      patientId,
-      age,
-      totalLiverVolume,
-      calculateDataPoint,
-      showModal
-    });
+    const { showFooter, showCitation, showDocumentation, showControls, initFromQuery } =
+      useQueryParams({
+        router,
+        route,
+        patientId,
+        age,
+        totalLiverVolume,
+        calculateDataPoint,
+        showModal,
+      });
 
     // Load a data point into the input fields for editing
     const editDataPoint = (index) => {
@@ -372,10 +356,18 @@ export default {
       }
     };
 
-    watch(age, () => { validateInput(); });
-    watch(totalLiverVolume, () => { validateInput(); });
-    watch(height, () => { validateInput(); });
-    watch(patientId, () => { validateInput(); });
+    watch(age, () => {
+      validateInput();
+    });
+    watch(totalLiverVolume, () => {
+      validateInput();
+    });
+    watch(height, () => {
+      validateInput();
+    });
+    watch(patientId, () => {
+      validateInput();
+    });
 
     // Clear the displayed calculated results if any input changes after a calculation.
     // Suppress the very next clear when calculateDataPoint intentionally clears the ID.
@@ -384,7 +376,11 @@ export default {
         suppressClearOnNextInput.value = false;
         return;
       }
-      if (displayFormattedHTLV.value !== null || displayProgressionGroup.value !== null || displayLiverGrowthRate.value !== null) {
+      if (
+        displayFormattedHTLV.value !== null ||
+        displayProgressionGroup.value !== null ||
+        displayLiverGrowthRate.value !== null
+      ) {
         displayFormattedHTLV.value = null;
         displayProgressionGroup.value = null;
         displayLiverGrowthRate.value = null;
@@ -401,7 +397,9 @@ export default {
         if (typeof chartDisplayRef.value.downloadChart === 'function') {
           chartDisplayRef.value.downloadChart();
         } else {
-          console.error('Error: downloadChart method not found on ChartDisplay component instance.');
+          console.error(
+            'Error: downloadChart method not found on ChartDisplay component instance.'
+          );
         }
       } else {
         console.error('Error: chartDisplayRef is null.');
@@ -436,7 +434,11 @@ export default {
     const updateChartPoint = (index) => {
       const sample = dataPoints.value[index];
       // Update the corresponding chart point backgroundColor based on groupColor.
-      chartDisplayRef.value?.updatePointStyle(index, sample.groupColor ? sample.groupColor : null, sample.group);
+      chartDisplayRef.value?.updatePointStyle(
+        index,
+        sample.groupColor ? sample.groupColor : null,
+        sample.group
+      );
     };
 
     // Toggle grouping mode
@@ -482,8 +484,12 @@ export default {
     };
 
     // Open/close FAQ modal
-    const openFAQ = () => { showFAQ.value = true; };
-    const closeFAQ = () => { showFAQ.value = false; };
+    const openFAQ = () => {
+      showFAQ.value = true;
+    };
+    const closeFAQ = () => {
+      showFAQ.value = false;
+    };
 
     onMounted(async () => {
       // Ensure DOM is updated and refs are available before interacting with them
@@ -493,8 +499,14 @@ export default {
       document.documentElement.style.setProperty('--modal-max-width', CONFIG.MODAL_MAX_WIDTH);
       document.documentElement.style.setProperty('--modal-max-height', CONFIG.MODAL_MAX_HEIGHT);
       document.title = 'Charité Imaging Classification';
-      updateMetaTag('description', 'Charité Imaging Classification is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.');
-      updateMetaTag('keywords', 'PLD, Polycystic Liver Disease, Liver Health, Medical Research, Data Visualization, Vue.js, Web Application, Liver Disease Progression, Medical Education, Healthcare Technology');
+      updateMetaTag(
+        'description',
+        'Charité Imaging Classification is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.'
+      );
+      updateMetaTag(
+        'keywords',
+        'PLD, Polycystic Liver Disease, Liver Health, Medical Research, Data Visualization, Vue.js, Web Application, Liver Disease Progression, Medical Education, Healthcare Technology'
+      );
       updateMetaTag('author', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
       updateMetaTag('creator', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
     });
@@ -550,8 +562,8 @@ export default {
       resetForm,
       showFAQ,
       openFAQ,
-      closeFAQ
+      closeFAQ,
     };
-  }
+  },
 };
 </script>
