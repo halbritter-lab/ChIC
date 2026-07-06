@@ -29,7 +29,7 @@
         id="ageInput"
         :value="age"
         type="text"
-        placeholder="15-80"
+        :placeholder="`${CONFIG.AGE_MIN}-${CONFIG.AGE_MAX}`"
         @input="(e) => {
           const val = e.target.value;
           if (val === '') {
@@ -202,7 +202,7 @@
       <div class="output-fields">
         <output
           id="heightAdjustedTLV"
-          :class="`output-field ${progressionGroup}`"
+          :class="`output-field ${classToCssClass(progressionGroup)}`"
         >
           <template v-if="formattedHeightAdjustedTlv">
             {{ formattedHeightAdjustedTlv + ' ml/m' }}
@@ -213,7 +213,7 @@
         </output>
         <output
           id="progressionGroupOutput"
-          :class="`progression-group-output ${progressionGroup}`"
+          :class="`progression-group-output ${classToCssClass(progressionGroup)}`"
         >
           <template v-if="progressionGroupLabel">
             {{ progressionGroupLabel }}
@@ -224,7 +224,7 @@
         </output>
         <output
           id="liverGrowthRateOutput"
-          :class="`progression-group-output ${progressionGroup}`"
+          :class="`progression-group-output ${classToCssClass(progressionGroup)}`"
         >
           <template v-if="liverGrowthRate !== null && liverGrowthRate !== undefined">
             {{ liverGrowthRate.toFixed(2) + ' %/y (LGR)' }}
@@ -303,6 +303,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { CONFIG } from '@/config/config';
+import { classToCssClass } from '@/domain/classification.js';
 
 // Props received from App.vue
 defineProps({

@@ -12,31 +12,31 @@
   margin-bottom: 5px;
   min-width: 80px;
 }
-/* Class A (PG1): below all thresholds */
-.PG1 {
+/* Class A: below all thresholds */
+.class-a {
   background-color: rgba(60,60,60,0.24); /* slightly darker translucent gray */
   border-color: #000000;
   color: #222;
 }
-.PG2 {
+.class-b {
   background-color: rgba(43,27,111,0.20); /* slightly darker pastel navy translucent */
   border-color: #2B1B6F; /* T1 border color */
   color: #062c46;
 }
-/* PG3: corresponds to Threshold T2 (periwinkle) */
-.PG3 {
+/* Class C: corresponds to Threshold T2 (periwinkle) */
+.class-c {
   background-color: #8E9BFF33; /* periwinkle translucent */
   border-color: #8E9BFF;
   color: #062c46;
 }
-/* PG4: corresponds to Threshold T3 (sky blue) */
-.PG4 {
+/* Class D: corresponds to Threshold T3 (sky blue) */
+.class-d {
   background-color: #64C8FF33; /* sky blue translucent */
   border-color: #64C8FF;
   color: #062c46;
 }
-/* PG5: corresponds to Threshold T4 (pastel blue) */
-.PG5 {
+/* Class E: corresponds to Threshold T4 (pastel blue) */
+.class-e {
   background-color: #BFE9FF33; /* pastel blue translucent */
   border-color: #BFE9FF;
   color: #062c46;

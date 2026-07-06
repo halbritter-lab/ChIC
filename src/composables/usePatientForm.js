@@ -3,6 +3,7 @@
 // which reads the computeds exposed here.
 import { ref, computed } from 'vue';
 import { CONFIG } from '@/config/config';
+import { heightAdjustedTLV as calcHtTLV } from '@/domain/classification.js';
 
 export function usePatientForm() {
   // --- Input refs ---
@@ -30,12 +31,8 @@ export function usePatientForm() {
     return Number.isFinite(v) && v > 0 && v >= CONFIG.HEIGHT_MIN && v <= CONFIG.HEIGHT_MAX;
   };
 
-  // --- Height-adjusted TLV (htTLV) ---
-  const heightAdjustedTLV = computed(() => {
-    const h = height.value;
-    if (!h || Number.isNaN(Number(h)) || Number(h) <= 0) return NaN;
-    return totalLiverVolume.value / Number(h);
-  });
+  // --- Height-adjusted TLV (htTLV) — delegated to the shared domain module ---
+  const heightAdjustedTLV = computed(() => calcHtTLV(totalLiverVolume.value, height.value));
   const formattedHeightAdjustedTLV = computed(() => {
     if (
       !isAgeValid() ||

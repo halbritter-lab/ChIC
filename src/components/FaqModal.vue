@@ -18,7 +18,7 @@
         <h3>How to Use</h3>
         <ol>
           <li><strong>Enter Patient ID:</strong> Provide a unique identifier for the patient.</li>
-          <li><strong>Enter Age:</strong> Input the patient's age (15-80 years).</li>
+          <li><strong>Enter Age:</strong> Input the patient's age ({{ CONFIG.AGE_MIN }}-{{ CONFIG.AGE_MAX }} years).</li>
           <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in milliliters (0-20000 ml).</li>
           <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
           <li><strong>View Results:</strong> The height-adjusted TLV (htTLV) and Charité Imaging Classes (A–E) will be displayed.</li>
@@ -69,6 +69,8 @@
 
 <script setup>
 // FAQ / Help modal. Owns the batch-upload template downloads triggered from its links.
+import { CONFIG } from '@/config/config';
+
 defineProps({
   show: { type: Boolean, default: false },
 });

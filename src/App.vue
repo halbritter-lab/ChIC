@@ -67,7 +67,7 @@
             @trigger-load="triggerLoad"
             @download-data-as-excel="() => downloadDataAsExcel(dataPoints)"
             @download-data-as-csv="() => downloadDataAsCsv(dataPoints)"
-            :progression-group-label="formatPGLabel(displayProgressionGroup)"
+            :progression-group-label="formatClassLabel(displayProgressionGroup)"
           />
 
           <!-- Loading Error Display -->
@@ -93,19 +93,19 @@
 
           <!-- Charité Imaging Classes (A - E) -->
           <div class="progression-groups">
-            <div class="progression-group PG1">
+            <div class="progression-group class-a">
               <strong>Class A</strong><br>&lt;1%/y
             </div>
-            <div class="progression-group PG2">
+            <div class="progression-group class-b">
               <strong>Class B</strong><br>1-2%/y
             </div>
-            <div class="progression-group PG3">
+            <div class="progression-group class-c">
               <strong>Class C</strong><br>2-3%/y
             </div>
-            <div class="progression-group PG4">
+            <div class="progression-group class-d">
               <strong>Class D</strong><br>3-4%/y
             </div>
-            <div class="progression-group PG5">
+            <div class="progression-group class-e">
               <strong>Class E</strong><br>&gt;4%/y
             </div>
           </div>
@@ -117,7 +117,6 @@
         :data-points="dataPoints"
         :enable-grouping="enableGrouping"
         :editing-index="editingIndex"
-        :format-label="formatPGLabel"
         @edit-point="editDataPoint"
         @remove-point="removeDataPoint"
         @update-chart-point="updateChartPoint"
@@ -146,7 +145,7 @@ import packageInfo from '../package.json';
 import { CONFIG } from '@/config/config';
 import disclaimerMixin from './mixins/disclaimerMixin';
 import footerMixin from './mixins/footerMixin';
-import { formulas } from '@/config/formulasConfig';
+import { classify, formatClassLabel, liverGrowthRate as calcLiverGrowthRate } from '@/domain/classification.js';
 import { useDataPersistence } from '@/composables/useDataPersistence';
 import { useTheme } from '@/composables/useTheme';
 import { useQueryParams } from '@/composables/useQueryParams';
@@ -257,7 +256,7 @@ export default {
     const heightTouched = ref(false);
     const tlvTouched = ref(false);
 
-    // Classification of the current inputs (five progression groups PG1..PG5 = Class A..E).
+    // Charité Imaging Class (letter A..E) of the current inputs, via the shared domain module.
     const progressionGroup = computed(() => {
       if (
         !isAgeValid() ||
@@ -266,17 +265,7 @@ export default {
       ) {
         return null;
       }
-      const htlv = heightAdjustedTLV.value;
-      const patientAge = age.value;
-      const t1 = formulas.calculateThreshold01(patientAge);
-      const t2 = formulas.calculateThreshold02(patientAge);
-      const t3 = formulas.calculateThreshold03(patientAge);
-      const t4 = formulas.calculateThreshold04(patientAge);
-      if (htlv >= t4) return 'PG5';
-      if (htlv >= t3) return 'PG4';
-      if (htlv >= t2) return 'PG3';
-      if (htlv >= t1) return 'PG2';
-      return 'PG1';
+      return classify(heightAdjustedTLV.value, age.value);
     });
     const liverGrowthRate = computed(() => {
       if (
@@ -286,12 +275,12 @@ export default {
       ) {
         return null;
       }
-      return formulas.calculateLiverGrowthRate(age.value, heightAdjustedTLV.value);
+      return calcLiverGrowthRate(age.value, heightAdjustedTLV.value);
     });
 
     // Display values updated only when Calculate is clicked
     const displayFormattedHTLV = ref(null); // string or null
-    const displayProgressionGroup = ref(null); // 'PG1'..'PG5' or null
+    const displayProgressionGroup = ref(null); // Class letter 'A'..'E' or null
     const displayLiverGrowthRate = ref(null); // number or null
     const suppressClearOnNextInput = ref(false);
 
@@ -322,17 +311,21 @@ export default {
       // Update display values (only on Calculate click)
       displayFormattedHTLV.value = formattedHeightAdjustedTLV.value;
       displayProgressionGroup.value = progressionGroup.value;
-      // formulas.calculateLiverGrowthRate returns a fraction (e.g. 0.01); ×100 for %/y display.
+      // liverGrowthRate is a fraction (e.g. 0.01); ×100 for %/y display.
       displayLiverGrowthRate.value = liverGrowthRate.value !== null ? (liverGrowthRate.value * 100) : null;
 
+      // Interactive path always has a measured height (guarded above), so this is a
+      // validated ChIC class — never an estimate.
       const newData = {
         id: patientId.value,
         age: age.value,
         height: height.value,
         tlv: totalLiverVolume.value,
         htlv: heightAdjustedTLV.value, // numeric for chart
-        htlv_formatted: formattedHeightAdjustedTLV.value, // formatted string for display
-        pg: progressionGroup.value,
+        htlvEstimated: false,
+        estimatedHtTLV: null,
+        class: progressionGroup.value,
+        estimatedClass: null,
         lgr: liverGrowthRate.value !== null ? (liverGrowthRate.value * 100).toFixed(2) : 'N/A',
         group: enableGrouping.value ? group.value : '',
         groupColor: enableGrouping.value ? groupColor.value : null
@@ -506,19 +499,6 @@ export default {
       updateMetaTag('creator', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
     });
 
-    // Map internal PG codes to display labels (Class A..E)
-    const pgLabelMap = {
-      PG1: 'Class A',
-      PG2: 'Class B',
-      PG3: 'Class C',
-      PG4: 'Class D',
-      PG5: 'Class E'
-    };
-    const formatPGLabel = (pg) => {
-      if (!pg) return '';
-      return pgLabelMap[pg] || pg;
-    };
-
     return {
       version,
       idWarningMessage,
@@ -560,7 +540,7 @@ export default {
       groupColor,
       toggleGrouping,
       updateChartPoint,
-      formatPGLabel,
+      formatClassLabel,
       chartDisplayRef,
       assignNextId,
       handleFieldTouched,

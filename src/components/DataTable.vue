@@ -27,16 +27,36 @@
         <tr
           v-for="(point, index) in dataPoints"
           :key="point.id"
-          @click="$emit('edit-point', index)"
-          :class="{ 'row-editing': editingIndex === index }"
           class="data-row"
+          :class="{ 'row-editing': editingIndex === index }"
+          role="button"
+          tabindex="0"
+          @click="$emit('edit-point', index)"
+          @keydown.enter.prevent="$emit('edit-point', index)"
+          @keydown.space.prevent="$emit('edit-point', index)"
         >
           <td>{{ point.id }}</td>
           <td>{{ point.age }}</td>
           <td>{{ point.height }}</td>
           <td>{{ point.tlv }}</td>
-          <td>{{ point.htlv_formatted }}</td>
-          <td>{{ formatLabel(point.pg) }}</td>
+          <!-- htTLV: measured value, or an unvalidated estimate when height was missing -->
+          <td>
+            <span
+              v-if="point.htlvEstimated"
+              class="estimated"
+              title="Unvalidated estimate — measured height missing"
+            >≈ {{ formatHtTLV(point.estimatedHtTLV) }}</span>
+            <template v-else>{{ formatHtTLV(point.htlv) }}</template>
+          </td>
+          <!-- Charité Imaging Class: measured, or estimated (not a validated ChIC class) -->
+          <td>
+            <span
+              v-if="point.htlvEstimated"
+              class="estimated"
+              title="Unvalidated estimate — measured height missing"
+            >≈ {{ formatClassLabel(point.estimatedClass) }}</span>
+            <template v-else>{{ formatClassLabel(point.class) }}</template>
+          </td>
           <td>{{ point.lgr }}</td>
           <td v-if="enableGrouping">
             <input
@@ -62,23 +82,48 @@
             </button>
           </td>
           <td>
-            <button @click.stop="$emit('remove-point', index)">
+            <button
+              @click.stop="$emit('remove-point', index)"
+              aria-label="Remove data point"
+            >
               -
             </button>
           </td>
         </tr>
       </tbody>
     </table>
+
+    <p
+      v-if="estimatedCount > 0"
+      class="estimate-note"
+    >
+      {{ estimatedCount }} of {{ dataPoints.length }} rows used an estimated height — not a validated ChIC class
+    </p>
   </div>
 </template>
 
 <script setup>
 // Results table for calculated / imported data points.
-defineProps({
+import { computed } from 'vue';
+import { formatClassLabel, formatHtTLV } from '@/domain/classification.js';
+
+const props = defineProps({
   dataPoints: { type: Array, required: true },
   enableGrouping: { type: Boolean, default: false },
   editingIndex: { type: Number, default: null },
-  formatLabel: { type: Function, default: (v) => v },
 });
 defineEmits(['edit-point', 'remove-point', 'update-chart-point']);
+
+const estimatedCount = computed(() => props.dataPoints.filter((p) => p.htlvEstimated).length);
 </script>
+
+<style scoped>
+.estimated {
+  font-style: italic;
+}
+.estimate-note {
+  margin: -10px 0 20px;
+  font-style: italic;
+  color: #a94442;
+}
+</style>
