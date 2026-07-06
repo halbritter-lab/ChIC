@@ -1,43 +1,29 @@
-// formulasConfig.js
+// src/config/formulasConfig.js — thin compatibility layer over the domain module.
+// Threshold constants come from CONFIG (no hardcoded 600 / 1.01–1.04); LGR delegates
+// to the single domain implementation. Existing callers (App.vue, ChartDisplay.vue,
+// useDataPersistence.js) keep working until they are migrated to the domain module.
+import { CONFIG } from '@/config/config.js'
+import { liverGrowthRate } from '@/domain/classification.js'
+
+const BASE = CONFIG.MODEL.CLASS_BASELINE_ML_PER_M
+const [R1, R2, R3, R4] = CONFIG.MODEL.GROWTH_RATE_CUTOFFS
+const curveAt = (rate, age) => BASE * Math.pow(1 + rate, age)
+
 export const formulas = {
-  // Four threshold curves as requested:
-  // htTLV = 600 * (1.01)^age
-  calculateThreshold01: (age) => 600 * Math.pow(1.01, age),
-  // htTLV = 600 * (1.02)^age
-  calculateThreshold02: (age) => 600 * Math.pow(1.02, age),
-  // htTLV = 600 * (1.03)^age
-  calculateThreshold03: (age) => 600 * Math.pow(1.03, age),
-  // htTLV = 600 * (1.04)^age
-  calculateThreshold04: (age) => 600 * Math.pow(1.04, age),
+  // Four threshold curves (config-driven).
+  calculateThreshold01: (age) => curveAt(R1, age),
+  calculateThreshold02: (age) => curveAt(R2, age),
+  calculateThreshold03: (age) => curveAt(R3, age),
+  calculateThreshold04: (age) => curveAt(R4, age),
 
-  // Backwards-compatible names used elsewhere in the app:
-  calculatePG3Threshold: (age) => formulas.calculateThreshold04(age),
-  calculatePG2Threshold: (age) => formulas.calculateThreshold03(age),
+  // Backwards-compatible aliases still used by the (soon-migrated) import path.
+  calculatePG3Threshold: (age) => curveAt(R4, age),
+  calculatePG2Threshold: (age) => curveAt(R3, age),
 
-  generateLineData1: (length, startAge) => Array.from({ length }, (_, i) => {
-    const age = startAge + i;
-    return { x: age, y: formulas.calculateThreshold04(age) };
-  }),
-  generateLineData2: (length, startAge) => Array.from({ length }, (_, i) => {
-    const age = startAge + i;
-    return { x: age, y: formulas.calculateThreshold03(age) };
-  }),
+  // Config-driven helpers for new callers.
+  thresholdFor: (rate, age) => curveAt(rate, age),
+  curves: CONFIG.MODEL.GROWTH_RATE_CUTOFFS.map((r) => (age) => curveAt(r, age)),
 
-  // Updated liver growth rate formula per requested steps:
-  // 1) divide htTLV by 600
-  // 2) take the age-th root of that: (htTLV / 600)^(1/age)
-  // 3) subtract 1
-  // 4) divide by 100
-  // LGR = ((htTLV / 600)^(1/age) - 1) / 100
-  calculateLiverGrowthRate: (age, htlv) => {
-    const a = Number(age);
-    const h = Number(htlv);
-    if (!Number.isFinite(a) || a <= 0) return null;
-    if (!Number.isFinite(h) || h <= 0) return null;
-    const ratio = h / 600;
-    const root = Math.pow(ratio, 1 / a);
-    // Return fractional annual growth rate (e.g., 0.03 for 3%/y)
-    return root - 1;
-  }
-  // Add more formulas as needed
-};
+  // Single source of truth for LGR (domain module).
+  calculateLiverGrowthRate: liverGrowthRate,
+}
