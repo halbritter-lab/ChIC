@@ -1,7 +1,124 @@
 import { ref } from 'vue';
 import ExcelJS from 'exceljs';
-import { formulas } from '@/config/formulasConfig';
 import { CONFIG } from '@/config/config';
+import {
+  heightAdjustedTLV,
+  classify,
+  liverGrowthRate,
+  legacyPgToLetter,
+  formatHtTLV,
+} from '@/domain/classification.js';
+
+// Column order shared by every export format.
+const EXPORT_COLUMNS = [
+  'ID',
+  'Age (y)',
+  'Height (m)',
+  'TLV (ml)',
+  'htTLV',
+  'Class',
+  'LGR (%/y)',
+  'htTLV_estimated',
+  'estimatedHtTLV',
+  'estimatedClass',
+  'Group',
+  'GroupColor',
+];
+
+// Parse a height cell (may use a comma decimal separator). Returns a positive number or null.
+function parseHeight(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const h = Number(String(raw).replace(',', '.'));
+  return Number.isFinite(h) && h > 0 ? h : null;
+}
+
+/**
+ * Pure import transform: raw file rows -> canonical data-point rows.
+ * - Rows missing id/age/tlv, or with out-of-range age/tlv, are dropped.
+ * - Measured height  -> htTLV, class computed and flagged as validated.
+ * - Missing height   -> htTLV estimated from the cohort mean height (over rows that
+ *                        HAVE a height); if no row has a height, from the assumed
+ *                        default. Estimates go to estimatedHtTLV/estimatedClass and
+ *                        the row is flagged (class stays null — not a validated class).
+ * - Any incoming legacy `pg`/`class` is mapped for information only; class is always
+ *   recomputed from the data.
+ */
+export function processRows(rawRows) {
+  if (!Array.isArray(rawRows)) return [];
+
+  // Pass 1: validate + parse, accumulating the cohort mean over rows that have a height.
+  const parsed = [];
+  let heightSum = 0;
+  let heightCount = 0;
+  for (const row of rawRows) {
+    if (row == null || row.id == null || row.age == null || row.tlv == null) continue;
+    const age = Number(row.age);
+    const tlv = Number(row.tlv);
+    if (
+      !Number.isFinite(age) || !Number.isFinite(tlv) ||
+      age < CONFIG.AGE_MIN || age > CONFIG.AGE_MAX ||
+      tlv < CONFIG.TLV_MIN || tlv > CONFIG.TLV_MAX
+    ) {
+      continue;
+    }
+    const height = parseHeight(row.height);
+    if (height !== null) {
+      heightSum += height;
+      heightCount += 1;
+    }
+    parsed.push({ raw: row, id: String(row.id), age, tlv, height });
+  }
+
+  const cohortMeanHeight = heightCount > 0 ? heightSum / heightCount : null;
+  const estimateHeight = cohortMeanHeight ?? CONFIG.MODEL.ASSUMED_HEIGHT_M;
+
+  // Pass 2: classify each surviving row.
+  return parsed.map(({ raw, id, age, tlv, height }) => {
+    // Informational only — the file's own class label is never trusted for classification.
+    const importedClass = legacyPgToLetter(raw.pg ?? raw.class ?? null);
+
+    const measured = height !== null;
+    const usedHeight = measured ? height : estimateHeight;
+    const htlv = heightAdjustedTLV(tlv, usedHeight);
+    const cls = classify(htlv, age);
+    const lgrFraction = age >= CONFIG.AGE_MIN_LGR ? liverGrowthRate(age, htlv) : null;
+
+    return {
+      id,
+      age,
+      height,
+      tlv,
+      htlv: measured ? htlv : null,
+      htlvEstimated: !measured,
+      estimatedHtTLV: measured ? null : htlv,
+      class: measured ? cls : null,
+      estimatedClass: measured ? null : cls,
+      lgr: lgrFraction !== null ? (lgrFraction * 100).toFixed(2) : 'N/A',
+      importedClass,
+      group: raw.group || '',
+      groupColor: raw.groupColor || null,
+    };
+  });
+}
+
+/** Pure export transform: canonical rows -> export-shaped rows (one object per row). */
+export function buildExportRows(points) {
+  if (!Array.isArray(points)) return [];
+  return points.map((p) => ({
+    'ID': p.id,
+    'Age (y)': p.age,
+    'Height (m)': p.height ?? '',
+    'TLV (ml)': p.tlv,
+    'htTLV': p.htlv != null ? formatHtTLV(p.htlv) : '',
+    'Class': p.class ?? '',
+    'LGR (%/y)': p.lgr,
+    'htTLV_estimated': !!p.htlvEstimated,
+    'estimatedHtTLV': p.estimatedHtTLV != null ? formatHtTLV(p.estimatedHtTLV) : '',
+    'estimatedClass': p.estimatedClass ?? '',
+    'Group': p.group || '',
+    'GroupColor': p.groupColor || '',
+  }));
+}
 
 export function useDataPersistence() {
   const loadedData = ref([]); // Ref to hold data loaded from files
@@ -47,52 +164,7 @@ export function useDataPersistence() {
     fileInput.click();
   };
 
-  // --- Data Loading Logic (adapted from App.vue) ---
-
-  const processLoadedRow = (row) => {
-     // Basic validation
-    if (row.id == null || row.age == null || row.tlv == null) {
-        console.warn('Skipping row due to missing id, age, or tlv:', row);
-        return null;
-    }
-
-    const ageValue = Number(row.age);
-    const tlvValue = Number(row.tlv);
-
-    if (isNaN(ageValue) || isNaN(tlvValue) || ageValue < CONFIG.AGE_MIN || ageValue > CONFIG.AGE_MAX || tlvValue < CONFIG.TLV_MIN || tlvValue > CONFIG.TLV_MAX ) {
-         console.warn('Skipping row due to invalid age or tlv:', row);
-         return null; // Skip invalid rows silently for now, maybe add user feedback later
-    }
-
-
-    // Compute height-adjusted TLV (htLV). If no height provided in row, fall back to normalization factor.
-    const heightValue = row.height !== undefined && row.height !== null ? Number(String(row.height).replace(',', '.')) : null;
-    const computedHTLV = heightValue && !Number.isNaN(heightValue) && heightValue > 0 ? (tlvValue / heightValue) : (tlvValue / CONFIG.NORMALIZATION_FACTOR);
-    let computedPG = null;
-    if (computedHTLV > formulas.calculatePG3Threshold(ageValue)) {
-      computedPG = 'PG3';
-    } else if (computedHTLV > formulas.calculatePG2Threshold(ageValue) &&
-               computedHTLV <= formulas.calculatePG3Threshold(ageValue)) {
-      computedPG = 'PG2';
-    } else {
-      computedPG = 'PG1';
-    }
-    const computedLGR = ageValue >= CONFIG.AGE_MIN_LGR ? formulas.calculateLiverGrowthRate(ageValue, computedHTLV) : null;
-
-    return {
-        id: String(row.id), // Ensure ID is a string
-        age: ageValue,
-        height: heightValue, // Store the height value
-        tlv: tlvValue,
-        htlv: computedHTLV, // numeric value for charting
-        htlv_formatted: computedHTLV.toFixed(2), // formatted string for display
-        pg: computedPG,
-        lgr: computedLGR !== null ? (computedLGR * 100).toFixed(2) : 'N/A',
-        group: row.group || '', // Preserve grouping info if present
-        groupColor: row.groupColor || null,
-    };
-  };
-
+  // --- Data Loading Logic ---
 
   const loadDataFromJson = (file) => {
     const reader = new FileReader();
@@ -102,8 +174,7 @@ export function useDataPersistence() {
         if (!Array.isArray(fileData)) {
           throw new Error('JSON file does not contain an array.');
         }
-        const processedData = fileData.map(processLoadedRow).filter(p => p !== null); // Process and filter invalid rows
-        loadedData.value = processedData;
+        loadedData.value = processRows(fileData);
       } catch (err) {
         console.error('Error loading JSON data:', err);
         errorLoading.value = `Error loading JSON: ${err.message}`;
@@ -111,9 +182,9 @@ export function useDataPersistence() {
       }
     };
     reader.onerror = (err) => {
-        console.error('FileReader error:', err);
-        errorLoading.value = 'Error reading file.';
-        loadedData.value = [];
+      console.error('FileReader error:', err);
+      errorLoading.value = 'Error reading file.';
+      loadedData.value = [];
     };
     reader.readAsText(file);
   };
@@ -123,20 +194,20 @@ export function useDataPersistence() {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(arrayBuffer);
-      
+
       const worksheet = workbook.worksheets[0];
       if (!worksheet) {
         throw new Error('Excel file contains no sheets.');
       }
-      
-      // Convert worksheet to JSON
+
+      // Convert worksheet to an array of row objects keyed by header.
       const jsonData = [];
       const headerRow = worksheet.getRow(1);
       const headers = [];
       headerRow.eachCell((cell, colNumber) => {
         headers[colNumber] = cell.value;
       });
-      
+
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return; // Skip header row
         const rowData = {};
@@ -148,12 +219,8 @@ export function useDataPersistence() {
         });
         jsonData.push(rowData);
       });
-      
-      if (!Array.isArray(jsonData)) {
-        throw new Error('Could not parse sheet data into an array.');
-      }
-      const processedData = jsonData.map(processLoadedRow).filter(p => p !== null); // Process and filter invalid rows
-      loadedData.value = processedData;
+
+      loadedData.value = processRows(jsonData);
     } catch (err) {
       console.error('Error reading Excel data:', err);
       errorLoading.value = `Error loading Excel: ${err.message}`;
@@ -186,9 +253,9 @@ export function useDataPersistence() {
           headers.forEach((header, index) => {
             const value = values[index];
             // Try to convert to number if it looks like one
-            if (value === '') {
+            if (value === '' || value === undefined) {
               rowData[header] = null;
-            } else if (!isNaN(value) && value !== '') {
+            } else if (!isNaN(value)) {
               rowData[header] = Number(value);
             } else {
               rowData[header] = value;
@@ -198,11 +265,7 @@ export function useDataPersistence() {
           jsonData.push(rowData);
         }
 
-        if (!Array.isArray(jsonData)) {
-          throw new Error('Could not parse CSV data into an array.');
-        }
-        const processedData = jsonData.map(processLoadedRow).filter(p => p !== null);
-        loadedData.value = processedData;
+        loadedData.value = processRows(jsonData);
       } catch (err) {
         console.error('Error loading CSV data:', err);
         errorLoading.value = `Error loading CSV: ${err.message}`;
@@ -217,28 +280,14 @@ export function useDataPersistence() {
     reader.readAsText(file);
   };
 
-
-  // --- Data Saving Logic (adapted from App.vue) ---
+  // --- Data Saving Logic ---
 
   const saveDataAsJson = (dataToSave) => {
     if (!Array.isArray(dataToSave)) {
-        console.error('Data to save is not an array');
-        return;
+      console.error('Data to save is not an array');
+      return;
     }
-    // Format data to match table columns: ID, Age (y), Height (m), TLV (ml), htTLV, Class, LGR (%/y)
-    const formattedData = dataToSave.map(point => ({
-      ID: point.id,
-      'Age (y)': point.age,
-      'Height (m)': point.height || '',
-      'TLV (ml)': point.tlv,
-      htTLV: point.htlv_formatted || (point.htlv ? Number(point.htlv).toFixed(2) : ''),
-      Class: point.pg,
-      'LGR (%/y)': point.lgr,
-      Group: point.group || '',
-      GroupColor: point.groupColor || ''
-    }));
-    
-    const dataStr = JSON.stringify(formattedData, null, 2); // Pretty print JSON
+    const dataStr = JSON.stringify(buildExportRows(dataToSave), null, 2); // Pretty print JSON
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     const exportFileDefaultName = `pld_data_${new Date().toISOString().split('T')[0]}.json`;
 
@@ -249,66 +298,42 @@ export function useDataPersistence() {
   };
 
   const downloadDataAsExcel = async (dataToSave) => {
-     if (!Array.isArray(dataToSave)) {
-        console.error('Data to save is not an array');
-        return;
+    if (!Array.isArray(dataToSave)) {
+      console.error('Data to save is not an array');
+      return;
     }
     try {
-      // Prepare data for saving to match table format
-        const worksheetData = dataToSave.map(point => ({
-          ID: point.id,
-          'Age (y)': point.age,
-          'Height (m)': point.height ? parseFloat(point.height) : '',
-          'TLV (ml)': point.tlv,
-          htTLV: point.htlv ? parseFloat(Number(point.htlv).toFixed(2)) : '',
-          Class: point.pg,
-          'LGR (%/y)': point.lgr ? parseFloat(point.lgr) : '',
-          Group: point.group || '',
-          GroupColor: point.groupColor || ''
-        }));
+      const worksheetData = buildExportRows(dataToSave);
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('PLD_Data');
-      
-      // Add headers matching table columns with number formatting
-      worksheet.columns = [
-        { header: 'ID', key: 'ID' },
-        { header: 'Age (y)', key: 'Age (y)', numFmt: '0' },
-        { header: 'Height (m)', key: 'Height (m)', numFmt: '0.00' },
-        { header: 'TLV (ml)', key: 'TLV (ml)', numFmt: '0' },
-        { header: 'htTLV', key: 'htTLV', numFmt: '0.00' },
-        { header: 'Class', key: 'Class' },
-        { header: 'LGR (%/y)', key: 'LGR (%/y)', numFmt: '0.00' },
-        { header: 'Group', key: 'Group' },
-        { header: 'GroupColor', key: 'GroupColor' }
-      ];
-      
-      // Add data rows
+
+      // Number formats keyed by column header.
+      const numFmts = {
+        'Age (y)': '0',
+        'Height (m)': '0.00',
+        'TLV (ml)': '0',
+        'htTLV': '0.00',
+        'LGR (%/y)': '0.00',
+        'estimatedHtTLV': '0.00',
+      };
+      worksheet.columns = EXPORT_COLUMNS.map((col) => (
+        numFmts[col] ? { header: col, key: col, numFmt: numFmts[col] } : { header: col, key: col }
+      ));
+
       worksheet.addRows(worksheetData);
-      
-      // Apply number formatting to specific columns and rows
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) { // Skip header row
-          // Height (m) - column C
-          if (row.getCell(3).value !== '') row.getCell(3).numFmt = '0.00';
-          // htTLV - column E
-          if (row.getCell(5).value !== '') row.getCell(5).numFmt = '0.00';
-          // LGR (%/y) - column G
-          if (row.getCell(7).value !== '') row.getCell(7).numFmt = '0.00';
-        }
-      });
-      
+
       // Generate buffer and download
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const fileName = `pld_data_${new Date().toISOString().split('T')[0]}.xlsx`;
-      
+
       const linkElement = document.createElement('a');
       linkElement.setAttribute('href', url);
       linkElement.setAttribute('download', fileName);
       linkElement.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
     } catch (err) {
@@ -322,25 +347,11 @@ export function useDataPersistence() {
       return;
     }
     try {
-      // Prepare CSV headers to match table format
-      const headers = ['ID', 'Age (y)', 'Height (m)', 'TLV (ml)', 'htTLV', 'Class', 'LGR (%/y)', 'Group', 'GroupColor'];
-      
-      // Prepare CSV rows - simple without complex escaping
-      const rows = dataToSave.map(point => [
-        point.id || '',
-        point.age || '',
-        point.height || '',
-        point.tlv || '',
-        point.htlv ? Number(point.htlv).toFixed(2) : '',
-        point.pg || '',
-        point.lgr || '',
-        point.group || '',
-        point.groupColor || ''
-      ]);
+      const rows = buildExportRows(dataToSave).map((row) => EXPORT_COLUMNS.map((col) => row[col]));
 
       // Create CSV string with headers and rows
       const csvContent = [
-        headers.join(','),
+        EXPORT_COLUMNS.join(','),
         ...rows.map(row => row.join(','))
       ].join('\n');
 

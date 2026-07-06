@@ -39,9 +39,7 @@ export const CONFIG = {
   MODAL_MAX_WIDTH: '500px',
   MODAL_MAX_HEIGHT: '90%',
 
-  // --- Temporary backward-compat aliases (removed in Tasks 24–25 once
-  //     ChartDisplay/useDataPersistence are migrated off them) ---
+  // --- Temporary backward-compat aliases (removed once ChartDisplay is migrated) ---
   CHART_X_AXIS_MIN: 15,
   CHART_X_AXIS_MAX: 85,
-  NORMALIZATION_FACTOR: 850, // legacy nTLV baseline; usage removed in Task 24
 }
