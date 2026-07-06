@@ -77,12 +77,11 @@ git commit -m "chore: pin Node 20 and add EditorConfig"
 
 **Interfaces — Produces:** `npm run lint` (check-only), `npm run lint:fix`.
 
-- [ ] **Step 1: Swap ESLint deps (ordered, to avoid the ERESOLVE seen earlier)**
+- [ ] **Step 1: Swap ESLint deps** — pin `@eslint/js` to the SAME major as eslint (unpinned it resolves to 10, which peers `eslint@^10` → ERESOLVE):
 ```bash
-npm rm eslint eslint-plugin-vue
-npm i -D eslint@^9 eslint-plugin-vue@^10 @eslint/js globals
+npm i -D eslint@^9 eslint-plugin-vue@^10 @eslint/js@^9 globals
 ```
-Expected: installs cleanly (removing the old pair first prevents the peer conflict). If ERESOLVE still appears, re-run with `--legacy-peer-deps` and note it.
+Expected: installs cleanly. (Verified: `@eslint/js@^9` is the fix; the earlier failures were `@eslint/js@10` demanding eslint 10.)
 
 - [ ] **Step 2: Create `eslint.config.mjs`**
 ```js
@@ -115,10 +114,10 @@ git rm .eslintrc.js
 ```
 Then remove the entire `"eslintConfig": { … }` key from `package.json`.
 
-- [ ] **Step 4: Update lint scripts in `package.json`**
+- [ ] **Step 4: Update lint scripts in `package.json`** — ESLint 9 flat config removed `--ext` and `--ignore-path` (ignores live in the config; `.vue` is added by the vue plugin's `files`):
 ```json
-    "lint": "eslint . --ext .vue,.js,.mjs,.cjs",
-    "lint:fix": "eslint . --ext .vue,.js,.mjs,.cjs --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
 ```
 
 - [ ] **Step 5: Run lint; triage fallout**
