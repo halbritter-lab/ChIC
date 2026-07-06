@@ -22,7 +22,7 @@
         />
         <p>
           <a
-            href="https://github.com/halbritter-lab/pld-progression-grouper/blob/main/docs/DOCUMENTATION.md"
+            href="https://github.com/halbritter-lab/ChIC/blob/main/README.md"
             target="_blank"
             rel="noopener noreferrer"
           ><strong>Documentation Page</strong></a>

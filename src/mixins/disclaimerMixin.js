@@ -17,7 +17,7 @@ export default {
           },
           {
             title: "Contact and Queries",
-            content: "For medical relevance of the application's content, please consult with a healthcare professional. For inquiries or feedback regarding the application, please contact <a href='mailto:info@pld-progression-grouper.org'>info@pld-progression-grouper.org</a>."
+            content: "For medical relevance of the application's content, please consult with a healthcare professional. For inquiries or feedback regarding the application, please contact <a href='mailto:jan.halbritter@charite.de'>jan.halbritter@charite.de</a>."
           },
           {
             title: "Acknowledgment and Consent",
