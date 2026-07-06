@@ -5,13 +5,13 @@
 
 # Charité Imaging Classification
 
-Please explore the [Charité Imaging Classification](https://halbritter-lab.github.io/pld-progression-grouper/) app hosted on GitHub pages.
+Please explore the [Charité Imaging Classification](https://halbritter-lab.github.io/ChIC/) app hosted on GitHub pages.
 
 ## Introduction
 
 The Charité Imaging Classification (ChIC) for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on a recent study titled "ChIC Paper" [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver events in individuals with PLD.
 
-PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The presentation of PLD can vary widely with some patients never expieriencing symptoms and others requiring medication or procedural intervention, in rare cases even liver transplantation. The application uses height-adjusted total liver volume (htTLV) and age and leverages data from three tertiary care centers and two previous studies for prognostic risk stratification in PLD.
+PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The presentation of PLD can vary widely with some patients never experiencing symptoms and others requiring medication or procedural intervention, in rare cases even liver transplantation. The application uses height-adjusted total liver volume (htTLV) and age and leverages data from three tertiary care centers and two previous studies for prognostic risk stratification in PLD.
 
 
 ## Tool Development
@@ -20,7 +20,7 @@ The principle of the "Charité Imaging Classification" tool was first published 
 
 The tool was validated in a second study of only ADPLD patients in 2024. For more details on the publication, see [PMID:38101549](https://pubmed.ncbi.nlm.nih.gov/38101549/).
 
-In 2026 the calssification underwent significant revision. The new classification system has expanded to a five-group system to better cover the range of disease presentation. It also uses htTLV and an expanded endpoint "liver events" to better align with progress in the PLD field. Additionally, the classification has expanded to cover the ages 15-85 and shows improved stratification of paitents under 30. For more details on the publication, see [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/).
+In 2026 the classification underwent significant revision. The new classification system has expanded to a five-group system to better cover the range of disease presentation. It also uses htTLV and an expanded endpoint "liver events" to better align with progress in the PLD field. Additionally, the classification has expanded to cover the ages 15-85 and shows improved stratification of patients under 30. For more details on the publication, see [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/).
 
 ## Features
 
@@ -51,7 +51,7 @@ The application is built using Vue.js and Chart.js, ensuring a responsive and in
 
 2. **User Input Area**
    - **(2a) ID Field**: Where users can enter a unique identifier for the data point they are entering or analyzing.
-   - **(2b) Age Input**: Users can input the age of the patient in years (15-80 years).
+   - **(2b) Age Input**: Users can input the age of the patient in years (15-85 years).
    - **(2c) Height Input**: Users can input the patient's height in meters (for calculating height-adjusted TLV).
    - **(2d) Total Liver Volume (TLV) Input**: Users can input the total liver volume measured in milliliters.
 
@@ -110,15 +110,15 @@ The tool accepts the following query parameters:
 ### Usage examples
 - **Setting ID and age**: 
 This URL sets the patient's ID to "12345" and age to "50".
-`https://[YOUR_DOMAIN]/pld-progression-grouper/?patientId=12345&age=50`
+`https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50`
 
 - **Setting all parameters**:
 This URL sets the patient's ID to "12345", age to "50", and Total Liver Volume to "15000 ml" and acknowledges the banner.
-`https://[YOUR_DOMAIN]/pld-progression-grouper/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true`
+`https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true`
 
 - **Setting view controls**:
 This URL will hide the footer and controls but display the citation information and documentation link.
-`https://[YOUR_DOMAIN]/pld-progression-grouper/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false`
+`https://[YOUR_DOMAIN]/ChIC/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false`
 
 
 ## Data Privacy and Storage
@@ -178,9 +178,33 @@ Disclaimer for Charité Imaging Classification
 - **Acknowledgment and Consent:** By using the Charité Imaging Classification, you acknowledge having read, understood and agreed to the terms stated in this disclaimer. If you do not agree to these terms, you should not use the application.
 
 
+## Development
+
+ChIC is a Vue 3 + Vite single-page application (plain JavaScript). Requires Node 20 (see `.nvmrc`).
+
+```bash
+npm ci            # install dependencies
+npm run dev       # dev server on http://localhost:8080
+npm run build     # production build -> dist/
+npm run preview   # serve the production build locally
+```
+
+Quality gates (also enforced in CI on every pull request):
+
+```bash
+npm run lint         # ESLint 9 (flat config), check-only
+npm run format:check # Prettier
+npm run typecheck    # vue-tsc
+npm test             # Vitest
+```
+
+The clinical model lives in `src/domain/classification.js` and all tunable constants in
+`src/config/config.js`. See [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for
+architecture, conventions, and the 600-LOC / DRY-KISS-SOLID rules.
+
 ## Contributions
 
-This tool is an open-source project and contributions are welcome. Whether it's feature enhancement, bug fixing, or improvements in the algorithm, your input is valuable.
+This tool is an open-source project and contributions are welcome. Whether it's feature enhancement, bug fixing, or improvements in the algorithm, your input is valuable. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 
 ## Citation policy
@@ -191,7 +215,7 @@ This tool is an open-source project and contributions are welcome. Whether it's 
 
 ## Copyright and license
 
-- All code from this project is licensed under the "MIT No Attribution" (MIT-0) License.  For more information, please refer to the [License](LICENSE.md) file.
+- All code from this project is licensed under the MIT License. For more information, please refer to the [LICENSE](LICENSE) file.
 
 
 ## Creators and contributors
@@ -225,6 +249,11 @@ This tool is an open-source project and contributions are welcome. Whether it's 
 
 This project was developed with extensive assistance from multiple AI tools, including GPT‑4.5 Mini, Claude Haiku, GPT‑5.3 Codex, GPT‑5.5 and other AI models used throughout the development process. These tools supported code generation, debugging, refactoring and architectural guidance. The project logo was created using ChatGPT’s image generation tools.
 
+## References
+
+- Mayo Clinic ADPKD imaging classification (the analogous kidney model ChIC is built on): <https://www.mayo.edu/research/documents/pkd-center-adpkd-classification/doc-20094754>
+- Related tools from the Halbritter Lab: [ADPKD risk](https://halbritter-lab.github.io/adpkd-risk/), the predecessor [PLD progression grouper](https://halbritter-lab.github.io/pld-progression-grouper/)
+
 ## Contact
 
-If you have any questions, suggestions, or feedback, please feel free to [contact us](contact.md).
+If you have any questions, suggestions, or feedback, please email <jan.halbritter@charite.de> or open an issue on GitHub.
