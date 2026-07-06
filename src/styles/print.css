@@ -1,0 +1,213 @@
+/* Print styles */
+@media print {
+  /* Hide non-essential elements when printing */
+  .footer,
+  .action-buttons,
+  .data-points-table-container,
+  .faq-modal-overlay {
+    display: none !important;
+  }
+
+  /* Show and center ribbon header */
+  .ribbon {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px !important;
+    margin-bottom: 10px;
+    text-align: center;
+    page-break-after: avoid;
+    border: none;
+    background: white !important;
+  }
+
+  .ribbon-left {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .ribbon-right {
+    display: none !important;
+  }
+
+  .app-logo {
+    max-width: 40px !important;
+    max-height: 40px !important;
+    display: block !important;
+  }
+
+  .title-container {
+    display: block !important;
+    text-align: center;
+  }
+
+  .app-title {
+    font-size: 14px !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  .app-version {
+    font-size: 8px !important;
+    display: block !important;
+  }
+
+  .app-commit {
+    display: inline !important;
+  }
+
+  /* Center the entire container */
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px !important;
+    max-width: 100% !important;
+  }
+
+  /* Show controls but hide print button, make input fields smaller */
+  .controls {
+    display: block !important;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .controls button[class*="print"],
+  .controls .secondary-actions {
+    display: none !important;
+  }
+
+  .left-column {
+    max-width: 100% !important;
+    min-width: auto !important;
+    flex: 0 0 auto;
+    margin-bottom: 5px;
+    width: 100%;
+  }
+
+  .input-group {
+    margin: 3px 0 !important;
+  }
+
+  .input-group label {
+    font-size: 9px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .input-group input {
+    font-size: 9px !important;
+    padding: 2px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .output-fields {
+    flex-direction: column;
+    font-size: 8px !important;
+    gap: 2px !important;
+  }
+
+  .output-field {
+    padding: 2px !important;
+    min-width: auto !important;
+    height: auto !important;
+  }
+
+  .validation-message {
+    font-size: 8px !important;
+    padding: 2px !important;
+    margin: 2px 0 !important;
+  }
+
+  /* Center and properly size chart - maintain aspect ratio */
+  .right-column {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    max-width: 500px !important;
+    flex: 0 0 auto;
+    margin: 5px auto !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .chart-container {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    margin: 5px 0 !important;
+  }
+
+  canvas {
+    max-height: none !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Keep progression groups on same page as chart */
+  .progression-groups {
+    page-break-before: avoid;
+    page-break-inside: avoid;
+    margin: 3px 0 !important;
+    gap: 10px !important;
+    display: flex !important;
+    justify-content: space-around;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .progression-group {
+    font-size: 9px !important;
+    padding: 3px !important;
+    min-width: 50px !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure the entire two-column layout stays on first page */
+  .two-column-layout {
+    page-break-inside: avoid;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    align-items: center;
+  }
+
+  /* Reduce button sizes */
+  .controls button {
+    font-size: 9px !important;
+    padding: 4px 8px !important;
+    margin: 2px !important;
+  }
+
+  /* Keep disclaimer visible */
+  .disclaimer-modal-overlay {
+    display: none !important;
+  }
+
+  /* Force single page print */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    orphans: 1;
+    widows: 1;
+  }
+
+  body {
+    margin: 0;
+    page-break-after: avoid;
+  }
+
+  * {
+    page-break-inside: avoid;
+  }
+}

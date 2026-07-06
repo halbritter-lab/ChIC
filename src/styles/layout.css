@@ -1,0 +1,50 @@
+/* Two column layout */
+.two-column-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  margin: 20px 0;
+  text-align: left;
+  align-items: flex-start; /* align left controls with top of chart */
+}
+
+.left-column {
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+  padding-top: 24px; /* small offset to line up inputs with chart top */
+}
+
+.right-column {
+  flex: 2;
+  min-width: 400px;
+}
+
+/* Responsive: stack columns on smaller screens */
+@media (max-width: 800px) {
+  .two-column-layout {
+    flex-direction: column;
+  }
+  
+  .left-column,
+  .right-column {
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  /* Fix chart container to maintain aspect ratio on mobile with width constraint */
+  .chart-container {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+

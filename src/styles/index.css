@@ -1,0 +1,8 @@
+/* ChIC global styles barrel — imports per-concern modules.
+   Order matters: modules are concatenated in source order to preserve the CSS cascade. */
+@import './base.css';
+@import './layout.css';
+@import './progression-groups.css';
+@import './controls.css';
+@import './table.css';
+@import './print.css';
