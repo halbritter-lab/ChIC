@@ -38,8 +38,4 @@ export const CONFIG = {
   // --- UI ---
   MODAL_MAX_WIDTH: '500px',
   MODAL_MAX_HEIGHT: '90%',
-
-  // --- Temporary backward-compat aliases (removed once ChartDisplay is migrated) ---
-  CHART_X_AXIS_MIN: 15,
-  CHART_X_AXIS_MAX: 85,
 }

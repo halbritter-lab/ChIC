@@ -8,15 +8,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, defineProps, defineExpose } from 'vue';
 import { Chart, registerables, Filler } from 'chart.js'; // Added Filler for background fills
-import annotationPlugin from 'chartjs-plugin-annotation'; // Import annotation plugin
 import { formulas } from '@/config/formulasConfig'; // Import formulas
-import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits
+import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits, ticks and class colors
 
 // Register Chart.js components and plugins
 Chart.register(...registerables);
 Chart.register(Filler); // Register Filler for fills like '+1', 'origin'
-// Keep annotation plugin registered if other annotations might be used, otherwise remove.
-// Chart.register(annotationPlugin); 
 
 // Props definition
 const props = defineProps({
@@ -31,7 +28,6 @@ const chartCanvas = ref(null);
 const overlayCanvas = ref(null);
 let chartInstance = null;
 let isInitialLoad = true; // Track if this is the first render
-let previousDataLength = 0; // Track previous data length to detect batch uploads
 
 // Function to draw ring overlay around selected point
 const drawRingOverlay = () => {
@@ -90,8 +86,8 @@ const initChart = () => {
     const tickColor = isDark ? '#dfeaf7' : undefined;
 
     // Generate data for background lines/areas based on formulas
-    const lineLength = CONFIG.CHART_X_AXIS_MAX - CONFIG.CHART_X_AXIS_MIN + 1;
-    const startAge = CONFIG.CHART_X_AXIS_MIN;
+    const lineLength = CONFIG.CHART_X_MAX - CONFIG.CHART_X_MIN + 1;
+    const startAge = CONFIG.CHART_X_MIN;
     // Generate line data for each threshold curve (T1..T4)
     const lineDataT1 = Array.from({ length: lineLength }, (_, i) => {
       const a = startAge + i;
@@ -110,9 +106,9 @@ const initChart = () => {
       return { x: a, y: formulas.calculateThreshold04(a) };
     });
 
-    // Dataset for the absolute top of the chart area (used for filling down)
-    // Use the chart's y-axis max (10100) so the ceiling sits above threshold curves
-    const CEILING_Y = 10100;
+    // Dataset for the absolute top of the chart area (used for filling down).
+    // Use the chart's y-axis max so the ceiling sits above the threshold curves.
+    const CEILING_Y = CONFIG.CHART_Y_MAX;
     const ceilingData = Array.from({ length: lineLength }, (_, i) => ({ x: startAge + i, y: CEILING_Y }));
 
     // Note: using a dataset for the left-side (T4->y-axis) fill so it animates with the chart.
@@ -131,26 +127,26 @@ const initChart = () => {
           showLine: true,
           pointRadius: 0,
           fill: '+1', // fill down to T4
-          backgroundColor: '#BFE9FF33', // pastel blue (unchanged)
+          backgroundColor: CONFIG.CLASS_COLORS.E.band, // Class E band (above T4)
           order: 1
         },
         // Threshold T4 (highest) - visible line only (no fill)
         {
           label: 'Threshold 4',
           data: lineDataT4,
-          borderColor: '#BFE9FF',
+          borderColor: CONFIG.CLASS_COLORS.E.border,
           borderWidth: 3,
           showLine: true,
           pointRadius: 0,
           fill: false,
           order: 2
         },
-        // Animated polygon dataset to shade the area between T4 curve and the y-axis (CHART_X_AXIS_MIN)
+        // Animated polygon dataset to shade the area between T4 curve and the y-axis (CHART_X_MIN)
         {
           type: 'line',
           label: '',
           data: (function(){
-            const leftX = CONFIG.CHART_X_AXIS_MIN;
+            const leftX = CONFIG.CHART_X_MIN;
             const rightSide = lineDataT4.map(p => ({ x: p.x, y: p.y }));
             const leftSide = lineDataT4.map(p => ({ x: leftX, y: p.y })).reverse();
             return rightSide.concat(leftSide);
@@ -163,7 +159,7 @@ const initChart = () => {
           tension: 0,
           spanGaps: true,
           fill: true,
-          backgroundColor: '#BFE9FF33',
+          backgroundColor: CONFIG.CLASS_COLORS.E.band,
           isFill: true,
           order: 1.5
         },
@@ -172,24 +168,24 @@ const initChart = () => {
         {
           label: 'Threshold 3',
           data: lineDataT3,
-          borderColor: '#64C8FF',
+          borderColor: CONFIG.CLASS_COLORS.D.border,
           borderWidth: 2,
           showLine: true,
           pointRadius: 0,
           fill: '-1', // fill up to previous dataset (T4) — band between T3 and T4
-          backgroundColor: '#64C8FF33', // match PG4 box shading (sky blue translucent)
+          backgroundColor: CONFIG.CLASS_COLORS.D.band, // Class D band (sky blue translucent)
           order: 3
         },
         // Threshold T2
         {
           label: 'Threshold 2',
           data: lineDataT2,
-          borderColor: '#8E9BFF',
+          borderColor: CONFIG.CLASS_COLORS.C.border,
           borderWidth: 2,
           showLine: true,
           pointRadius: 0,
           fill: '-1', // fill up to previous dataset (T3)
-          backgroundColor: '#8E9BFF33', // match PG3 box shading (periwinkle translucent)
+          backgroundColor: CONFIG.CLASS_COLORS.C.band, // Class C band (periwinkle translucent)
           order: 4
         },
         // T1: two separate fill datasets to control above/below fills, plus baseline and visible line
@@ -205,7 +201,7 @@ const initChart = () => {
           spanGaps: true,
           tension: 0,
           fill: '-1', // fill up to previous dataset (T2)
-          backgroundColor: 'rgba(43,27,111,0.20)', // PG2 box shading (slightly darker to match PG2 box)
+          backgroundColor: CONFIG.CLASS_COLORS.B.band, // Class B band (between T1 and T2)
           order: 4.5
         },
         // Fill between T1 and baseline (PG1 color)
@@ -220,7 +216,7 @@ const initChart = () => {
           spanGaps: true,
           tension: 0,
           fill: '+1', // fill down to next dataset (baseline)
-          backgroundColor: 'rgba(60,60,60,0.24)', // PG1 translucent (match .PG1 color, darker)
+          backgroundColor: CONFIG.CLASS_COLORS.A.band, // Class A band (between T1 and baseline)
           order: 4.6
         },
         // Baseline dataset used as fill target for T1 below-fill
@@ -240,7 +236,7 @@ const initChart = () => {
           type: 'line',
           label: 'Threshold 1',
           data: lineDataT1,
-          borderColor: '#2B1B6F',
+          borderColor: CONFIG.CLASS_COLORS.B.border,
           borderWidth: 2,
           showLine: true,
           pointRadius: 0,
@@ -256,9 +252,9 @@ const initChart = () => {
             y: p.htlv,
             id: p.id,
             group: p.group,
-            backgroundColor: p.groupColor || '#180C0C'
+            backgroundColor: p.groupColor || CONFIG.DEFAULT_POINT_COLOR
           })),
-          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : '#180C0C'),
+          pointBackgroundColor: context => (context.raw ? context.raw.backgroundColor : CONFIG.DEFAULT_POINT_COLOR),
           pointBorderColor: '#ffffff',
           pointBorderWidth: 0,
           pointRadius: 6,
@@ -310,8 +306,8 @@ const initChart = () => {
             ticks: {
               color: tickColor
             },
-            min: CONFIG.CHART_X_AXIS_MIN, // Use config value
-            max: CONFIG.CHART_X_AXIS_MAX  // Use config value
+            min: CONFIG.CHART_X_MIN,
+            max: CONFIG.CHART_X_MAX
           },
           y: {
             type: 'logarithmic',
@@ -331,17 +327,15 @@ const initChart = () => {
               color: tickColor,
               autoSkip: false,
               callback: function(value) {
-                const marks = [600, 800, 1000, 2000, 4000, 6000, 8000, 10000];
-                return marks.includes(value) ? value.toLocaleString() : '';
+                return CONFIG.CHART_Y_TICKS.includes(value) ? value.toLocaleString() : '';
               }
             },
-            min: 600,
-            max: 10100,
+            min: CONFIG.CHART_Y_MIN,
+            max: CONFIG.CHART_Y_MAX,
             // Force specific tick marks on the logarithmic axis
             afterBuildTicks: function(scale) {
-                const marks = [600, 800, 1000, 2000, 4000, 6000, 8000, 10000];
-              // Replace automatically generated ticks with our marks
-              scale.ticks = marks.map(v => ({ value: v }));
+              // Replace automatically generated ticks with our configured marks
+              scale.ticks = CONFIG.CHART_Y_TICKS.map(v => ({ value: v }));
             }
           }
         },
@@ -380,7 +374,7 @@ const updateChart = (shouldAnimate = true) => {
     y: p.htlv,
     id: p.id,
     group: p.group,
-    backgroundColor: p.groupColor || '#180C0C'
+    backgroundColor: p.groupColor || CONFIG.DEFAULT_POINT_COLOR
   }));
   
   if (shouldAnimate) {
@@ -404,10 +398,33 @@ const updateChartPoint = (index, sample) => {
   if (pdIndex === -1 || !chartInstance.data.datasets[pdIndex].data[index]) return;
 
   const chartPoint = chartInstance.data.datasets[pdIndex].data[index];
-  chartPoint.backgroundColor = sample.groupColor || '#180C0C'; // Update color (original default)
+  chartPoint.backgroundColor = sample.groupColor || CONFIG.DEFAULT_POINT_COLOR; // Update color (original default)
   chartPoint.group = sample.group; // Update group info for tooltip
 
   chartInstance.update(); // Update the chart to reflect changes
+};
+
+// Update a single patient point's colour + group label from (index, color, group).
+// Called imperatively by App.vue when a row's group/colour is edited in the table.
+const updatePointStyle = (index, color, group) => {
+  if (!chartInstance) return;
+  const pdIndex = chartInstance.data.datasets.findIndex(d => d.label === 'Patient Data');
+  if (pdIndex === -1) return;
+  const chartPoint = chartInstance.data.datasets[pdIndex].data[index];
+  if (!chartPoint) return;
+  chartPoint.backgroundColor = color || CONFIG.DEFAULT_POINT_COLOR;
+  chartPoint.group = group;
+  chartInstance.update();
+};
+
+// Clear ONLY the patient/selected points — never the threshold-curve or class-fill datasets.
+const clearChart = () => {
+  if (!chartInstance) return;
+  for (const label of ['Patient Data', 'Selected Point']) {
+    const i = chartInstance.data.datasets.findIndex(d => d.label === label);
+    if (i !== -1) chartInstance.data.datasets[i].data = [];
+  }
+  chartInstance.update();
 };
 
 // Function to download the chart as PNG
@@ -445,8 +462,8 @@ const downloadChart = () => {
   link.click();
 };
 
-// Expose downloadChart and updateChartPoint functions so they can be called from parent if needed
-defineExpose({ downloadChart, updateChartPoint });
+// Expose imperative chart operations to the parent (App.vue) via its template ref.
+defineExpose({ downloadChart, updateChartPoint, updatePointStyle, clearChart });
 
 onMounted(() => {
   initChart();
@@ -468,12 +485,10 @@ watch([
 ], () => {
   if (!isInitialLoad) {
     // After initial load, always animate data changes
-    previousDataLength = props.dataPoints.length;
     updateChart(true);
   } else {
     // On initial load, mark it as done and animate if there's data
     isInitialLoad = false;
-    previousDataLength = props.dataPoints.length;
     // Animate on initial load if data is present
     updateChart(props.dataPoints.length > 0);
   }
