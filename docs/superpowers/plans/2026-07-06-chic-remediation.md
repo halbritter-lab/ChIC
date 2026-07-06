@@ -1,193 +1,56 @@
-# ChIC Remediation Implementation Plan
+# ChIC Remediation Implementation Plan (rev 2 — post Codex NO-GO)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Fix all issues from the 2026-07-06 repo review — correctness bugs, monolith refactor, tooling/CI, deploy/branch — grounding the classification in the ChIC manuscript, without changing validated clinical behavior.
+**Goal:** Fix all issues from the 2026-07-06 review — correctness bugs, monolith refactor, tooling/CI, deploy/branch — grounding classification in the ChIC manuscript, without changing validated clinical behavior.
 
-**Architecture:** Extract the clinical model into one pure `src/domain/classification.js` used by both entry paths; pin it with Vitest; decompose `App.vue`/`app.css` under a 600-LOC cap via behavior-preserving extraction; modernize tooling (ESLint 9 flat, Prettier, Vitest, typecheck); split CI/deploy; fix the base path and default branch.
+**Architecture:** One pure `src/domain/classification.js` (fed by a central `CONFIG`) used by both entry paths; pin it with Vitest; de-monolith `App.vue`/`app.css` under a 600-LOC cap by **extracting and wiring in the same phase** (so any touched over-cap file lands under cap); modernize tooling; split CI/deploy; fix base path and default branch.
 
-**Tech Stack:** Vue 3 (`<script setup>` + Composition API), Vite 6, Chart.js 4, exceljs, vite-plugin-pwa, ESLint 9 flat, Prettier, Vitest + @vue/test-utils + jsdom.
-
-**Source spec:** `docs/superpowers/specs/2026-07-06-chic-remediation-design.md` (rev 2, Codex-reviewed). Read §2 (clinical contract) before Phase B.
+**Source spec:** `docs/superpowers/specs/2026-07-06-chic-remediation-design.md` (rev 2). Read §2 before Phase B.
 
 ## Global Constraints
 
-- **600 LOC hard cap** per `.vue`/`.js`/`.css` file. New files born under it.
-- **Behavior-preserving refactor:** move code, don't rewrite. Verify with `npm run build` + manual smoke.
-- **Clinical contract (spec §2):** `htTLV = TLV/height`; classes A–E via `600·1.01^age … 600·1.04^age`; `LGR = (htTLV/600)^(1/age) − 1`; `≥` boundaries on **unrounded** htTLV.
-- **Never** reintroduce `/850` normalization or present an estimated class as validated.
-- **Node ≥ 20.** Every code change ends green on `npm run lint`, `npm test`, `npm run build`.
-- **Commit frequently**, one deliverable per task. Commit trailer:
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` + `Claude-Session: …`.
-- **NO HARDCODING — everything configurable.** Every clinical and display constant lives in `src/config/config.js` and is read from there: the model itself (baseline `600` ml/m, growth-rate cutoffs `[0.01,0.02,0.03,0.04]`), age/TLV/height validation ranges, chart x/y domain, tick marks, and class colors. No magic numbers in components or the domain module — they import from config. Config is the single source of truth (Task 10 builds it; it is created **first** in Phase B).
-- **D8 age range — RESOLVED to fit the manuscript: `AGE_MIN=15`, `AGE_MAX=85`** (paper extends the lower bound to 15; README states 85; cohort max 81). Chart x-axis matches (`CHART_X_MIN=15`, `CHART_X_MAX=85`). All read from `CONFIG`.
+- **600 LOC hard cap** per `.vue`/`.js`/`.css`. Any file you touch that is over cap must be brought under cap **in the same phase** (never commit an over-cap file you modified without reducing it).
+- **Behavior-preserving refactor:** move code, don't rewrite. Preserve exact visuals (copy the real `.PG1`–`.PG5` / chart colors), query-param semantics, and feature behavior.
+- **Clinical contract (spec §2):** `htTLV = TLV/height`; classes A–E via `600·1.01^age … 600·1.04^age`; `LGR = (htTLV/600)^(1/age) − 1`; `≥` on **unrounded** htTLV.
+- **NO HARDCODING:** every model/display constant lives in `src/config/config.js`; domain + chart import from it. Assumed height is **`CONFIG.MODEL.ASSUMED_HEIGHT_M`** (one canonical key, used everywhere).
+- **Row schema (canonical, defined once):**
+  ```
+  { id:string, age:number, height:number|null, tlv:number,
+    htlv:number|null,            // measured tlv/height; null if height absent
+    htlvEstimated:boolean,
+    estimatedHtTLV:number|null,  // from estimated height; null if measured
+    class:'A'..'E'|null,         // validated; null when estimated
+    estimatedClass:'A'..'E'|null,// from estimated htTLV; null when measured
+    lgr:string, group:string, groupColor:string|null }
+  ```
+  UI renders `class`; if `htlvEstimated`, renders `estimatedClass`/`estimatedHtTLV` with distinct treatment. Legacy `pg` codes are mapped to letters **only at the import boundary** via `legacyPgToLetter`; internal state uses `class`.
+- **Age range:** `AGE_MIN=15`, `AGE_MAX=85` (fits manuscript + README), all read from `CONFIG` incl. chart x-axis, validation, query-param clamping, and UI copy.
+- **Git:** every task creating/deleting files uses **`git add -A && git commit`** (never `-am` for new files). Node ≥ 20. Each task ends green on `npm run lint && npm test && npm run build`. Commit trailer: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` + `Claude-Session: …`.
 
-## Execution phases (order matters)
+## Phases (strict order)
 
-A. Toolchain foundation (Tasks 1–5) → B. Correctness, TDD (6–14) → C. Refactor under green tests (15–23) → D. Deploy/rebrand (24–26) → E. CI/hygiene/infra (27–32) → F. Branch surgery, last (33).
+A. Toolchain (1–6) → B. Config + domain, pure (7–12) → C. De-monolith App.vue **while** wiring domain + pg→class migration (13–23) → D. Import + chart correctness (24–26) → E. Deploy/rebrand (27–29) → F. CI/hygiene/infra (30–35) → G. App smoke tests (36) → H. Branch surgery, last (37).
 
 ---
 
 ## Phase A — Toolchain foundation
 
-### Task 1: Editor & Node pinning
+### Task 1: Editor & Node pinning — ✅ DONE (commit 32f4020)
+`.nvmrc` (20), `.editorconfig`, `package.json` `engines.node>=20`.
 
-**Files:**
-- Create: `.nvmrc`, `.editorconfig`
-- Modify: `package.json` (add `engines`)
+### Task 2: ESLint 9 flat config — ✅ DONE (commit c238964)
+`eslint.config.mjs` (js.recommended + vue flat/essential + prettier-off), deleted `.eslintrc.js` + `eslintConfig`. **Fix that mattered:** pin `@eslint/js@^9` (unpinned resolves to 10 → ERESOLVE). `lint` is check-only (flat config drops `--ext`/`--ignore-path`). Baseline: 0 errors, 9 warnings.
 
-- [ ] **Step 1: Create `.nvmrc`**
-```
-20
-```
+### Task 3: Prettier — ✅ DONE (commit 7a8eb1c)
+`.prettierrc.json`, `.prettierignore`, `eslint-config-prettier` last in flat config, `format`/`format:check` scripts. No mass-format yet.
 
-- [ ] **Step 2: Create `.editorconfig`**
-```ini
-root = true
+### Task 4: Vitest harness
 
-[*]
-indent_style = space
-indent_size = 2
-end_of_line = lf
-charset = utf-8
-insert_final_newline = true
-trim_trailing_whitespace = true
+**Files:** Create `vitest.config.js`; modify `package.json`.
 
-[*.md]
-trim_trailing_whitespace = false
-```
-
-- [ ] **Step 3: Add `engines` to `package.json`** (after `"private": true,`)
-```json
-  "engines": { "node": ">=20" },
-```
-
-- [ ] **Step 4: Commit**
-```bash
-git add .nvmrc .editorconfig package.json
-git commit -m "chore: pin Node 20 and add EditorConfig"
-```
-
-### Task 2: ESLint 9 flat config
-
-**Files:**
-- Create: `eslint.config.mjs`
-- Delete: `.eslintrc.js`
-- Modify: `package.json` (remove `eslintConfig` block; swap deps; scripts)
-
-**Interfaces — Produces:** `npm run lint` (check-only), `npm run lint:fix`.
-
-- [ ] **Step 1: Swap ESLint deps** — pin `@eslint/js` to the SAME major as eslint (unpinned it resolves to 10, which peers `eslint@^10` → ERESOLVE):
-```bash
-npm i -D eslint@^9 eslint-plugin-vue@^10 @eslint/js@^9 globals
-```
-Expected: installs cleanly. (Verified: `@eslint/js@^9` is the fix; the earlier failures were `@eslint/js@10` demanding eslint 10.)
-
-- [ ] **Step 2: Create `eslint.config.mjs`**
-```js
-import js from '@eslint/js'
-import pluginVue from 'eslint-plugin-vue'
-import globals from 'globals'
-
-export default [
-  { ignores: ['dist/**', 'dev-dist/**', 'node_modules/**', 'public/**', 'coverage/**'] },
-  js.configs.recommended,
-  ...pluginVue.configs['flat/essential'],
-  {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: { ...globals.browser, ...globals.node },
-    },
-    rules: {
-      // Bootstrapping: keep the baseline green; tighten later.
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      'vue/multi-word-component-names': 'off',
-    },
-  },
-]
-```
-
-- [ ] **Step 3: Delete `.eslintrc.js` and the `package.json` `eslintConfig` block**
-```bash
-git rm .eslintrc.js
-```
-Then remove the entire `"eslintConfig": { … }` key from `package.json`.
-
-- [ ] **Step 4: Update lint scripts in `package.json`** — ESLint 9 flat config removed `--ext` and `--ignore-path` (ignores live in the config; `.vue` is added by the vue plugin's `files`):
-```json
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-```
-
-- [ ] **Step 5: Run lint; triage fallout**
-Run: `npm run lint`
-Expected: exits 0 (unused-vars are warnings). Record any errors; fix trivial ones (e.g. remove unused `useRoute` import in `src/router/index.js`).
-
-- [ ] **Step 6: Commit**
-```bash
-git add -A
-git commit -m "build: migrate to ESLint 9 flat config, single source of lint truth"
-```
-
-### Task 3: Prettier
-
-**Files:**
-- Create: `.prettierrc.json`, `.prettierignore`
-- Modify: `package.json` (deps, scripts), `eslint.config.mjs` (append prettier-off)
-
-- [ ] **Step 1: Install**
-```bash
-npm i -D prettier eslint-config-prettier
-```
-
-- [ ] **Step 2: Create `.prettierrc.json`**
-```json
-{ "singleQuote": true, "semi": false, "printWidth": 100, "trailingComma": "es5" }
-```
-
-- [ ] **Step 3: Create `.prettierignore`**
-```
-dist
-dev-dist
-coverage
-public
-package-lock.json
-```
-
-- [ ] **Step 4: Append `eslint-config-prettier` as the LAST element of `eslint.config.mjs`'s array**
-```js
-import prettier from 'eslint-config-prettier'
-// … existing array, then add `prettier` as the final element:
-//   ...pluginVue.configs['flat/essential'], { … }, prettier,
-```
-
-- [ ] **Step 5: Add scripts**
-```json
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-```
-
-- [ ] **Step 6: Commit (do NOT mass-format yet — that rides with WS-2 file touches)**
-```bash
-git add -A
-git commit -m "build: add Prettier with ESLint integration"
-```
-
-### Task 4: Vitest infrastructure
-
-**Files:**
-- Create: `vitest.config.js`, `src/domain/__tests__/smoke.test.js`
-- Modify: `package.json` (deps, scripts)
-
-**Interfaces — Produces:** `npm test`, `npm run coverage`.
-
-- [ ] **Step 1: Install**
-```bash
-npm i -D vitest @vue/test-utils jsdom @vitest/coverage-v8
-```
-
-- [ ] **Step 2: Create `vitest.config.js`**
+- [ ] **Step 1: Install** `npm i -D vitest @vue/test-utils jsdom @vitest/coverage-v8`
+- [ ] **Step 2: `vitest.config.js`**
 ```js
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
@@ -198,146 +61,125 @@ export default defineConfig({
   test: { environment: 'jsdom', globals: true, include: ['src/**/*.{test,spec}.js'] },
 })
 ```
+- [ ] **Step 3: Scripts** — add `"test": "vitest run"`, `"test:watch": "vitest"`, `"coverage": "vitest run --coverage"`.
+- [ ] **Step 4:** Add `coverage` to `.gitignore` and `.prettierignore` (already) / eslint ignores (already).
+- [ ] **Step 5: Commit** `git add -A && git commit -m "test: add Vitest + @vue/test-utils harness"`. (No test yet — first real test is Task 8.)
 
-- [ ] **Step 3: Write a smoke test `src/domain/__tests__/smoke.test.js`**
-```js
-import { describe, it, expect } from 'vitest'
-describe('vitest wiring', () => {
-  it('runs', () => { expect(1 + 1).toBe(2) })
-})
-```
+### Task 5: Typecheck (spec WS-3 — was missing)
 
-- [ ] **Step 4: Add scripts**
-```json
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "coverage": "vitest run --coverage",
-```
+**Files:** modify `jsconfig.json`, `package.json`.
 
-- [ ] **Step 5: Run**
-Run: `npm test`
-Expected: 1 passing test.
+- [ ] **Step 1: Install** `npm i -D vue-tsc typescript`
+- [ ] **Step 2:** `jsconfig.json` → `"target": "ESNext"`, add `"checkJs": false` (advisory; flip later), keep `paths`.
+- [ ] **Step 3: Script** — add `"typecheck": "vue-tsc --noEmit"`.
+- [ ] **Step 4: Run** `npm run typecheck` — record output (advisory; must not block the build). If it errors on JS-without-types, keep `checkJs:false` so it's a no-op scaffold for now.
+- [ ] **Step 5: Commit** `git add -A && git commit -m "build: add vue-tsc typecheck scaffold"`.
 
-- [ ] **Step 6: Commit**
-```bash
-git add -A
-git commit -m "test: add Vitest + @vue/test-utils harness"
-```
+### Task 6: Stop tracking dist/
 
-### Task 5: Stop tracking dist/, fix jsconfig
-
-**Files:** Modify `jsconfig.json`; untrack `dist/`.
-
-- [ ] **Step 1: Untrack build output**
-```bash
-git rm -r --cached dist
-```
-
-- [ ] **Step 2: Set `jsconfig.json` `target`**
-Change `"target": "es5"` → `"target": "ESNext"`.
-
-- [ ] **Step 3: Verify build still works**
-Run: `npm run build`
-Expected: succeeds (build regenerates dist locally; it's now ignored).
-
-- [ ] **Step 4: Commit**
-```bash
-git add -A
-git commit -m "chore: stop tracking dist/, modernize jsconfig target"
-```
+- [ ] **Step 1:** `git rm -r --cached dist`
+- [ ] **Step 2:** `npm run build` — succeeds (dist regenerates, now ignored).
+- [ ] **Step 3: Commit** `git add -A && git commit -m "chore: stop tracking dist/ build output"`.
 
 ---
 
-## Phase B — Correctness (TDD)
+## Phase B — Config + domain (pure; no `App.vue` touch)
 
-> Read spec §2. All thresholds/labels come from the manuscript.
-> **Task order within Phase B: build the central config (Task 10) FIRST**, then the domain module (Tasks 6–9, which import model constants from config), then wiring (Tasks 11–14).
+### Task 7: Central config — single source of truth (FIRST in Phase B)
 
-### Task 6: Domain — height-adjusted TLV
+**Files:** Rewrite `src/config/config.js`.
 
-> Depends on Task 10's `CONFIG.MODEL`.
+- [ ] **Step 1: Read the real class colors first** so nothing visual changes:
+```bash
+grep -nA3 '\.PG[1-5]' src/styles/app.css
+grep -nE "backgroundColor|borderColor|'#|rgba" src/components/ChartDisplay.vue | head -40
+```
+- [ ] **Step 2: Rewrite `src/config/config.js`** — copy the ACTUAL colors into `CLASS_COLORS` (do not invent):
+```js
+// src/config/config.js — single source of truth for all ChIC parameters.
+export const CONFIG = {
+  // --- Clinical model (manuscript; spec §2) ---
+  MODEL: {
+    CLASS_BASELINE_ML_PER_M: 600,
+    GROWTH_RATE_CUTOFFS: [0.01, 0.02, 0.03, 0.04], // A/B,B/C,C/D,D/E
+    ASSUMED_HEIGHT_M: 1.70,                          // fallback for height-less imports (flagged)
+  },
+  // --- Input validation ranges ---
+  AGE_MIN: 15, AGE_MAX: 85, AGE_MIN_LGR: 0,
+  TLV_MIN: 0, TLV_MAX: 20000,
+  HEIGHT_MIN: 0.5, HEIGHT_MAX: 2.5,
+  // --- Chart domain ---
+  CHART_X_MIN: 15, CHART_X_MAX: 85,
+  CHART_Y_MIN: 100, CHART_Y_MAX: 10500,
+  CHART_Y_TICKS: [600, 800, 1000, 2000, 4000, 6000, 8000, 10000],
+  // --- Class band colors: COPY EXACT current values for A..E from app.css/ChartDisplay ---
+  CLASS_COLORS: { A: '<copy .PG1>', B: '<copy .PG2>', C: '<copy .PG3>', D: '<copy .PG4>', E: '<copy .PG5>' },
+  // --- UI ---
+  MODAL_MAX_WIDTH: '500px', MODAL_MAX_HEIGHT: '90%',
+}
+```
+> Removed: `NORMALIZATION_FACTOR` (850), `CHART_Y_AXIS_MAX` (25), `AGE_INI`. Renamed `CHART_X_AXIS_MIN/MAX`→`CHART_X_MIN/MAX`.
+- [ ] **Step 3: Grep** `grep -rn "NORMALIZATION_FACTOR\|CHART_Y_AXIS_MAX\|CHART_X_AXIS_MIN\|CHART_X_AXIS_MAX\|AGE_INI" src` — remaining hits are in `useDataPersistence.js`/`ChartDisplay.vue`, fixed in Tasks 24–25.
+- [ ] **Step 4:** `npm run build` (app still references old keys in chart/import until Tasks 24–25 — if build breaks on a renamed key, that file is fixed in its task; keep this task's change limited to config and accept that chart/import get fixed next). To avoid a red build between tasks, **do Tasks 7→24→25 as a tight group** or keep temporary aliases. Simplest: keep `CHART_X_AXIS_MIN/MAX` as aliases pointing to the new keys until Task 25, then delete.
+- [ ] **Step 5: Commit** `git add -A && git commit -m "refactor(config): single source of truth — model, ranges, chart domain, real colors (15–85, drop /850)"`.
 
-**Files:**
-- Create: `src/domain/classification.js`, `src/domain/__tests__/classification.test.js`
+### Task 8: Domain — height-adjusted TLV (TDD)
 
-**Interfaces — Produces:** `heightAdjustedTLV(tlv, height) → number`.
+**Files:** Create `src/domain/classification.js`, `src/domain/__tests__/classification.test.js`.
+**Produces:** `heightAdjustedTLV(tlv, height)`, `CLASS_BASELINE`, `GROWTH_RATES`.
 
-- [ ] **Step 1: Write failing test** (`classification.test.js`)
+- [ ] **Step 1: Failing test**
 ```js
 import { describe, it, expect } from 'vitest'
 import { heightAdjustedTLV } from '../classification.js'
-
 describe('heightAdjustedTLV', () => {
-  it('divides TLV by height in metres', () => {
-    expect(heightAdjustedTLV(3400, 1.7)).toBeCloseTo(2000, 6)
-  })
-  it('returns NaN for non-positive height', () => {
-    expect(Number.isNaN(heightAdjustedTLV(3400, 0))).toBe(true)
-  })
+  it('divides TLV by height (m)', () => { expect(heightAdjustedTLV(3400, 1.7)).toBeCloseTo(2000, 6) })
+  it('NaN for non-positive height', () => { expect(Number.isNaN(heightAdjustedTLV(3400, 0))).toBe(true) })
 })
 ```
-
-- [ ] **Step 2: Run — expect FAIL** (`npm test`) — "heightAdjustedTLV is not a function".
-
-- [ ] **Step 3: Implement in `classification.js`** — model constants come from config (no hardcoding):
+- [ ] **Step 2: Run** `npm test` → FAIL.
+- [ ] **Step 3: Implement** (constants from config — no hardcoding)
 ```js
-// src/domain/classification.js
-// Pure ChIC classification domain per manuscript (spec §2). No Vue reactivity.
+// src/domain/classification.js — pure ChIC domain (spec §2). No Vue reactivity.
 import { CONFIG } from '@/config/config.js'
-
-export const CLASS_BASELINE = CONFIG.MODEL.CLASS_BASELINE_ML_PER_M // 600 ml/m at age 0
-export const GROWTH_RATES = CONFIG.MODEL.GROWTH_RATE_CUTOFFS       // [0.01,0.02,0.03,0.04]
-
+export const CLASS_BASELINE = CONFIG.MODEL.CLASS_BASELINE_ML_PER_M
+export const GROWTH_RATES = CONFIG.MODEL.GROWTH_RATE_CUTOFFS
 export function heightAdjustedTLV(tlv, height) {
-  const t = Number(tlv)
-  const h = Number(height)
+  const t = Number(tlv), h = Number(height)
   if (!Number.isFinite(t) || !Number.isFinite(h) || h <= 0) return NaN
   return t / h
 }
 ```
-> Tests import `CLASS_BASELINE`/`GROWTH_RATES` from the module, so they track config automatically.
+- [ ] **Step 4: Run** → PASS. **Step 5:** `git add -A && git commit -m "feat(domain): height-adjusted TLV"`.
 
-- [ ] **Step 4: Run — expect PASS.**
+### Task 9: Domain — classify A–E (epsilon-tested)
 
-- [ ] **Step 5: Commit**
-```bash
-git add src/domain/classification.js src/domain/__tests__/classification.test.js
-git commit -m "feat(domain): height-adjusted TLV"
-```
+**Produces:** `classify(htTLV, age) → 'A'..'E'`.
 
-### Task 7: Domain — classify A–E (with epsilon policy)
-
-**Interfaces — Produces:** `classify(htTLV, age) → 'A'|'B'|'C'|'D'|'E'`.
-
-- [ ] **Step 1: Add failing tests**
+- [ ] **Step 1: Failing tests** — full boundary + epsilon per spec:
 ```js
-import { classify, CLASS_BASELINE } from '../classification.js'
-
-const threshold = (rate, age) => CLASS_BASELINE * Math.pow(1 + rate, age)
-
-describe('classify', () => {
+import { classify, CLASS_BASELINE, GROWTH_RATES } from '../classification.js'
+const curve = (rate, age) => CLASS_BASELINE * Math.pow(1 + rate, age)
+describe('classify boundaries', () => {
   const age = 50
-  it('A below the 1% curve', () => {
-    expect(classify(threshold(0.01, age) - 1e-6, age)).toBe('A')
-  })
-  it('B at/above the 1% curve, below 2%', () => {
-    expect(classify(threshold(0.01, age), age)).toBe('B')
-    expect(classify(threshold(0.02, age) - 1e-6, age)).toBe('B')
-  })
-  it('C at/above 2% curve', () => { expect(classify(threshold(0.02, age), age)).toBe('C') })
-  it('D at/above 3% curve', () => { expect(classify(threshold(0.03, age), age)).toBe('D') })
-  it('E at/above 4% curve', () => { expect(classify(threshold(0.04, age), age)).toBe('E') })
+  const cases = [
+    ['A', curve(0.01, age) - 1e-6, 'A'],
+    ['B@1%', curve(0.01, age), 'B'],
+    ['B<2%', curve(0.02, age) - 1e-6, 'B'],
+    ['C@2%', curve(0.02, age), 'C'],
+    ['D@3%', curve(0.03, age), 'D'],
+    ['E@4%', curve(0.04, age), 'E'],
+  ]
+  it.each(cases)('%s', (_n, htlv, expected) => { expect(classify(htlv, age)).toBe(expected) })
+  it('holds at another age (25)', () => { expect(classify(curve(0.04, 25), 25)).toBe('E') })
 })
 ```
-
-- [ ] **Step 2: Run — expect FAIL.**
-
-- [ ] **Step 3: Implement `classify`** — derived from `GROWTH_RATES` (config), not hardcoded rates:
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement** (derived from `GROWTH_RATES`)
 ```js
-const CLASS_LETTERS = ['B', 'C', 'D', 'E'] // class cleared once the i-th ascending cutoff is met
+const CLASS_LETTERS = ['B', 'C', 'D', 'E'] // must match GROWTH_RATES length
 export function classify(htTLV, age) {
-  const h = Number(htTLV)
-  const a = Number(age)
+  const h = Number(htTLV), a = Number(age)
   if (!Number.isFinite(h) || !Number.isFinite(a)) return null
   const curve = (rate) => CLASS_BASELINE * Math.pow(1 + rate, a)
   for (let i = GROWTH_RATES.length - 1; i >= 0; i--) {
@@ -346,374 +188,237 @@ export function classify(htTLV, age) {
   return 'A'
 }
 ```
-> `CLASS_LETTERS` length must equal `GROWTH_RATES` length (4 cutoffs → B/C/D/E, with A below all). If the config grows the model, extend both.
+- [ ] **Step 4: Run** → PASS. **Step 5:** commit `feat(domain): five-class A–E classifier`.
 
-- [ ] **Step 4: Run — expect PASS.**
+### Task 10: Domain — LGR + labels + legacy shim + display rounding
 
-- [ ] **Step 5: Commit**
-```bash
-git add -A && git commit -m "feat(domain): five-class A–E classifier (manuscript thresholds)"
-```
+**Produces:** `liverGrowthRate`, `formatClassLabel`, `legacyPgToLetter`, `formatHtTLV`.
 
-### Task 8: Domain — liver growth rate
-
-**Interfaces — Produces:** `liverGrowthRate(age, htTLV) → number` (fraction).
-
-- [ ] **Step 1: Add failing test**
+- [ ] **Step 1: Failing tests**
 ```js
-import { liverGrowthRate } from '../classification.js'
-describe('liverGrowthRate', () => {
-  it('recovers the compound annual growth rate', () => {
-    const age = 40, g = 0.025
-    const htTLV = 600 * Math.pow(1 + g, age)
-    expect(liverGrowthRate(age, htTLV)).toBeCloseTo(g, 10)
-  })
-  it('null for non-positive age or htTLV', () => {
-    expect(liverGrowthRate(0, 1000)).toBeNull()
-    expect(liverGrowthRate(40, 0)).toBeNull()
-  })
+import { liverGrowthRate, formatClassLabel, legacyPgToLetter, formatHtTLV } from '../classification.js'
+describe('lgr', () => {
+  it('recovers CAGR', () => { const a=40,g=0.025,h=600*Math.pow(1+g,a); expect(liverGrowthRate(a,h)).toBeCloseTo(g,10) })
+  it('null on bad input', () => { expect(liverGrowthRate(0,1000)).toBeNull(); expect(liverGrowthRate(40,0)).toBeNull() })
+})
+describe('labels + rounding (separate from classification)', () => {
+  it('label', () => { expect(formatClassLabel('C')).toBe('Class C') })
+  it('legacy', () => { expect(legacyPgToLetter('PG4')).toBe('D'); expect(legacyPgToLetter('B')).toBe('B') })
+  it('display rounds to 2dp but classify uses raw', () => { expect(formatHtTLV(1999.996)).toBe('2000.00') })
 })
 ```
-
-- [ ] **Step 2: Run — expect FAIL.**
-
-- [ ] **Step 3: Implement** (correcting the old `/100` comment bug)
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement**
 ```js
-// LGR = (htTLV / 600)^(1/age) - 1  → the compound annual growth rate g
 export function liverGrowthRate(age, htTLV) {
-  const a = Number(age)
-  const h = Number(htTLV)
+  const a = Number(age), h = Number(htTLV)
   if (!Number.isFinite(a) || a <= 0 || !Number.isFinite(h) || h <= 0) return null
   return Math.pow(h / CLASS_BASELINE, 1 / a) - 1
 }
+const PG_TO_LETTER = { PG1:'A', PG2:'B', PG3:'C', PG4:'D', PG5:'E' }
+export function formatClassLabel(letter) { return letter ? `Class ${letter}` : '' }
+export function legacyPgToLetter(code) { return code == null ? null : (PG_TO_LETTER[code] ?? String(code)) }
+export function formatHtTLV(htTLV) { return Number.isFinite(Number(htTLV)) ? Number(htTLV).toFixed(2) : '' }
 ```
+- [ ] **Step 4: Run** → PASS. **Step 5:** commit `feat(domain): LGR, labels, legacy shim, display rounding`.
 
-- [ ] **Step 4: Run — expect PASS.**
+### Task 11: Absorb `formulasConfig.js` (spec §2 — was missing)
 
-- [ ] **Step 5: Commit** `git commit -am "feat(domain): liver growth rate"`
+**Files:** Modify/replace `src/config/formulasConfig.js`; update importers.
 
-### Task 9: Domain — labels & legacy shim
-
-**Interfaces — Produces:** `formatClassLabel('A') → 'Class A'`; `legacyPgToLetter('PG1') → 'A'`.
-
-- [ ] **Step 1: Add failing tests**
+- [ ] **Step 1:** Find importers: `grep -rn "formulasConfig\|formulas\." src`.
+- [ ] **Step 2:** Re-export a thin compatibility `formulas` object from the domain module so existing callers keep working, but the numbers live only in config/domain:
 ```js
-import { formatClassLabel, legacyPgToLetter } from '../classification.js'
-describe('labels', () => {
-  it('formats class labels', () => { expect(formatClassLabel('C')).toBe('Class C') })
-  it('maps legacy PG codes', () => {
-    expect(legacyPgToLetter('PG1')).toBe('A')
-    expect(legacyPgToLetter('PG5')).toBe('E')
-    expect(legacyPgToLetter('B')).toBe('B') // pass-through for new letters
-  })
-})
-```
-
-- [ ] **Step 2: Run — expect FAIL.**
-
-- [ ] **Step 3: Implement**
-```js
-const PG_TO_LETTER = { PG1: 'A', PG2: 'B', PG3: 'C', PG4: 'D', PG5: 'E' }
-export function formatClassLabel(letter) {
-  return letter ? `Class ${letter}` : ''
-}
-export function legacyPgToLetter(code) {
-  if (code == null) return null
-  return PG_TO_LETTER[code] ?? String(code)
+// src/config/formulasConfig.js — thin compat shim over the domain module.
+import { CLASS_BASELINE, GROWTH_RATES, liverGrowthRate } from '@/domain/classification.js'
+export const formulas = {
+  thresholdFor: (rate, age) => CLASS_BASELINE * Math.pow(1 + rate, age),
+  curves: GROWTH_RATES.map((r) => (age) => CLASS_BASELINE * Math.pow(1 + r, age)),
+  calculateLiverGrowthRate: liverGrowthRate,
 }
 ```
+> Removes the hardcoded `600`/`1.01`–`1.04` and dead `calculatePG2/3Threshold`, `generateLineData1/2`. Update `ChartDisplay.vue` threshold-curve construction to use `formulas.curves`/`thresholdFor` (done in Task 25).
+- [ ] **Step 3:** `npm run lint && npm test && npm run build`. **Step 4:** commit `refactor: absorb formula constants into domain/config`.
 
-- [ ] **Step 4: Run — expect PASS.** **Step 5: Commit** `git commit -am "feat(domain): class labels + legacy PG shim"`
+### Task 12: Domain — LGR display note & full domain green
 
-### Task 10: Central config — single source of truth (RUN FIRST in Phase B)
+- [ ] **Step 1:** Ensure `formulasConfig.js`'s old `/100` comment is gone; confirm `npm test` covers all domain funcs. **Step 2:** commit if any cleanup, else skip.
 
-**Files:** Rewrite `src/config/config.js` as the one place all clinical + display constants live. Removes hardcoding across domain, chart, validation.
+---
 
-- [ ] **Step 1: Rewrite `src/config/config.js`**
+## Phase C — De-monolith `App.vue` while wiring domain + pg→class migration
+
+> **Discipline:** every task here reduces `App.vue`. After the phase, `App.vue` and all new files are < 600 LOC (verified in Task 23). Move code verbatim; wire the domain module as you go. Migrate the data-point shape from `pg` to the canonical row schema (Global Constraints).
+
+### Task 13: Extract `useQueryParams` (with age clamping — spec D8)
+
+**Files:** Create `src/composables/useQueryParams.js`; modify `App.vue`.
+- [ ] Move `getUrlQueryParams` (`App.vue:318-333`) + init. **Preserve** `?patientId=&age=&tlv=`, `acknowledgeBanner`, `show*`. **Add:** clamp parsed `age` to `[CONFIG.AGE_MIN, CONFIG.AGE_MAX]`. Verify each mode. `git add -A && git commit -m "refactor: extract useQueryParams with config age clamping"`.
+
+### Task 14: Extract `usePatientForm` (validation from CONFIG)
+
+**Files:** Create `src/composables/usePatientForm.js`; modify `App.vue`.
+- [ ] Move input refs + `isAgeValid`/`isHeightValid`/`formattedHeightAdjustedTLV`. Validation reads `CONFIG.AGE_MIN/MAX`, `HEIGHT_MIN/MAX`, `TLV_MIN/MAX`. commit `refactor: extract usePatientForm`.
+
+### Task 15: Wire domain classifier into `App.vue` + migrate data-point shape to `class`
+
+**Files:** Modify `App.vue`.
+- [ ] **Step 1:** Import the domain module **without name collision** (App has a computed `heightAdjustedTLV`):
 ```js
-// src/config/config.js — single source of truth for all ChIC parameters.
-export const CONFIG = {
-  // --- Clinical model (ChIC, per manuscript; spec §2) ---
-  MODEL: {
-    CLASS_BASELINE_ML_PER_M: 600,               // htTLV baseline at age 0
-    GROWTH_RATE_CUTOFFS: [0.01, 0.02, 0.03, 0.04], // A/B, B/C, C/D, D/E boundaries
-    ASSUMED_HEIGHT_M: 1.70,                      // fallback for height-less imports (flagged)
-  },
-
-  // --- Input validation ranges (D8: 15–85, fits manuscript + README) ---
-  AGE_MIN: 15,
-  AGE_MAX: 85,
-  AGE_MIN_LGR: 0,
-  TLV_MIN: 0,
-  TLV_MAX: 20000,
-  HEIGHT_MIN: 0.5,
-  HEIGHT_MAX: 2.5,
-
-  // --- Chart domain ---
-  CHART_X_MIN: 15,
-  CHART_X_MAX: 85,
-  CHART_Y_MIN: 100,     // log floor; must not clip small htTLV (<600)
-  CHART_Y_MAX: 10500,   // above cohort max htTLV 10344 (Table S1)
-  CHART_Y_TICKS: [600, 800, 1000, 2000, 4000, 6000, 8000, 10000],
-
-  // --- Class band + series colors (moved out of ChartDisplay) ---
-  CLASS_COLORS: {
-    A: '#2ecc71', B: '#a3d977', C: '#f1c40f', D: '#e67e22', E: '#e74c3c',
-  },
-
-  // --- UI ---
-  MODAL_MAX_WIDTH: '500px',
-  MODAL_MAX_HEIGHT: '90%',
-}
+import { classify, formatClassLabel, liverGrowthRate,
+         heightAdjustedTLV as calcHtTLV } from '@/domain/classification.js'
 ```
-> **Removed:** `NORMALIZATION_FACTOR` (850) and `CHART_Y_AXIS_MAX` (25) — dead nTLV artifacts. `CHART_X_AXIS_MIN/MAX` renamed to `CHART_X_MIN/MAX`; `AGE_INI` dropped (unused). Copy the real class-band colors from the current `ChartDisplay.vue` datasets into `CLASS_COLORS` verbatim.
+- [ ] **Step 2:** Replace the inline `progressionGroup` computed (`App.vue:399-419`) with `classify(heightAdjustedTLV.value, age.value)` (reuse the existing computed for the value); replace `pgLabelMap`/`formatPGLabel` (`App.vue:796-806`) with `formatClassLabel`.
+- [ ] **Step 3:** Migrate the data-point object built on "Calculate"/add (`App.vue:~477-491`) to the **canonical row schema**: set `class` (letter), `htlv`, `htlvEstimated:false`, `estimatedHtTLV:null`, `estimatedClass:null`. Replace all internal `point.pg` reads with `point.class`.
+- [ ] **Step 4:** `grep -n "PG[1-5]\|pgLabelMap\|formatPGLabel\|\.pg\b" src/App.vue` → none. `npm test && npm run build`. commit `refactor(app): wire shared classifier, migrate data points to class letters`.
 
-- [ ] **Step 2: Grep for removed/renamed keys across the app**
-Run: `grep -rn "NORMALIZATION_FACTOR\|CHART_Y_AXIS_MAX\|CHART_X_AXIS_MIN\|CHART_X_AXIS_MAX\|AGE_INI" src`
-Expected: hits only in `ChartDisplay.vue`/`useDataPersistence.js` — all fixed in Tasks 12–13. No other consumer.
+### Task 16: Extract `useDataPoints`
 
-- [ ] **Step 3: Commit** `git commit -am "refactor(config): single source of truth — model, ranges, chart domain, colors (15–85, no /850)"`
+**Files:** Create `src/composables/useDataPoints.js`; modify `App.vue`.
+- [ ] Move `dataPoints`, add/edit/remove, `editingIndex` (keep chart-ref calls in `App.vue`). commit `refactor: extract useDataPoints`.
 
-### Task 11: Wire `App.vue` to the domain module + PG→letter migration
+### Task 17: Extract `useTheme`
 
-**Files:** Modify `src/App.vue`, `src/styles/app.css`.
+**Files:** Create `src/composables/useTheme.js`; modify `App.vue`.
+- [ ] Move theme toggle + persistence. commit `refactor: extract useTheme`.
 
-**Interfaces — Consumes:** `classify`, `heightAdjustedTLV`, `liverGrowthRate`, `formatClassLabel` from `@/domain/classification.js`.
+### Task 18: PG→letter CSS migration across App.vue + InputControls.vue + UI copy
 
-- [ ] **Step 1:** Import the domain module in `App.vue`; replace the inline `progressionGroup` computed (`App.vue:399-419`) with `classify(heightAdjustedTLV(tlv, height), age)`; replace `pgLabelMap`/`formatPGLabel` (`App.vue:796-806`) with `formatClassLabel`. Class values are now `'A'..'E'`.
+**Files:** Modify `App.vue`, `src/components/InputControls.vue`, `src/styles/app.css`, add a `classToCssClass` helper (domain module).
+- [ ] **Step 1:** Add `export const classToCssClass = (c) => c ? 'class-' + c.toLowerCase() : ''` to the domain module (+ test).
+- [ ] **Step 2:** `App.vue` template (`:158-170`): `progression-group PG1..PG5` → `progression-group class-a..class-e`. `app.css`: rename `.PG1..PG5` → `.class-a..class-e` (keep the exact color values).
+- [ ] **Step 3:** `InputControls.vue:205`: `:class="\`output-field ${progressionGroup}\`"` → `:class="['output-field', classToCssClass(progressionGroup)]"`; ensure `progressionGroup` prop is now a letter.
+- [ ] **Step 4: UI copy** — `InputControls.vue:~32` placeholder `15-80` and `App.vue:~39` FAQ `15-80 years` → build from `CONFIG.AGE_MIN`/`AGE_MAX` (e.g. ``:placeholder="`${CONFIG.AGE_MIN}-${CONFIG.AGE_MAX}`"``).
+- [ ] **Step 5:** `grep -rn "PG[1-5]" src` → none. Manual smoke: band colors + input class styling unchanged; age hints show 15–85. commit `refactor: migrate PG codes to class-letter CSS across app + InputControls`.
 
-- [ ] **Step 2:** Rename CSS classes: in `App.vue` template (`:158-170`) change `progression-group PG1..PG5` → `progression-group class-a..class-e`; in `src/styles/app.css` rename `.PG1..PG5` → `.class-a..class-e`.
+### Task 19: Extract `FaqModal.vue`
+**Files:** Create `src/components/FaqModal.vue`; modify `App.vue`. Move inline FAQ (`App.vue:~40-90`) + show/hide. commit `refactor: extract FaqModal`.
 
-- [ ] **Step 3:** Grep to confirm no `PG1..PG5` or `pgLabelMap` references remain in `App.vue`.
-Run: `grep -n "PG[1-5]\|pgLabelMap\|formatPGLabel" src/App.vue`
-Expected: none.
+### Task 20: Extract `DataTable.vue` (+ a11y + estimated-row rendering)
+**Files:** Create `src/components/DataTable.vue`; modify `App.vue`.
+- [ ] Move the table (`App.vue:~185-245`). Render `class`/`htlv` normally; when `htlvEstimated`, render `estimatedClass`/`estimatedHtTLV` italic + `≈` + `title="Unvalidated estimate — measured height missing"`. Add summary line "N of M rows used an estimated height — not a validated ChIC class". A11y: row `role="button"` + `tabindex="0"` + `@keydown.enter/.space`; remove button `aria-label="Remove data point"`. commit `refactor: extract DataTable with a11y + estimated-row flags`.
 
-- [ ] **Step 4: Verify** `npm run lint && npm test && npm run build` — all green.
+### Task 21: Fold template downloads into `useDataPersistence`
+**Files:** Modify `useDataPersistence.js`, `App.vue`. Move template helpers out of `App.vue`; delete duplicate `downloadCSVTemplate` (`App.vue:706-714`). commit `refactor: consolidate template downloads`.
 
-- [ ] **Step 5: Manual smoke** — `npm run dev`, enter age/height/TLV, confirm class letter + band styling render.
+### Task 22: Split `app.css` into modules
+**Files:** Create `src/styles/{base,layout,controls,table,progression-groups,print}.css` + `src/styles/index.css`; delete `src/styles/app.css`; update import in `main.js`/`App.vue`. Each < 600. Verify visual parity. `git add -A && git commit -m "refactor(styles): split app.css into per-concern modules"`.
 
-- [ ] **Step 6: Commit** `git commit -am "refactor(app): use shared classifier; migrate PG codes to class letters"`
+### Task 23: Verify 600-LOC cap + full smoke
+- [ ] `find src \( -name '*.vue' -o -name '*.js' -o -name '*.css' \) -print0 | xargs -0 wc -l | sort -rn | head` — no file > 600. If `App.vue` still over, extract more (e.g. a `useChartBridge` composable). Full manual smoke incl. all query-param modes. commit any final extraction.
 
-### Task 12: Wire `useDataPersistence` to the domain module + height estimation
+---
 
-**Files:** Modify `src/composables/useDataPersistence.js`; add tests `src/composables/__tests__/useDataPersistence.test.js`.
+## Phase D — Import + chart correctness
 
-- [ ] **Step 1: Write failing tests**
+### Task 24: Rewrite `processLoadedRow` (unify classifier, cohort-mean height, drop /850)
+
+**Files:** Modify `src/composables/useDataPersistence.js`; add `src/composables/__tests__/useDataPersistence.test.js`.
+- [ ] **Step 1: Failing tests** (round-trip, cohort-mean, height-less flag, legacy pg, malformed, export column):
 ```js
 import { describe, it, expect } from 'vitest'
 import { classify, heightAdjustedTLV } from '@/domain/classification.js'
-// Test processLoadedRow via an exported pure helper (extract it if needed).
-describe('processLoadedRow', () => {
-  it('classifies with measured height identically to manual path', async () => {
-    const { processLoadedRow } = await import('@/composables/useDataPersistence.js')
-    const row = processLoadedRow({ id: 'x', age: 50, height: 1.7, tlv: 3400 })
-    expect(row.class).toBe(classify(heightAdjustedTLV(3400, 1.7), 50))
-    expect(row.htlvEstimated).toBe(false)
+import { processRows, buildExportRows } from '@/composables/useDataPersistence.js'
+describe('processRows', () => {
+  it('measured height matches manual path', () => {
+    const [r] = processRows([{ id:'x', age:50, height:1.7, tlv:3400 }])
+    expect(r.class).toBe(classify(heightAdjustedTLV(3400,1.7),50)); expect(r.htlvEstimated).toBe(false)
   })
-  it('estimates htTLV when height missing, leaving validated class empty', async () => {
-    const { processLoadedRow } = await import('@/composables/useDataPersistence.js')
-    const row = processLoadedRow({ id: 'y', age: 50, tlv: 3400 })
-    expect(row.htlvEstimated).toBe(true)
-    expect(row.class).toBeNull()
-    expect(row.estimatedClass).not.toBeNull()
+  it('cohort-mean height used before global fallback', () => {
+    const rows = processRows([{id:'a',age:50,height:1.6,tlv:3000},{id:'b',age:50,height:1.8,tlv:3000},{id:'c',age:50,tlv:3000}])
+    const est = rows.find(r => r.id==='c')
+    expect(est.htlvEstimated).toBe(true); expect(est.class).toBeNull()
+    expect(est.estimatedHtTLV).toBeCloseTo(3000/1.7, 6) // mean(1.6,1.8)=1.7
   })
-  it('maps legacy PG codes on import', async () => {
-    const { legacyPgToLetter } = await import('@/domain/classification.js')
-    expect(legacyPgToLetter('PG4')).toBe('D')
+  it('global fallback when no heights in file', () => {
+    const [r] = processRows([{id:'z',age:50,tlv:3400}])
+    expect(r.estimatedHtTLV).toBeCloseTo(3400/1.70, 6)
+  })
+  it('drops malformed rows', () => { expect(processRows([{id:'q'}]).length).toBe(0) })
+  it('export includes htTLV_estimated column', () => {
+    const rows = buildExportRows([{ id:'x', age:50, height:1.7, tlv:3400, htlv:2000, class:'C', htlvEstimated:false }])
+    expect(rows[0]).toHaveProperty('htTLV_estimated')
   })
 })
 ```
+- [ ] **Step 2: Run** → FAIL. **Step 3:** Extract a pure `processRows(rawRows)` that: computes the file-level mean height (rows with valid height); for each row uses `heightAdjustedTLV(tlv, height)` when height present (→ `class`, `htlvEstimated:false`), else estimates via mean-else-`CONFIG.MODEL.ASSUMED_HEIGHT_M` (→ `estimatedHtTLV`/`estimatedClass`, `class:null`, `htlvEstimated:true`); maps any incoming legacy `pg` with `legacyPgToLetter` (informational only). Delete `/850` + 2-threshold logic. Add `buildExportRows` with the `htTLV_estimated` column. Wire the file loaders (JSON/CSV/Excel) through `processRows`.
+- [ ] **Step 4: Run** → PASS. `npm run build`. commit `fix(import): unify classifier, cohort-mean estimation, drop /850, export flag`.
 
-- [ ] **Step 2: Run — expect FAIL** (old logic returns `pg`, uses `/850`).
+### Task 25: Chart — safe methods + config-driven domain/ticks/colors
 
-- [ ] **Step 3: Rewrite `processLoadedRow`** to: use `heightAdjustedTLV`+`classify`; when height present → `class`, `htlvEstimated:false`; when absent → compute assumed height (mean of same-file rows with height, provided by caller, else `CONFIG.ASSUMED_HEIGHT_M`), set `estimatedHtTLV`/`estimatedClass`, `htlvEstimated:true`, `class:null`. Delete the `/850` branch and the 2-threshold logic. Export `processLoadedRow` for testing. Accept incoming legacy `pg` via `legacyPgToLetter` for display only.
-> Cohort-mean requires two passes over the file: first collect heights, compute mean, then map rows. Update `loadDataFromJson`/CSV/Excel loaders to pass the file-level mean.
+**Files:** Modify `src/components/ChartDisplay.vue`; remove any temporary CONFIG aliases from Task 7.
+- [ ] **Step 1:** Implement `updatePointStyle(index, color, group)` (mutates the `Patient Data` dataset point) and a **SAFE** `clearChart()` that clears **only** the `Patient Data` and `Selected Point` datasets (NEVER the threshold curves / class fills) — or simply delegates to the existing `dataPoints` watcher redraw. Add both to `defineExpose` (`:449`). Confirm `App.vue:644`/`:692` resolve.
+- [ ] **Step 2:** Replace hardcoded chart constants with config: y `min/max`/`CEILING_Y`←`CONFIG.CHART_Y_MIN/MAX`; both tick arrays (`:334`,`:342`)←`CONFIG.CHART_Y_TICKS`; x `min/max`←`CONFIG.CHART_X_MIN/MAX`; class colors←`CONFIG.CLASS_COLORS`; threshold curves via `formulas.curves`. Remove the Task 7 temporary `CHART_X_AXIS_*` aliases.
+- [ ] **Step 3: Manual smoke** — add point; edit its group/color in the table → marker updates; the background threshold bands remain after edits/reset; htTLV 450 (below 600) and 10344 both render on-axis. commit `fix(chart): safe exposed methods, config-driven domain/ticks/colors`.
 
-- [ ] **Step 4: Run — expect PASS.**
-
-- [ ] **Step 5: Verify** `npm run lint && npm test && npm run build`.
-
-- [ ] **Step 6: Commit** `git commit -am "fix(import): unify classifier, coherent height estimation, drop /850"`
-
-### Task 13: Chart method fix + y-domain
-
-**Files:** Modify `src/components/ChartDisplay.vue`.
-
-- [ ] **Step 1:** Implement `updatePointStyle(index, color, group)` (updates the patient dataset point's color/label) and `clearChart()` (empties datasets + redraws); add both to `defineExpose` (`:449`). Confirm `App.vue:644` (`updatePointStyle`) and `:692` (`clearChart`) now resolve.
-
-- [ ] **Step 2:** Remove ALL hardcoded chart constants — read from config (no magic numbers): y-domain `min`/`max`/`CEILING_Y` ← `CONFIG.CHART_Y_MIN`/`CONFIG.CHART_Y_MAX`; the duplicated tick arrays (`ChartDisplay.vue:334` and `:342`) ← `CONFIG.CHART_Y_TICKS`; x-axis `min`/`max` ← `CONFIG.CHART_X_MIN`/`CONFIG.CHART_X_MAX`; class-band colors ← `CONFIG.CLASS_COLORS`; threshold curve base ← `CONFIG.MODEL.CLASS_BASELINE_ML_PER_M` (or the domain module's `formulas`). Keep log scale; verify a synthetic htTLV of 450 (below 600) renders on-axis, and 10344 renders below the ceiling.
-
-- [ ] **Step 3: Manual smoke** — add a point, edit its group/color in the table, confirm the chart marker updates; add a very small and a very large TLV, confirm neither clips.
-
-- [ ] **Step 4: Verify** `npm run lint && npm run build`.
-
-- [ ] **Step 5: Commit** `git commit -am "fix(chart): implement exposed updatePointStyle/clearChart; explicit y-domain"`
-
-### Task 14: Estimated-row presentation
-
-**Files:** Modify the results table (in `App.vue` for now; moves to `DataTable.vue` in Task 20) and `useDataPersistence.js` export builders.
-
-- [ ] **Step 1:** In the table, render estimated rows' htTLV/class with distinct treatment (italic + `≈` prefix + `title="Unvalidated estimate — measured height missing"`), pulling from `estimatedHtTLV`/`estimatedClass`; the validated columns stay blank.
-
-- [ ] **Step 2:** Add a summary line above the table: `"{n} of {m} rows used an estimated height — not a validated ChIC class"` when any `htlvEstimated`.
-
-- [ ] **Step 3:** Add an `htTLV_estimated` boolean column to CSV/JSON/Excel export builders (`useDataPersistence.js:228+`).
-
-- [ ] **Step 4: Manual smoke** — import a file with a height-less row; confirm the flag, notice, and export column.
-
-- [ ] **Step 5: Commit** `git commit -am "feat(ui): flag estimated-height rows as unvalidated in table + export"`
+### Task 26: Estimated-row export/UI finalize
+- [ ] Confirm CSV/JSON/Excel exports carry `htTLV_estimated` (from Task 24) and the DataTable flags (Task 20) render end-to-end via a manual import of a height-less row. commit if any gap closed.
 
 ---
 
-## Phase C — Refactor under green tests (behavior-preserving)
+## Phase E — Deploy & rebrand
 
-> After each task: `npm run lint && npm test && npm run build` + manual smoke. Move code verbatim; do not change behavior. Verify each extracted file is < 600 LOC.
+### Task 27: Base path & router
+**Files:** `vite.config.js`, `src/router/index.js`, footer image resolution.
+- [ ] `base = command==='build' ? '/ChIC/' : '/'`; `createWebHistory(import.meta.env.BASE_URL)`; drop unused `useRoute`; footer imgs via `import.meta.env.BASE_URL` or `@/assets` import. `npm run build && npm run preview` → assets load under `/ChIC/`. commit `fix(deploy): correct Pages base path to /ChIC/`.
 
-### Task 15: Extract `useQueryParams`
+### Task 28: Complete rebrand (scoped)
+- [ ] **Scoped** replace (not a bare `.`): `grep -rn "pld-progression-grouper" src public vite.config.js README.md package.json index.html`. Replace in those targets only (exclude `dist`, `docs/superpowers`, dirs slated for deletion). Update PWA `start_url`/`scope`/`id`, contact email, README URL. commit `chore: complete pld-progression-grouper → ChIC rebrand`.
 
-**Files:** Create `src/composables/useQueryParams.js`; modify `src/App.vue`.
-- [ ] **Step 1:** Move `getUrlQueryParams` (`App.vue:318-333`) and related init into `useQueryParams()` returning the parsed params + the `?patientId=&age=&tlv=`, `acknowledgeBanner`, `show*` flags. **Preserve exact param names/behavior.**
-- [ ] **Step 2:** Consume it in `App.vue`.
-- [ ] **Step 3:** Verify + manual test each query-param mode. **Step 4:** Commit `git commit -am "refactor: extract useQueryParams composable"`.
-
-### Task 16: Extract `usePatientForm`
-**Files:** Create `src/composables/usePatientForm.js`; modify `App.vue`.
-- [ ] Move patient input refs + validation (`isAgeValid`/`isHeightValid`/`formattedHeightAdjustedTLV` and the input refs) into the composable. Verify + commit `git commit -am "refactor: extract usePatientForm composable"`.
-
-### Task 17: Extract `useDataPoints`
-**Files:** Create `src/composables/useDataPoints.js`; modify `App.vue`.
-- [ ] Move `dataPoints`, add/edit/remove, `editingIndex` handling. Keep the chart-ref calls in `App.vue`. Verify + commit `git commit -am "refactor: extract useDataPoints composable"`.
-
-### Task 18: Extract `useTheme`
-**Files:** Create `src/composables/useTheme.js`; modify `App.vue`.
-- [ ] Move theme toggle + localStorage persistence. Verify + commit `git commit -am "refactor: extract useTheme composable"`.
-
-### Task 19: Extract `FaqModal.vue`
-**Files:** Create `src/components/FaqModal.vue`; modify `App.vue`.
-- [ ] Move the ~66-line inline FAQ modal markup (`App.vue:~40-90`) + its show/hide prop/emit. Verify + commit `git commit -am "refactor: extract FaqModal component"`.
-
-### Task 20: Extract `DataTable.vue` (+ a11y)
-**Files:** Create `src/components/DataTable.vue`; modify `App.vue`.
-- [ ] **Step 1:** Move the results table (`App.vue:~185-245`), including the Task-14 estimated-row treatment.
-- [ ] **Step 2:** A11y: row `@click` gets `role="button"`, `tabindex="0"`, and a keyboard handler (`@keydown.enter`/`.space`); the icon-only remove button gets `aria-label="Remove data point"` + `title`.
-- [ ] **Step 3:** Verify + commit `git commit -am "refactor: extract DataTable component with a11y fixes"`.
-
-### Task 21: Fold template downloads into `useDataPersistence`
-**Files:** Modify `src/composables/useDataPersistence.js`, `src/App.vue`.
-- [ ] Move `downloadTemplateAsCsv`/template helpers out of `App.vue`; **delete the duplicate `downloadCSVTemplate`** (`App.vue:706-714`). Single template function in the composable. Verify + commit `git commit -am "refactor: consolidate template downloads, drop duplicate"`.
-
-### Task 22: Split `app.css` into modules
-**Files:** Create `src/styles/{base,layout,controls,table,progression-groups,print}.css` + `src/styles/index.css` barrel; delete `src/styles/app.css`; update the import in `main.js`/`App.vue`.
-- [ ] Split by concern (variables/theme → `base.css`, etc.), each < 600 LOC; barrel `@import`s them in order. Verify visual parity in dev. Commit `git commit -am "refactor(styles): split app.css into per-concern modules"`.
-
-### Task 23: Verify cap + full smoke
-- [ ] **Step 1:** `find src -name '*.vue' -o -name '*.js' -o -name '*.css' | xargs wc -l | sort -rn | head` — confirm no file > 600 (except generated). If `App.vue` still > 600, extract further.
-- [ ] **Step 2:** Full manual smoke of every feature + all query-param modes.
-- [ ] **Step 3:** Commit any final extraction `git commit -am "refactor: bring all touched files under 600 LOC"`.
+### Task 29: Retire double service worker
+**Files:** delete `src/registerServiceWorker.js`; modify `main.js`; `npm rm register-service-worker`.
+- [ ] Remove the PROD dynamic import block (`main.js:5-7`; keep dev-unregister cleanup). Verify `vite-plugin-pwa` still emits `sw.js`. `git add -A && git commit -m "fix(pwa): let vite-plugin-pwa own SW"`.
 
 ---
 
-## Phase D — Deploy & rebrand
+## Phase F — CI, hygiene, infra
 
-### Task 24: Fix base path & router
-**Files:** Modify `vite.config.js`, `src/router/index.js`, `src/mixins/footerMixin.js` (or wherever footer imgs resolve).
-- [ ] **Step 1:** `vite.config.js` → `const base = command === 'build' ? '/ChIC/' : '/'`.
-- [ ] **Step 2:** `router/index.js` → `createWebHistory(import.meta.env.BASE_URL)`; remove unused `useRoute` import.
-- [ ] **Step 3:** Footer image `src` values resolved through `import.meta.env.BASE_URL` (or move assets to `src/assets` + import).
-- [ ] **Step 4:** `npm run build`, `npm run preview`; confirm assets load under `/ChIC/`. Commit `git commit -am "fix(deploy): correct GitHub Pages base path to /ChIC/"`.
+### Task 30: Split CI / deploy (with typecheck + format:check)
+**Files:** Create `.github/workflows/ci.yml`; replace `gh-pages.yml` with `deploy.yml`.
+- [ ] **`ci.yml`** on `pull_request` + push (ignore `gh-pages`): `npm ci` → `npm run lint` → `npm run format:check` → `npm run typecheck` → `npm test` → `npm run build`.
+- [ ] **`deploy.yml`** on push to `main` only: `npm ci` → `npm run build` → `cp dist/index.html dist/404.html` → `peaceiris/actions-gh-pages@v4`. No deploy in any PR context.
+- [ ] `git rm .github/workflows/gh-pages.yml`; `git add -A && git commit -m "ci: split validation (ci.yml) from deploy (deploy.yml), add typecheck + format:check"`.
 
-### Task 25: Complete rebrand
-**Files:** `vite.config.js` (PWA manifest `start_url`/`scope`/`id`), any `pld-progression-grouper` string, `README.md` deploy URL.
-- [ ] `grep -rn "pld-progression-grouper" . --exclude-dir=node_modules --exclude-dir=.git` → replace with ChIC equivalents. Commit `git commit -am "chore: complete pld-progression-grouper → ChIC rebrand"`.
+### Task 31: Purge junk (filesystem-aware)
+- [ ] Tracked junk: `git rm -r public/_old public/pgs_old contact.md`. **`dist/_old` is now untracked** (Task 6) → remove from filesystem only: `rm -rf dist/_old`. Move the Mayo MIC reference from `external-references` into README References, then `git rm external-references`. `git add -A && git commit -m "chore: remove leftover directories and orphan files"`.
 
-### Task 26: Retire the double service worker
-**Files:** Delete `src/registerServiceWorker.js`; modify `src/main.js`; remove `register-service-worker` dep.
-- [ ] Remove the PROD dynamic import block in `main.js:5-7` (keep the dev-unregister cleanup); `npm rm register-service-worker`; verify `vite-plugin-pwa` still emits `sw.js` in build. Commit `git commit -am "fix(pwa): let vite-plugin-pwa own SW; remove legacy registration"`.
+### Task 32: Optimize logos
+- [ ] Compress 2 MB logos to < 100 KB (WebP/optimized PNG), de-dup `src/assets/logo.png` vs `public/`. `git add -A && git commit -m "perf: optimize + de-dup logo assets"`.
 
----
+### Task 33: Audit + dead deps
+- [ ] `npm audit fix` (non-breaking). Remove confirmed-unused deps (verified 0 `src` refs): `npm rm core-js html2canvas canvas2svg chartjs-plugin-datalabels`. Remove dead `annotationPlugin` import (`ChartDisplay.vue:11`). `npm run build` after each. `git add -A && git commit -m "chore: drop dead deps, patch audit findings"`.
 
-## Phase E — CI, hygiene, infra
+### Task 34: README accuracy
+- [ ] Fix license (MIT not "MIT-0"; link `LICENSE`), age range → 15–85, typos, add a **Development** section (`npm ci`/`dev`/`build`/`lint`/`test`), align description with the manuscript. `git add -A && git commit -m "docs: correct README license, setup, copy"`.
 
-### Task 27: Split CI / deploy workflows
-**Files:** Create `.github/workflows/ci.yml`; rewrite `.github/workflows/gh-pages.yml` → `deploy.yml`.
-- [ ] **Step 1: `ci.yml`**
-```yaml
-name: CI
-on:
-  pull_request:
-  push:
-    branches-ignore: [gh-pages]
-jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
-```
-- [ ] **Step 2: `deploy.yml`** — trigger only `push` to `main`; `npm ci` → `npm run build` → `cp dist/index.html dist/404.html` → `peaceiris/actions-gh-pages@v4` with `publish_dir: ./dist`. No deploy step in any PR context.
-- [ ] **Step 3:** Delete old `gh-pages.yml`. Commit `git commit -am "ci: split validation (ci.yml) from deploy (deploy.yml)"`.
-
-### Task 28: Purge junk
-- [ ] `git rm -r public/_old public/pgs_old dist/_old` (dist already untracked); move the Mayo MIC reference from `external-references` into `README.md` References, then `git rm external-references`; `git rm contact.md` and fix the README link. Commit `git commit -am "chore: remove leftover directories and orphan files"`.
-
-### Task 29: Optimize logos
-- [ ] Compress the 2 MB logos (WebP/optimized PNG, target < 100 KB), de-dup `src/assets/logo.png` vs `public/` copies; update references. Verify build asset weight dropped. Commit `git commit -am "perf: optimize and de-duplicate logo assets"`.
-
-### Task 30: Audit + dead deps
-- [ ] `npm audit fix` (non-breaking); for each of `core-js`, `html2canvas`, `canvas2svg`, `chartjs-plugin-datalabels`: `grep -rn <pkg> src` → if zero, `npm rm <pkg>`; `npm run build` after each. Also remove the dead `annotationPlugin` import in `ChartDisplay.vue:11` if unused. Commit `git commit -am "chore: drop dead deps, patch audit findings"`.
-
-### Task 31: README accuracy
-- [ ] Fix license section (it's **MIT**, not "MIT-0"; link `LICENSE` not `LICENSE.md`); reconcile age range with D8; fix typos ("expieriencing", "calssification", "paitents"); add a **Development** section (`npm ci` / `npm run dev` / `build` / `lint` / `test`); align description with the manuscript abstract. Commit `git commit -am "docs: correct README license, setup, and copy"`.
-
-### Task 32: Project infra
-**Files:** Create `.github/dependabot.yml`, `SECURITY.md`, `CONTRIBUTING.md`, `.github/CODEOWNERS`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/bug_report.md`.
-- [ ] **dependabot.yml**
-```yaml
-version: 2
-updates:
-  - package-ecosystem: npm
-    directory: "/"
-    schedule: { interval: weekly }
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule: { interval: weekly }
-```
-- [ ] `CONTRIBUTING.md` documents the dev setup + the **600-LOC / DRY-KISS-SOLID** rules from `AGENTS.md`. `CODEOWNERS` → the maintainers. Commit `git commit -am "chore: add dependabot, security, contributing, templates"`.
+### Task 35: Project infra
+**Files:** `.github/dependabot.yml`, `SECURITY.md`, `CONTRIBUTING.md`, `.github/CODEOWNERS`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/bug_report.md`.
+- [ ] dependabot (npm + github-actions weekly); CONTRIBUTING documents dev setup + the 600-LOC/DRY-KISS-SOLID rules. `git add -A && git commit -m "chore: add dependabot, security, contributing, templates"`.
 
 ---
 
-## Phase F — Branch surgery (LAST, only after all above is green on CI)
+## Phase G — App smoke tests (spec WS-4 — was missing)
 
-### Task 33: Make `main` the default; clean up branches
-- [ ] **Step 1:** Ensure local is green: `npm ci && npm run lint && npm test && npm run build`.
-- [ ] **Step 2:** Fast-forward `main` to the current tip:
-```bash
-git checkout main 2>/dev/null || git checkout -b main origin/main
-git merge --ff-only copilot/start-from-version-1
-git push origin main
-```
-(If not FF-able because work landed on the copilot branch, `git merge` then push — main is an ancestor so FF is expected.)
-- [ ] **Step 3:** Set GitHub default branch:
-```bash
-gh api -X PATCH repos/halbritter-lab/ChIC -f default_branch=main
-```
-- [ ] **Step 4:** Delete stale branches:
-```bash
-git push origin --delete copilot/start-from-version-1 yml-edit-2
-```
-- [ ] **Step 5:** Confirm `deploy.yml` fires on the `main` push and Pages serves `/ChIC/` correctly.
+### Task 36: Component smoke tests
+**Files:** `src/__tests__/App.smoke.test.js`.
+- [ ] Using `@vue/test-utils` + jsdom: (a) `App` mounts without error; (b) the disclaimer gate blocks/acknowledges (localStorage); (c) entering valid age/height/TLV and clicking Calculate adds a row to `DataTable` and calls the chart update. `npm test` green. `git add -A && git commit -m "test: App mount + disclaimer + add-a-point smoke tests"`.
 
 ---
 
-## Self-Review (run before execution)
+## Phase H — Branch surgery (LAST, only after CI is green)
 
-- **Spec coverage:** WS-1→Tasks 6–14; WS-2→15–23; WS-3→2–5; WS-4→4,6–9,12; WS-5→24–26,33; WS-6→27–31; WS-7→32. All covered.
-- **D8 age range:** RESOLVED to 15–85 (fits manuscript + README), fully config-driven in Task 10; chart x-axis + validation + README all read `CONFIG`.
-- **No-hardcoding:** all model/display constants centralized in `CONFIG` (Task 10, built first); domain (Tasks 6–9) and chart (Task 13) import from it — verified by the Task 10 Step 2 grep leaving no stray consumers.
-- **Type consistency:** `classify`→letters `'A'..'E'`; consumed as such in Tasks 11–14; `htlvEstimated`/`estimatedClass`/`estimatedHtTLV` names consistent across Tasks 12/14/20.
-- **Ordering:** tests (Phase B) precede refactor (Phase C); branch surgery last.
+### Task 37: Make `main` default; clean up
+- [ ] **Step 1:** Green locally: `npm ci && npm run lint && npm run format:check && npm run typecheck && npm test && npm run build`.
+- [ ] **Step 2:** Capture the working branch dynamically (do NOT hardcode): `WORK=$(git branch --show-current)`.
+- [ ] **Step 3:** `git checkout main 2>/dev/null || git checkout -b main origin/main; git merge --ff-only "$WORK"; git push origin main` (FF verified valid: main is ancestor).
+- [ ] **Step 4:** `gh api -X PATCH repos/halbritter-lab/ChIC -f default_branch=main`.
+- [ ] **Step 5:** `git push origin --delete "$WORK" yml-edit-2` (only after confirming `$WORK` is merged into main).
+- [ ] **Step 6:** Confirm `deploy.yml` fires on the `main` push and Pages serves `/ChIC/`.
+
+---
+
+## Self-Review (against spec + Codex NO-GO)
+
+- **Codex blockers resolved:** config-before-domain (Phase B order), single `CONFIG.MODEL.ASSUMED_HEIGHT_M` key, extraction interleaved with `App.vue` touches (Phase C, cap verified Task 23), aliased `heightAdjustedTLV` import (Task 15), InputControls in the migration + `classToCssClass` (Task 18), row schema defined once (Global Constraints), real colors (Task 7 copies actual values), safe `clearChart` (Task 25), `git add -A` everywhere, `dist/_old` filesystem-only (Task 31), scoped rebrand grep (Task 28).
+- **Spec gaps closed:** typecheck (Task 5) + in CI (Task 30); format:check in CI (Task 30); App smoke tests (Task 36); epsilon + separate rounding tests (Tasks 9–10); cohort-mean + export + malformed tests (Task 24); query-param age clamping (Task 13); UI "15-80" copy (Task 18); formulasConfig absorbed (Task 11).
+- **Ordering:** config → domain → interleaved de-monolith/wire → import/chart → deploy → CI/hygiene → smoke → branch last. Branch name captured dynamically (Task 37).
