@@ -422,3 +422,16 @@ describe('processRows', () => {
 - **Codex blockers resolved:** config-before-domain (Phase B order), single `CONFIG.MODEL.ASSUMED_HEIGHT_M` key, extraction interleaved with `App.vue` touches (Phase C, cap verified Task 23), aliased `heightAdjustedTLV` import (Task 15), InputControls in the migration + `classToCssClass` (Task 18), row schema defined once (Global Constraints), real colors (Task 7 copies actual values), safe `clearChart` (Task 25), `git add -A` everywhere, `dist/_old` filesystem-only (Task 31), scoped rebrand grep (Task 28).
 - **Spec gaps closed:** typecheck (Task 5) + in CI (Task 30); format:check in CI (Task 30); App smoke tests (Task 36); epsilon + separate rounding tests (Tasks 9–10); cohort-mean + export + malformed tests (Task 24); query-param age clamping (Task 13); UI "15-80" copy (Task 18); formulasConfig absorbed (Task 11).
 - **Ordering:** config → domain → interleaved de-monolith/wire → import/chart → deploy → CI/hygiene → smoke → branch last. Branch name captured dynamically (Task 37).
+
+## Rev-2 review fixes (applied during implementation)
+
+Codex rev-2 re-review (NO-GO, "materially better") — these 8 items are binding on the implementation:
+
+1. **Task 11 shim must stay backward-compatible:** keep `calculateThreshold01/02/03/04` (and any names current `App.vue:410`/`ChartDisplay.vue:98` call) in `formulasConfig.js` until Tasks 15/25 migrate every caller. The shim ADDS config-driven helpers; it does not remove live APIs mid-flight.
+2. **Task 15 second name collision:** `App.vue` has a computed `liverGrowthRate`. Import the domain fn aliased: `import { liverGrowthRate as calcLiverGrowthRate, heightAdjustedTLV as calcHtTLV, classify, formatClassLabel } from '@/domain/classification.js'`.
+3. **Task 18 InputControls:** add `import { classToCssClass } from '@/domain/classification.js'` in `InputControls.vue` `<script setup>`, and migrate **all three** `${progressionGroup}` bindings (`InputControls.vue:205,216,227`), not just one.
+4. **Phase C 600-LOC discipline:** the FIRST commit that modifies `App.vue` must already carry enough extraction to bring `App.vue` < 600 (bundle the large composable/component extractions into that first refactor commit); never commit a modified over-cap `App.vue`. Task 23 re-verifies.
+5. **format:check needs a clean baseline (new Task 29b):** run `npx prettier --write .` once as a dedicated `style: apply Prettier` commit BEFORE Task 30 enables `format:check` in CI (current `format:check` fails on ~31 files).
+6. **Estimated export columns (spec D7):** JSON/CSV/Excel exports must carry `estimatedHtTLV` and `estimatedClass` **in addition to** the `htTLV_estimated` boolean (Tasks 24/26).
+7. **Task 37 branch-delete guard:** `if [ "$WORK" != "main" ]; then git push origin --delete "$WORK"; fi`, and verify the branch is merged into `main` first. Never delete `main`.
+8. **Task 9 epsilon coverage:** test `threshold ± ε` for EVERY cutoff (1/2/3/4%), not just the low ones.
