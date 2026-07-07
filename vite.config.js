@@ -105,11 +105,21 @@ export default defineConfig(({ command }) => {
       },
     },
     server: {
-      port: 8080, // Or your preferred port
-      open: true, // Automatically open browser
+      // Fixed non-standard port so the dev server never collides with other local
+      // dev servers (e.g. one already occupying 8080). Override via CHIC_DEV_PORT.
+      port: Number(process.env.CHIC_DEV_PORT) || 8137,
+      strictPort: true, // fail loudly instead of silently hopping to an unforwarded port
+      host: true, // bind 0.0.0.0 so a forwarded / remote browser can reach it
+      open: false, // headless / remote host: no local browser to auto-open
       watch: {
         usePolling: true,
       },
+    },
+    preview: {
+      // Mirror the dev server: fixed non-standard port, override via CHIC_PREVIEW_PORT.
+      port: Number(process.env.CHIC_PREVIEW_PORT) || 8138,
+      strictPort: true,
+      host: true,
     },
   };
 });

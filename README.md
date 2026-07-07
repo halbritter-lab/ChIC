@@ -187,7 +187,7 @@ ChIC is a Vue 3 + Vite single-page application (plain JavaScript). Requires Node
 
 ```bash
 npm ci            # install dependencies
-npm run dev       # dev server on http://localhost:8080
+npm run dev       # dev server on http://localhost:8137
 npm run build     # production build -> dist/
 npm run preview   # serve the production build locally
 ```
