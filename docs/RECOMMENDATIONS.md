@@ -1,6 +1,6 @@
 # ChIC — Repository Review & Improvement Roadmap
 
-_Review date: 2026-07-06. Scope: full-repo audit for correctness, tooling, CI/CD, and readiness for sustained multi-agent development._
+_Review date: 2026-07-06. Scope: full-repo audit for correctness, tooling, CI/CD and readiness for sustained multi-agent development._
 
 This document is the agreed backlog. Items are grouped by tier and ordered by value/effort. Effort: **S** ≈ <1h, **M** ≈ half-day, **L** ≈ multi-day. Every claim here was verified against the code.
 
