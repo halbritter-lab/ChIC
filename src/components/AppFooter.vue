@@ -5,9 +5,26 @@
       <div class="footer-text">
         <p><strong>Please cite the following publications for this tool:</strong></p>
         <p>
-          <a href="https://pubmed.ncbi.nlm.nih.gov/TBD/" target="_blank" rel="noopener noreferrer">
-            ChIC Paper Citation
+          <a
+            href="https://pubmed.ncbi.nlm.nih.gov/36246085/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Sierks et al., JHEP Reports 2022 (PMID 36246085)
           </a>
+        </p>
+        <p>
+          <a
+            href="https://pubmed.ncbi.nlm.nih.gov/38101549/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Schönauer et al., Gastroenterology 2024 (PMID 38101549)
+          </a>
+        </p>
+        <p class="footer-note">
+          The primary ChIC manuscript is in preparation; citation details will be added once it is
+          published.
         </p>
         <p class="footer-break" aria-hidden="true" />
         <p>
