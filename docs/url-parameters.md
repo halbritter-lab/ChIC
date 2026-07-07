@@ -2,7 +2,7 @@
 
 [← Documentation home](README.md)
 
-The Charité Imaging Classification tool supports **URL query parameters** that preset the input fields and control which parts of the interface are shown. This makes it easy to share a specific configuration, deep-link into the tool with predefined settings, or embed it in **kiosk/embed mode**.
+The Charité Imaging Classification tool supports **URL query parameters** that preset the input fields and control which parts of the interface are shown. This makes it easy to share a specific configuration, deep-link into the tool with predefined settings or embed it in **kiosk/embed mode**.
 
 ## Available parameters
 
