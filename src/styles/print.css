@@ -140,7 +140,9 @@
     width: 100%;
     max-width: 500px;
     height: auto;
-    aspect-ratio: 16 / 9;
+    /* Same canonical ratio as on screen (controls.css, issue #7): the canvas buffer
+       is rasterized at its on-screen 5/3 shape, so any other print ratio stretches it. */
+    aspect-ratio: 5 / 3;
     margin: 5px 0 !important;
   }
 

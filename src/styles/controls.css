@@ -236,12 +236,28 @@ input[type='number'] {
   outline: none !important;
   padding: 0 12px !important; /* keep horizontal padding consistent */
 }
+/* The chart is a clinical reference diagram (nomogram): its class-band slopes must
+   look the same on every device, so the container enforces ONE canonical aspect
+   ratio at all breakpoints (issue #7). 5/3 matches the historical desktop rendering
+   (~744x450 at the 1200px container). Height always derives from width; the vh term
+   only caps width on short landscape viewports so the chart never overflows them.
+   Chart.js (responsive:true, maintainAspectRatio:false) follows this box — the
+   container owns the size, nothing styles the <canvas> itself. */
 .chart-container {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 0; /* align top with left-column inputs */
-  height: 450px; /* Explicit height for the container */
+  aspect-ratio: 5 / 3;
+  height: auto;
+  /* Break the canvas->container sizing feedback loop: an aspect-ratio box gets a
+     content-based automatic minimum height, so the canvas's stale inline height
+     would prop the container open and defeat the ratio on shrink. */
+  min-height: 0;
+  overflow: hidden;
+  width: min(100%, calc(85vh * 5 / 3));
+  margin-left: auto;
+  margin-right: auto;
 }
 /* Box style for htTLV output to match FAQ/Disclaimer sections */
 .httlv-box {
@@ -267,10 +283,6 @@ input[type='number'] {
   margin-bottom: 8px;
   border-bottom: 2px solid #3498db;
   padding-bottom: 6px;
-}
-canvas {
-  max-width: 100%;
-  height: 100%; /* Allow canvas to fill the container height */
 }
 .button {
   margin: 3px;
