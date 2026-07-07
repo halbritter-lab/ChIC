@@ -49,16 +49,425 @@
       name="msapplication-square150x150logo"
       content="%BASE_URL%img/icons/mstile-150x150.png?v=6"
     />
-    <title>Charité Imaging Classification</title>
+    <!-- ==================== SEO CONFIG — single source of absolute URLs ====================
+         Canonical origin is hardcoded. If the app ever moves to a custom domain, change every
+         https://halbritter-lab.github.io/ChIC/ occurrence in this block AND in the JSON-LD below. -->
+    <title>ChIC — Charité Imaging Classification for Polycystic Liver Disease (PLD)</title>
+    <meta
+      name="description"
+      content="Free interactive tool that classifies polycystic liver disease (PLD) progression from height-adjusted total liver volume (htTLV) and age to predict liver-event risk in ADPKD and ADPLD."
+    />
+    <meta
+      name="keywords"
+      content="polycystic liver disease, PLD, ADPLD, ADPKD, height-adjusted total liver volume, htTLV, total liver volume, liver events, risk prediction, volume classification, Charité Imaging Classification, ChIC, PKD1, PKD2, GANAB, PRKCSH, SEC63"
+    />
+    <meta name="author" content="Carolin Beatrice Brigl, Bernt Popp, Jan Halbritter" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#00bf7d" />
+    <link rel="canonical" href="https://halbritter-lab.github.io/ChIC/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Charité Imaging Classification (ChIC)" />
+    <meta
+      property="og:title"
+      content="ChIC — Charité Imaging Classification for Polycystic Liver Disease"
+    />
+    <meta
+      property="og:description"
+      content="Classify PLD progression from height-adjusted total liver volume (htTLV) and age to predict liver-event risk in ADPKD and ADPLD. Free, research-based."
+    />
+    <meta property="og:url" content="https://halbritter-lab.github.io/ChIC/" />
+    <meta property="og:image" content="https://halbritter-lab.github.io/ChIC/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Charité Imaging Classification (ChIC) — polycystic liver disease progression by class A–E"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="ChIC — Charité Imaging Classification for Polycystic Liver Disease"
+    />
+    <meta
+      name="twitter:description"
+      content="Classify PLD progression from htTLV and age to predict liver-event risk in ADPKD and ADPLD. Free, research-based."
+    />
+    <meta name="twitter:image" content="https://halbritter-lab.github.io/ChIC/og-image.png" />
+    <meta
+      name="twitter:image:alt"
+      content="ChIC — polycystic liver disease progression classes A–E"
+    />
+
+    <!-- Dublin Core (academic indexers) -->
+    <meta
+      name="DC.title"
+      content="Charité Imaging Classification (ChIC) for Polycystic Liver Disease"
+    />
+    <meta name="DC.creator" content="Brigl, Carolin Beatrice" />
+    <meta name="DC.creator" content="Popp, Bernt" />
+    <meta name="DC.creator" content="Halbritter, Jan" />
+    <meta
+      name="DC.subject"
+      content="Polycystic Liver Disease; ADPLD; ADPKD; height-adjusted total liver volume; risk stratification"
+    />
+    <meta
+      name="DC.description"
+      content="Interactive classification of polycystic liver disease progression using height-adjusted total liver volume and age to predict liver-event risk."
+    />
+    <meta name="DC.publisher" content="Charité – Universitätsmedizin Berlin" />
+    <meta name="DC.type" content="InteractiveResource" />
+    <meta name="DC.format" content="text/html" />
+    <meta name="DC.identifier" content="https://halbritter-lab.github.io/ChIC/" />
+    <meta name="DC.language" content="en" />
+    <meta name="DC.rights" content="MIT License" />
+
+    <!-- NOTE: Google Scholar citation_* tags are intentionally NOT emitted. This is a software
+         tool page, not an article/abstract page; emitting them risks Scholar misattributing the
+         tool as the paper. Paper linkage lives in the JSON-LD (isBasedOn) and the visible
+         "How to cite" block in the body. -->
+    <!-- ==================== /SEO CONFIG ==================== -->
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://halbritter-lab.github.io/ChIC/#webapp",
+            "name": "Charité Imaging Classification (ChIC)",
+            "alternateName": "ChIC",
+            "url": "https://halbritter-lab.github.io/ChIC/",
+            "description": "Free interactive tool that classifies polycystic liver disease (PLD) progression from height-adjusted total liver volume (htTLV) and age to predict liver-event risk in ADPKD and ADPLD.",
+            "applicationCategory": "HealthApplication",
+            "operatingSystem": "Any (web browser)",
+            "browserRequirements": "Requires JavaScript.",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "inLanguage": "en",
+            "softwareVersion": "0.4.0",
+            "image": "https://halbritter-lab.github.io/ChIC/og-image.png",
+            "license": "https://opensource.org/licenses/MIT",
+            "codeRepository": "https://github.com/halbritter-lab/ChIC",
+            "sameAs": "https://github.com/halbritter-lab/ChIC",
+            "about": { "@id": "https://halbritter-lab.github.io/ChIC/#pld" },
+            "audience": {
+              "@type": "MedicalAudience",
+              "audienceType": ["Clinician", "Medical researcher"]
+            },
+            "author": [
+              { "@type": "Person", "name": "Carolin Beatrice Brigl" },
+              { "@type": "Person", "name": "Bernt Popp" },
+              { "@type": "Person", "name": "Jan Halbritter" }
+            ],
+            "publisher": {
+              "@type": "Organization",
+              "name": "Charité – Universitätsmedizin Berlin",
+              "url": "https://www.charite.de/"
+            },
+            "isBasedOn": [
+              { "@id": "https://halbritter-lab.github.io/ChIC/#sierks2022" },
+              { "@id": "https://halbritter-lab.github.io/ChIC/#schonauer2024" }
+            ]
+          },
+          {
+            "@type": "MedicalWebPage",
+            "@id": "https://halbritter-lab.github.io/ChIC/#page",
+            "url": "https://halbritter-lab.github.io/ChIC/",
+            "name": "Charité Imaging Classification (ChIC) for Polycystic Liver Disease",
+            "description": "Interactive classification of polycystic liver disease progression using height-adjusted total liver volume and age to predict liver-event risk in ADPKD and ADPLD.",
+            "inLanguage": "en",
+            "about": { "@id": "https://halbritter-lab.github.io/ChIC/#pld" },
+            "medicalAudience": [
+              { "@id": "https://schema.org/Clinician" },
+              { "@id": "https://schema.org/MedicalResearcher" }
+            ],
+            "primaryImageOfPage": "https://halbritter-lab.github.io/ChIC/og-image.png",
+            "lastReviewed": "2026-07-07",
+            "dateModified": "2026-07-07",
+            "mainEntity": { "@id": "https://halbritter-lab.github.io/ChIC/#webapp" }
+          },
+          {
+            "@type": "MedicalCondition",
+            "@id": "https://halbritter-lab.github.io/ChIC/#pld",
+            "name": "Polycystic Liver Disease",
+            "alternateName": ["PLD", "Autosomal Dominant Polycystic Liver Disease (ADPLD)"],
+            "associatedAnatomy": { "@type": "AnatomicalStructure", "name": "Liver" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://halbritter-lab.github.io/ChIC/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is height-adjusted total liver volume (htTLV)?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "htTLV is total liver volume (in millilitres, from MRI or CT) divided by the patient's height in metres. ChIC uses htTLV together with age to place a patient in a progression class."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What do the ChIC classes A–E mean?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "ChIC assigns one of five classes, A (mild) to E (severe), from a patient's age and htTLV, corresponding to compound annual liver-growth-rate bands of under 1%, 1–2%, 2–3%, 3–4%, and 4% or more per year. Higher classes carry a higher risk of future liver events."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is ChIC a diagnostic device?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. ChIC is an informational and educational research tool for risk stratification, not a diagnostic device. It does not replace clinical judgement."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does ChIC differ from the Mayo Imaging Classification?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The Mayo Imaging Classification stratifies kidney disease in ADPKD using height-adjusted total kidney volume. ChIC applies an analogous compound-exponential-growth model to the liver, using height-adjusted total liver volume to predict liver events in PLD."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which genes cause polycystic liver disease?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "PLD is most often associated with variants in PKD1, PKD2 and GANAB (in ADPKD) and PRKCSH and SEC63 (in ADPLD)."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I cite ChIC?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Cite the originating, peer-reviewed studies: Sierks et al., JHEP Reports 2022 (PMID 36246085) and Schönauer et al., Gastroenterology 2024 (PMID 38101549). The primary ChIC manuscript is in preparation; citation details will be added once it is published."
+                }
+              }
+            ]
+          },
+          {
+            "@type": "ScholarlyArticle",
+            "@id": "https://halbritter-lab.github.io/ChIC/#sierks2022",
+            "headline": "Modelling polycystic liver disease progression using age-adjusted liver volumes and targeted mutational analysis",
+            "author": [
+              { "@type": "Person", "name": "Dana Sierks" },
+              { "@type": "Person", "name": "Ria Anne-Rose Schönauer" },
+              { "@type": "Person", "name": "Jan Halbritter" }
+            ],
+            "isPartOf": { "@type": "Periodical", "name": "JHEP Reports" },
+            "datePublished": "2022",
+            "sameAs": "https://pubmed.ncbi.nlm.nih.gov/36246085/"
+          },
+          {
+            "@type": "ScholarlyArticle",
+            "@id": "https://halbritter-lab.github.io/ChIC/#schonauer2024",
+            "headline": "Sex, Genotype, and Liver Volume Progression as Risk of Hospitalization Determinants in Autosomal Dominant Polycystic Liver Disease",
+            "author": [
+              { "@type": "Person", "name": "Ria Anne-Rose Schönauer" },
+              { "@type": "Person", "name": "Dana Sierks" },
+              { "@type": "Person", "name": "Jan Halbritter" }
+            ],
+            "isPartOf": { "@type": "Periodical", "name": "Gastroenterology" },
+            "datePublished": "2024",
+            "sameAs": "https://pubmed.ncbi.nlm.nih.gov/38101549/"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <noscript>
-      <strong
-        >We're sorry but this app doesn't work properly without JavaScript enabled. Please enable it
-        to continue.</strong
+      <div
+        style="max-width: 820px; margin: 0 auto; padding: 24px; font-family: system-ui, sans-serif"
       >
+        <p>
+          <strong>The interactive ChIC tool requires JavaScript.</strong> Please enable it to enter
+          patient data and see the classification chart.
+        </p>
+        <p>
+          ChIC classifies polycystic liver disease (PLD) progression from height-adjusted total
+          liver volume (htTLV) and age.
+          <strong>Informational and educational; not a diagnostic device.</strong>
+        </p>
+        <p>
+          Read the papers: Sierks et al., <em>JHEP Reports</em> 2022 (<a
+            href="https://pubmed.ncbi.nlm.nih.gov/36246085/"
+            >PMID 36246085</a
+          >) and Schönauer et al., <em>Gastroenterology</em> 2024 (<a
+            href="https://pubmed.ncbi.nlm.nih.gov/38101549/"
+            >PMID 38101549</a
+          >). <a href="https://github.com/halbritter-lab/ChIC">Source code</a>.
+        </p>
+      </div>
     </noscript>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Static pre-mount / no-JS landing. Vue replaces this on mount (progressive
+           enhancement — same subject matter as the app, not cloaking). Non-JS crawlers and
+           link-preview scrapers index this content. The scoped <style> is removed with the shell. -->
+      <style>
+        .chic-seo-shell {
+          max-width: 820px;
+          margin: 0 auto;
+          padding: 40px 24px;
+          font-family:
+            system-ui,
+            -apple-system,
+            'Segoe UI',
+            Roboto,
+            sans-serif;
+          color: #1a1a1a;
+          line-height: 1.55;
+        }
+        .chic-seo-shell img {
+          width: 96px;
+          height: auto;
+          display: block;
+          margin: 0 auto 16px;
+        }
+        .chic-seo-shell h1 {
+          font-size: 1.6rem;
+          text-align: center;
+          margin: 0 0 8px;
+        }
+        .chic-seo-shell .chic-disclaimer {
+          text-align: center;
+          font-weight: 600;
+          color: #0a7f66;
+          margin: 0 0 24px;
+        }
+        .chic-seo-shell h2 {
+          font-size: 1.15rem;
+          margin: 28px 0 8px;
+        }
+        .chic-seo-shell dt {
+          font-weight: 600;
+          margin-top: 10px;
+        }
+        .chic-seo-shell dd {
+          margin: 0 0 4px 0;
+        }
+        .chic-seo-shell details {
+          margin: 8px 0;
+        }
+        .chic-seo-shell summary {
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .chic-seo-shell a {
+          color: #0a7f66;
+        }
+        .chic-seo-shell .chic-loading {
+          text-align: center;
+          color: #666;
+          margin-top: 28px;
+          font-size: 0.9rem;
+        }
+      </style>
+      <div class="chic-seo-shell">
+        <img src="./favicon.png" alt="Charité Imaging Classification logo" width="96" />
+        <h1>Charité Imaging Classification (ChIC) for Polycystic Liver Disease</h1>
+        <p class="chic-disclaimer">Informational and educational; not a diagnostic device.</p>
+
+        <p>
+          ChIC is a free, research-based tool that classifies
+          <strong>polycystic liver disease (PLD)</strong> progression by age and
+          <strong>height-adjusted total liver volume (htTLV)</strong> into five classes, A (mild) to
+          E (severe), to help clinicians and researchers estimate the risk of future
+          <strong>liver events</strong> in <strong>ADPKD</strong> and <strong>ADPLD</strong>.
+        </p>
+
+        <h2>How the classes work</h2>
+        <p>
+          htTLV = total liver volume (ml) ÷ height (m). Patients are placed in classes A–E by
+          compound annual liver-growth-rate bands (&lt;1%, 1–2%, 2–3%, 3–4%, ≥4% per year); higher
+          classes carry a higher risk of liver events. ChIC builds on the two published PLD
+          progression studies cited below, using multicentre imaging data.
+        </p>
+
+        <h2>Key terms</h2>
+        <dl>
+          <dt>PLD</dt>
+          <dd>Polycystic liver disease — fluid-filled cysts replacing liver tissue.</dd>
+          <dt>ADPLD</dt>
+          <dd>Autosomal dominant polycystic liver disease (isolated liver involvement).</dd>
+          <dt>ADPKD</dt>
+          <dd>Autosomal dominant polycystic kidney disease, which often includes PLD.</dd>
+          <dt>htTLV</dt>
+          <dd>Height-adjusted total liver volume (ml/m).</dd>
+          <dt>TLV</dt>
+          <dd>Total liver volume (ml), measured from MRI or CT.</dd>
+          <dt>Liver events</dt>
+          <dd>
+            Cyst complications, procedures, or medication for PLD (e.g. hemorrhage, infection,
+            aspiration sclerotherapy, resection, transplantation).
+          </dd>
+          <dt>LGR</dt>
+          <dd>Liver growth rate (percent per year).</dd>
+        </dl>
+
+        <h2>Frequently asked questions</h2>
+        <details>
+          <summary>What is height-adjusted total liver volume (htTLV)?</summary>
+          <p>
+            htTLV is total liver volume (ml, from MRI or CT) divided by the patient's height in
+            metres. ChIC uses htTLV with age to assign a progression class.
+          </p>
+        </details>
+        <details>
+          <summary>What do the ChIC classes A–E mean?</summary>
+          <p>
+            Five classes from A (mild) to E (severe), set by age and htTLV and mapping to annual
+            liver-growth-rate bands of &lt;1%, 1–2%, 2–3%, 3–4%, and ≥4%. Higher classes carry
+            higher liver-event risk.
+          </p>
+        </details>
+        <details>
+          <summary>Is ChIC a diagnostic device?</summary>
+          <p>
+            No. ChIC is an informational and educational research tool for risk stratification, not
+            a diagnostic device, and does not replace clinical judgement.
+          </p>
+        </details>
+        <details>
+          <summary>How does ChIC differ from the Mayo Imaging Classification?</summary>
+          <p>
+            The Mayo Imaging Classification stratifies kidney disease in ADPKD using height-adjusted
+            total kidney volume. ChIC applies an analogous compound-exponential-growth model to the
+            liver using htTLV.
+          </p>
+        </details>
+        <details>
+          <summary>Which genes cause polycystic liver disease?</summary>
+          <p>
+            PLD is most often associated with variants in <em>PKD1</em>, <em>PKD2</em> and
+            <em>GANAB</em> (ADPKD) and <em>PRKCSH</em> and <em>SEC63</em> (ADPLD).
+          </p>
+        </details>
+
+        <h2>How to cite</h2>
+        <p>
+          Cite the originating, peer-reviewed studies: Sierks et al., <em>JHEP Reports</em> 2022 (<a
+            href="https://pubmed.ncbi.nlm.nih.gov/36246085/"
+            >PMID 36246085</a
+          >) and Schönauer et al., <em>Gastroenterology</em> 2024 (<a
+            href="https://pubmed.ncbi.nlm.nih.gov/38101549/"
+            >PMID 38101549</a
+          >). The primary ChIC manuscript is in preparation; citation details will be added once it
+          is published.
+        </p>
+
+        <p><a href="https://github.com/halbritter-lab/ChIC">Source code on GitHub</a></p>
+
+        <p class="chic-loading">Loading the interactive ChIC tool…</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
     <!-- built files will be auto injected - This comment is no longer accurate for Vite -->
   </body>

@@ -6,6 +6,8 @@
 
 Please explore the [Charité Imaging Classification](https://halbritter-lab.github.io/ChIC/) app hosted on GitHub pages.
 
+> The app ships static SEO metadata, Open Graph/Twitter cards, and schema.org structured data for discoverability by the PLD clinical/research audience. Academic linkage and the DOI/PMID are finalized at publication — see `docs/superpowers/specs/2026-07-07-seo-audience-fit-design.md`.
+
 ## Introduction
 
 The Charité Imaging Classification (ChIC) for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on a recent study titled "ChIC Paper" [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver events in individuals with PLD.
