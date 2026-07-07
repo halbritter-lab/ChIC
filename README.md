@@ -1,262 +1,74 @@
 <p align="center">
-   <img src="public/ChICLogo_Full_2026-07-02.png" alt="Charité Imaging Classification logo" width="320" height="320">
+   <img src="public/ChICLogo_Full_2026-07-02.png" alt="Charité Imaging Classification logo" width="240" height="240">
 </p>
 
-# Charité Imaging Classification
-
-Please explore the [Charité Imaging Classification](https://halbritter-lab.github.io/ChIC/) app hosted on GitHub pages.
-
-> The app ships static SEO metadata, Open Graph/Twitter cards, and schema.org structured data for discoverability by the PLD clinical/research audience. Academic linkage and the DOI/PMID are finalized at publication — see `docs/superpowers/specs/2026-07-07-seo-audience-fit-design.md`.
-
-## Introduction
-
-The Charité Imaging Classification (ChIC) for Polycystic Liver Disease (PLD) is an interactive web application designed to assist in the prognostic assessment of Autosomal Dominant Polycystic Liver Disease (ADPLD) and PLD within the context of Autosomal Dominant Polycystic Kidney Disease (ADPKD). Based on a recent study titled "ChIC Paper" [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/), this tool aims to facilitate the visualization of disease progression and estimates the future risk of liver events in individuals with PLD.
-
-PLD, characterized by numerous fluid-filled cysts arising from intrahepatic biliary epithelia, is a mostly genetic cholangiopathy with significant clinical heterogeneity. The presentation of PLD can vary widely with some patients never experiencing symptoms and others requiring medication or procedural intervention, in rare cases even liver transplantation. The application uses height-adjusted total liver volume (htTLV) and age and leverages data from three tertiary care centers and two previous studies for prognostic risk stratification in PLD.
-
-## Tool Development
-
-The principle of the "Charité Imaging Classification" tool was first published in 2022, highlighting its application in the study of PLD within the context of both Autosomal Dominant Polycystic Kidney Disease (ADPKD) and Autosomal Dominant Polycystic Liver Disease (ADPLD). This version of the tool had a three-group system and used the endpoint "liver hospitalizations". For more details on the publication, see [PMID:36246085](https://pubmed.ncbi.nlm.nih.gov/36246085/).
-
-The tool was validated in a second study of only ADPLD patients in 2024. For more details on the publication, see [PMID:38101549](https://pubmed.ncbi.nlm.nih.gov/38101549/).
-
-In 2026 the classification underwent significant revision. The new classification system has expanded to a five-group system to better cover the range of disease presentation. It also uses htTLV and an expanded endpoint "liver events" to better align with progress in the PLD field. Additionally, the classification has expanded to cover the ages 15-85 and shows improved stratification of patients under 30. For more details on the publication, see [PMID:TBD](https://pubmed.ncbi.nlm.nih.gov/TBD/).
-
-## Features
-
-- **Data Input and Visualization:** Users can input individual-specific data, including age, height, and total liver volume, to visualize the height-adjusted total liver volume (htTLV) on a chart.
-- **Data Analysis:** The app plots four key trend lines based on the formulas derived from the study, offering visual insight into the Charité Imaging Classes as defined in the research.
-- **Dynamic Interaction:** Users can interactively plot new data points on the chart, assisting in the analysis of individual trajectories. Points can be edited after input by clicking on the data row or point, and can be removed using the remove button.
-- **Download and Print Options:** The application allows for downloading the plotted chart and printing the page for offline analysis and record-keeping.
-- **Batch Analysis:** Batch analysis is also possible via the enable grouping button.
-
-## Technical Overview
-
-The application is built using Vue.js and Chart.js, ensuring a responsive and interactive user experience. The layout is designed with controls and input fields on the left and the chart on the right, facilitating ease of use and clear data presentation.
-
-## Webapp usage and application components
+<h1 align="center">Charité Imaging Classification (ChIC)</h1>
 
 <p align="center">
-   <img src="public/ChIC_ApplicationComponents_2026-07-02.png" alt="Charité Imaging Classification application components description" width="1100">
+  An interactive web app for the prognostic assessment of <strong>Polycystic Liver Disease (PLD)</strong> progression.
 </p>
 
-1. **Application Header**
-   - **(1a) Logo**: Displays the logo of the Charité Imaging Classification application.
-   - **(1b) Title**: Shows the name of the application.
-   - **(1c) Version Tag**: Indicates the current version of the application.
-   - **(1d) Reset Button**: Clears all data and input fields to start a new session.
-   - **(1e) Night Mode Toggle**: Switches the application between light and dark theme for better visibility in different lighting conditions.
-   - **(1f) Print Button**: Opens the print dialog to print the current page with all visualizations.
-   - **(1g) FAQ Button**: Opens the frequently asked questions panel with helpful information about using the application.
+<p align="center">
+  <a href="https://github.com/halbritter-lab/ChIC/actions/workflows/ci.yml"><img src="https://github.com/halbritter-lab/ChIC/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://halbritter-lab.github.io/ChIC/"><img src="https://img.shields.io/badge/Live%20app-ChIC-00bf7d?logo=github&logoColor=white" alt="Live app"></a>
+  <a href="docs/README.md"><img src="https://img.shields.io/badge/Documentation-read-2496ED" alt="Documentation"></a>
+</p>
 
-2. **User Input Area**
-   - **(2a) ID Field**: Where users can enter a unique identifier for the data point they are entering or analyzing.
-   - **(2b) Age Input**: Users can input the age of the patient in years (15-85 years).
-   - **(2c) Height Input**: Users can input the patient's height in meters (for calculating height-adjusted TLV).
-   - **(2d) Total Liver Volume (TLV) Input**: Users can input the total liver volume measured in milliliters.
+<p align="center">
+  <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white" alt="Vue 3">
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white" alt="Vite 6">
+  <img src="https://img.shields.io/badge/Chart.js-4-FF6384?logo=chartdotjs&logoColor=white" alt="Chart.js 4">
+  <img src="https://img.shields.io/badge/PWA-ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA ready">
+</p>
 
-3. **Computed Outputs**
-   - **(3a) Height-adjusted Total Liver Volume (htTLV)**: This field displays the calculated height-adjusted total liver volume based on the input TLV divided by height in meters.
-   - **(3b) Charité Imaging Class (Class) Indicator**: Shows the Charité Imaging Class classification based on the computed htTLV and age.
-   - **(3c) Liver Growth Rate (LGR)**: Displays the percentage change in liver volume per year (%/y) based on serial measurements.
+---
 
-4. **Action Buttons**
-   - **(4a) Calculate**: Submits the entered data and plots the point on the graph.
-   - **(4b) Print Page**: Allows the user to print the current page.
-   - **(4c) Download Chart**: Enables the user to download the displayed plot as an image.
-   - **(4d) Download Data**: Exports the data table in JSON, CSV, or Excel format with consistent column formatting.
-   - **(4e) Load Data**: Loads data from a selected JSON file and updates the table and plot accordingly.
+## About
 
-5. **Chart Area**
-   - Displays a scatter plot graph illustrating the relationship between age and htTLV, with trend lines indicating progression thresholds.
+The **Charité Imaging Classification (ChIC)** helps clinicians and researchers assess and visualize the progression of **Polycystic Liver Disease (PLD)**. It stratifies prognosis from **height-adjusted total liver volume (htTLV)** and **age**, assigning a Charité Imaging Class (**A–E**) and estimating the future risk of liver events. All computation runs in your browser — no data leaves your device.
 
-6. **Charité Imaging Classes Legend**
-   - **Class A** — <1% growth per year — Very slow progression
-   - **Class B** — 1–2% growth per year — Slow progression
-   - **Class C** — 2–3% growth per year — Moderate progression
-   - **Class D** — 3–4% growth per year — Rapid progression
-   - **Class E** — >4% growth per year — Very rapid progression
+> ⚠️ ChIC is an **informational, educational, and research tool — not a diagnostic device.** See the [full disclaimer](docs/disclaimer.md).
 
-7. **Additional Information and Footer**
-   - **(7a) Citation Information**: Contains bibliographic information to cite when using the application for research or publication purposes.
-   - **(7b) Documentation Link**: Provides a link to the GitHub README for detailed documentation of the application and its methodologies. Includes a feedback form for user suggestions and bug reports.
-   - **(7c) Institution Logo**: Shows the logo of the associated medical institution.
-   - **(7d) Funder Logo**: Displays the logo of the funding organization.
+**👉 Try it live: <https://halbritter-lab.github.io/ChIC/>**
 
-8. **Data Table** _(not visible in the screenshot)_
-   - If present, this would display a table of all data points entered, including ID, age, height, TLV, htTLV, Charité Imaging Class, and an option to remove data points.
+## Documentation
 
-Each numbered item refers to a different component or section of the app. Users interact with these components to input data, receive computed outputs, manage the data points, and utilize the results for further analysis or documentation.
+Full documentation lives in [**`docs/`**](docs/README.md):
 
-## URL API Documentation
+| Page                                                 | What it covers                                    |
+| ---------------------------------------------------- | ------------------------------------------------- |
+| [Clinical background](docs/clinical-background.md)   | The science, the model, and publication history.  |
+| [User guide](docs/user-guide.md)                     | Features and an annotated tour of the interface.  |
+| [Data formats](docs/data-formats.md)                 | Batch import & export (Excel / CSV / JSON / PNG). |
+| [URL parameters](docs/url-parameters.md)             | Preset inputs and embed/kiosk mode via the URL.   |
+| [Privacy & offline use](docs/privacy-and-offline.md) | Client-side storage and PWA install/offline.      |
+| [Disclaimer](docs/disclaimer.md)                     | Full disclaimer and usage guidelines.             |
+| [Citation & credits](docs/citation.md)               | How to cite ChIC, plus creators and contributors. |
 
-### Overview
-
-The Charité Imaging Classification tool supports URL query parameters, allowing users to preset input fields directly through the URL. This feature enables easy sharing of specific configurations and faster access to the tool with predefined settings.
-
-### Query flags
-
-The tool accepts the following query parameters:
-
-1. `patientId`: Sets the patient's ID.
-2. `age`: Sets the patient's age.
-3. `height`: Sets the patient's height in meters (for calculating height-adjusted TLV).
-4. `tlv`: Sets the Total Liver Volume (TLV) in milliliters.
-5. `acknowledgeBanner`: Sets the banner acknowledgement state. Accepts `true` or `false`.
-6. `showFooter`: Controls the visibility of the footer. Accepts `true` or `false`.
-7. `showCitation`: Toggles the display of citation information. Accepts `true` or `false`.
-8. `showDocumentation`: Determines if the documentation link is shown. Accepts `true` or `false`.
-9. `showControls`: Enables or disables the display of the user input controls. Accepts `true` or `false`.
-
-### Usage examples
-
-- **Setting ID and age**:
-  This URL sets the patient's ID to "12345" and age to "50".
-  `https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50`
-
-- **Setting all parameters**:
-  This URL sets the patient's ID to "12345", age to "50", and Total Liver Volume to "15000 ml" and acknowledges the banner.
-  `https://[YOUR_DOMAIN]/ChIC/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true`
-
-- **Setting view controls**:
-  This URL will hide the footer and controls but display the citation information and documentation link.
-  `https://[YOUR_DOMAIN]/ChIC/?showFooter=false&showCitation=true&showDocumentation=true&showControls=false`
-
-## Data Privacy and Storage
-
-### Local Data Storage
-
-The Charité Imaging Classification is designed to prioritize user privacy and data security:
-
-- **Client-Side Data Storage**: All data input into the application is stored locally on the user's device. No personal or sensitive data is sent to or stored on a server.
-- **Data Security**: By keeping data client-side, the risk of data breaches is minimized, ensuring user data remains private and secure.
-
-## Input Formats
-
-### Batch Upload
-
-The application supports batch uploading of multiple patient records at once using the following formats:
-
-- **Excel (XLSX)**: Upload patient data from Excel spreadsheets. Each row should contain: ID, Age (years), Height (meters), TLV (milliliters), and optionally Group and GroupColor.
-- **CSV**: Import comma-separated values files with the same column structure as Excel files. This format is universally compatible with all spreadsheet applications.
-- **JSON**: Upload data in JSON format for technical users. The file should contain an array of patient objects with properties: id, age, height, tlv, group (optional), and groupColor (optional).
-
-All batch uploads will add the records to the chart and data table, allowing for immediate visualization and analysis of multiple patients.
-
-## Output Formats
-
-### Export Options
-
-Users can export their data in various formats for ease of use and flexibility:
-
-- **Excel (XLSX)**: For users who prefer spreadsheet analysis, data can be exported in Excel format with proper number formatting.
-- **CSV**: Comma-separated values format for universal compatibility with all spreadsheet applications.
-- **JSON**: Offering a more technical format, data can be saved as JSON files, which are ideal for further processing or integration with other applications.
-- **PNG**: The application allows users to download charts as PNG images, perfect for presentations or reports.
-
-All export formats include the complete data table columns: ID, Age (y), Height (m), TLV (ml), htTLV, Class, and LGR (%/y), with consistent number formatting.
-
-## Progressive Web App (PWA) support
-
-The Charité Imaging Classification is also available as a Progressive Web App (PWA), providing a more integrated and efficient user experience.
-The PWA is compatible with most modern browsers on both desktop and mobile devices. For the best experience, ensure your browser is up to date.
-
-### Installing the PWA
-
-1. **Access the Tool**: Open the Charité Imaging Classification in your web browser.
-2. **Install Prompt**: A prompt to "Add to Home Screen" will appear if you are using a compatible browser.
-3. **Confirm Installation**: Click the prompt to install the application on your device.
-4. **Access from Home Screen**: Once installed, the app can be accessed directly from your home screen, just like any other installed application.
-
-### Usage
-
-- **Offline access**: The PWA can be used offline, making it convenient for users without constant internet access.
-- **Faster load times**: As a PWA, the application loads faster, providing a smoother user experience.
-- **Regular updates**: The app will update automatically with the latest features and improvements when online.
-
-## Disclaimer and Usage Guidelines
-
-Disclaimer for Charité Imaging Classification
-
-- **Important Information for All Users:** The Charité Imaging Classification application is intended for informational, educational and research purposes only and should not be used as a substitute for professional medical advice or for direct diagnostic use. The tool is designed to provide insights into PLD progression but is not meant to replace clinical decision-making or genetic consultation.
-- **Usage Guidelines:** The information provided by this application is not intended for medical diagnosis or treatment decisions without the oversight of qualified healthcare professionals. Users are advised not to base any health-related decisions solely on the results obtained from this application. The data and information presented are provided without any warranty of accuracy, completeness, or usefulness. Users should exercise their own judgment in the interpretation and use of the information. For medical relevance of the application's content, please consult with a healthcare professional.
-- **Liability and Risk:** The application is provided 'as is,' without any guarantees or obligations for support, updates or accuracy. Under no circumstances shall the creators or affiliates of the Charité Imaging Classification be liable for any direct, indirect, incidental or consequential damages arising from the use of the application.
-- **Acknowledgment and Consent:** By using the Charité Imaging Classification, you acknowledge having read, understood and agreed to the terms stated in this disclaimer. If you do not agree to these terms, you should not use the application.
-
-## Development
-
-ChIC is a Vue 3 + Vite single-page application (plain JavaScript). Requires Node 20 (see `.nvmrc`).
+## Quick start
 
 ```bash
-npm ci            # install dependencies
-npm run dev       # dev server on http://localhost:8137
-npm run build     # production build -> dist/
-npm run preview   # serve the production build locally
+npm ci         # install dependencies (Node 20 — see .nvmrc)
+npm run dev    # dev server on http://localhost:8137
+npm run build  # production build -> dist/
+npm test       # run the Vitest suite
 ```
 
-Quality gates (also enforced in CI on every pull request):
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide and quality gates, and [AGENTS.md](AGENTS.md) for architecture, conventions, and load-bearing invariants.
 
-```bash
-npm run lint         # ESLint 9 (flat config), check-only
-npm run format:check # Prettier
-npm run typecheck    # vue-tsc
-npm test             # Vitest
-```
+## Tech stack
 
-The clinical model lives in `src/domain/classification.js` and all tunable constants in
-`src/config/config.js`. See [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for
-architecture, conventions, and the 600-LOC / DRY-KISS-SOLID rules.
+**Vue 3** + **Vite 6** · **Chart.js 4** · **exceljs** · **vite-plugin-pwa** · ESLint + Prettier + Vitest. Plain JavaScript, deployed to **GitHub Pages**.
 
-## Contributions
+## Citation
 
-This tool is an open-source project and contributions are welcome. Whether it's feature enhancement, bug fixing, or improvements in the algorithm, your input is valuable. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+If you use ChIC in research or publication, please cite the ChIC paper (DOI/PMID forthcoming). Details in [Citation & credits](docs/citation.md).
 
-## Citation policy
+## License
 
-- Please cite the following publication for this tool:
-  [ChIC Paper Citation](https://pubmed.ncbi.nlm.nih.gov/tbd/)
-
-## Copyright and license
-
-- All code from this project is licensed under the MIT License. For more information, please refer to the [LICENSE](LICENSE) file.
-
-## Creators and contributors
-
-**Carolin Brigl**
-
-- <https://github.com/CBrigl>
-- <https://orcid.org/0009-0008-2094-3440>
-
-**Bernt Popp**
-
-- <https://twitter.com/berntpopp>
-- <https://github.com/berntpopp>
-- <https://orcid.org/0000-0002-3679-1081>
-- <https://scholar.google.com/citations?user=Uvhu3t0AAAAJ>
-
-**Dana Sierks**
-
-- <https://github.com/SIERKSd>
-- <https://orcid.org/0000-0002-3850-7646>
-
-**Ria Schönauer**
-
-- <https://github.com/RARSchoen>
-- <https://orcid.org/0000-0001-7609-3061>
-
-**Jan Halbritter**
-
-- <https://github.com/halbrijp>
-- <https://orcid.org/0000-0002-1377-9880>
-- <https://scholar.google.com/citations?user=Jt1S5fkAAAAJ>
-
-This project was developed with extensive assistance from multiple AI tools, including GPT‑4.5 Mini, Claude Haiku, GPT‑5.3 Codex, GPT‑5.5 and other AI models used throughout the development process. These tools supported code generation, debugging, refactoring and architectural guidance. The project logo was created using ChatGPT’s image generation tools.
-
-## References
-
-- Mayo Clinic ADPKD imaging classification (the analogous kidney model ChIC is built on): <https://www.mayo.edu/research/documents/pkd-center-adpkd-classification/doc-20094754>
-- Related tools from the Halbritter Lab: [ADPKD risk](https://halbritter-lab.github.io/adpkd-risk/), the predecessor [PLD progression grouper](https://halbritter-lab.github.io/pld-progression-grouper/)
+[MIT](LICENSE) © 2026 Carolin Brigl and contributors.
 
 ## Contact
 
-If you have any questions, suggestions, or feedback, please email <jan.halbritter@charite.de> or open an issue on GitHub.
+Email <jan.halbritter@charite.de> or [open an issue](https://github.com/halbritter-lab/ChIC/issues).

@@ -4,7 +4,7 @@ Guidance for AI coding agents (and humans) working in **ChIC** — the Charité 
 
 ## What this app is
 
-ChIC is a single-page **clinical/research calculator for Polycystic Liver Disease (PLD) progression**. A user enters patient ID, age (15–80), height (m), and total liver volume (TLV, ml). The app:
+ChIC is a single-page **clinical/research calculator for Polycystic Liver Disease (PLD) progression**. A user enters patient ID, age (15–85), height (m), and total liver volume (TLV, ml). The app:
 
 1. Computes **height-adjusted TLV**: `htTLV = TLV / height`.
 2. Assigns a **Charité Imaging Class A–E** by comparing `htTLV` against four exponential age-dependent threshold curves.
