@@ -4,11 +4,11 @@
 
 ## Features
 
-- **Data input and visualization** — Enter patient-specific data (age, height, total liver volume) to visualize the height-adjusted total liver volume (htTLV) on a chart.
-- **Data analysis** — The app plots the trend lines derived from the study, giving visual insight into the Charité Imaging Classes.
-- **Dynamic interaction** — Plot new data points interactively to analyze individual trajectories. Points can be edited after entry by clicking the data row or point, and removed with the remove button.
-- **Download and print** — Download the plotted chart and print the page for offline analysis and record-keeping.
-- **Batch analysis** — Analyze multiple patients at once via the _Enable grouping_ button. See [Data formats](data-formats.md) for import/export details.
+- **Data input and visualization:** Enter patient-specific data (age, height, total liver volume) to visualize the height-adjusted total liver volume (htTLV) on a chart.
+- **Data analysis:** The app plots the trend lines derived from the study, giving visual insight into the Charité Imaging Classes.
+- **Dynamic interaction:** Plot new data points interactively to analyze individual trajectories. Points can be edited after entry by clicking the data row or point, and removed with the remove button.
+- **Download and print:** Download the plotted chart and print the page for offline analysis and record-keeping.
+- **Batch analysi:s** Analyze multiple patients at once via the _Enable grouping_ button. See [Data formats](data-formats.md) for import/export details.
 
 ## Interface walkthrough
 
@@ -72,4 +72,4 @@ A scatter plot showing the relationship between age and htTLV, with trend lines 
 
 ### 8. Data table _(not shown in the screenshot)_
 
-When present, the data table lists every entered data point — ID, age, height, TLV, htTLV, Charité Imaging Class — with an option to remove points.
+When present, the data table lists every entered data point (ID, age, height, TLV, htTLV, Charité Imaging Class and when grouping is enabled group and group color) with options to edit or remove points.
