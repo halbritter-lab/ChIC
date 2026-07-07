@@ -26,9 +26,7 @@
 
 ## About
 
-The **Charité Imaging Classification (ChIC)** helps clinicians and researchers assess and visualize the progression of **Polycystic Liver Disease**. It stratifies prognosis from **height-adjusted total liver volume (htTLV)** and **age**, assigning a Charité Imaging Class (**A–E**) which can aid in estimating future risk of liver events. All computation runs in your browser and no data leaves your device. 
-
-🌐 Try it [here](https://halbritter-lab.github.io/ChIC/)
+The **Charité Imaging Classification (ChIC)** helps clinicians and researchers assess and visualize the progression of **Polycystic Liver Disease**. It stratifies prognosis from **height-adjusted total liver volume (htTLV)** and **age**, assigning a Charité Imaging Class (**A–E**) which can aid in estimating future risk of liver events. All computation runs in your browser and no data leaves your device. Try it [here](https://halbritter-lab.github.io/ChIC/)
 
 > The ChIC app is an **informational, educational, and research tool — not a diagnostic device.** See the full disclaimer [here](docs/disclaimer.md).
 
