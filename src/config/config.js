@@ -21,7 +21,7 @@ export const CONFIG = {
   // --- Chart domain ---
   CHART_X_MIN: 15,
   CHART_X_MAX: 85,
-  CHART_Y_MIN: 100, // log floor; must not clip small htTLV (<600)
+  CHART_Y_MIN: 600, // log floor = class-A baseline (CLASS_BASELINE_ML_PER_M); origin sits at (15, 600)
   CHART_Y_MAX: 10500, // above cohort max htTLV 10344 (Table S1)
   CHART_Y_TICKS: [600, 800, 1000, 2000, 4000, 6000, 8000, 10000],
 

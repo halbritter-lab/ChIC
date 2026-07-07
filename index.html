@@ -281,6 +281,107 @@
         ]
       }
     </script>
+
+    <!-- Set the pre-mount background to the persisted theme BEFORE first paint, so neither the
+         splash nor the app's first frame flashes the wrong colour (a returning dark-mode user
+         otherwise sees a white flash before the dark app). Render-blocking is intentional and
+         ~150 bytes. Matches useTheme.js: dark ONLY when the user has toggled it
+         (localStorage 'theme' === 'dark'); system preference is deliberately not used. -->
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-chic-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- No-flash boot. The SEO shell inside #app exists for no-JS crawlers and link scrapers.
+         For JS users we hide it and show a minimal branded splash instead, so the crawler shell
+         (which reads like a GitHub/README page) never flashes before Vue mounts. The splash is
+         DELAYED — it fades in only after 300ms — so a fast/warm load, where Vue mounts and
+         replaces #app in ~100ms, never shows it at all (no flicker); it only appears for a
+         genuinely slow first load. Vue's mount removes it automatically. -->
+    <style>
+      /* Themed pre-mount background (data-chic-theme set by the inline script above). */
+      html {
+        background-color: #ffffff;
+      }
+      html[data-chic-theme='dark'] {
+        background-color: #1a1a2e;
+      }
+      .chic-seo-shell {
+        display: none;
+      }
+      .chic-app-splash {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        gap: 16px;
+        background: transparent; /* inherit the themed html background */
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        /* Delay the reveal so fast loads never show the splash (avoids the flash-of-spinner). */
+        opacity: 0;
+        animation: chic-splash-in 0.2s ease-out 0.3s forwards;
+      }
+      .chic-app-splash img {
+        width: 72px;
+        height: auto;
+        animation: chic-splash-pulse 1.4s ease-in-out infinite;
+      }
+      .chic-app-splash .chic-splash-label {
+        font-size: 0.95rem;
+        color: #5a6b7b;
+        letter-spacing: 0.02em;
+      }
+      html[data-chic-theme='dark'] .chic-app-splash .chic-splash-label {
+        color: #aeb9c5;
+      }
+      @keyframes chic-splash-in {
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes chic-splash-pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.55;
+          transform: scale(0.94);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        /* Keep the delay (still no flash on fast loads) but drop the fade + pulse. */
+        .chic-app-splash {
+          animation: chic-splash-in 0.01s linear 0.3s forwards;
+        }
+        .chic-app-splash img {
+          animation: none;
+        }
+      }
+    </style>
+    <noscript>
+      <style>
+        /* No JS (and non-rendering crawlers): show the SEO shell, hide the splash. */
+        .chic-seo-shell {
+          display: block;
+        }
+        .chic-app-splash {
+          display: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     <noscript>
@@ -466,6 +567,12 @@
         <p><a href="https://github.com/halbritter-lab/ChIC">Source code on GitHub</a></p>
 
         <p class="chic-loading">Loading the interactive ChIC tool…</p>
+      </div>
+      <!-- JS-only branded splash. Sits inside #app so Vue's mount removes it automatically.
+           Hidden for no-JS via the <noscript> override in <head>. -->
+      <div class="chic-app-splash" aria-hidden="true">
+        <img src="./favicon.png" alt="" width="72" />
+        <span class="chic-splash-label">Loading ChIC…</span>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>
