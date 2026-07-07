@@ -16,7 +16,7 @@ ChIC is also available as a **Progressive Web App (PWA)** which can be installed
 ### Installing the PWA
 
 1. **Open the tool** in your web browser: <https://halbritter-lab.github.io/ChIC/>
-2. **Install prompt** — a prompt to _"Add to Home Screen"_ appears in compatible browsers (or use your browser's install/"Install app" menu item).
+2. **Install prompt** a prompt to _"Add to Home Screen"_ appears in compatible browsers (or use your browser's install/"Install app" menu item).
 3. **Confirm installation** to add the app to your device.
 4. **Launch from your home screen**, just like any other installed application.
 
