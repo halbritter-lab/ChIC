@@ -22,8 +22,6 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
-
 // Define props received from the parent component (App.vue)
 defineProps({
   showModal: {

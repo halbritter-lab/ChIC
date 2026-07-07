@@ -4,8 +4,6 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue';
-
 // Keep the prop for compatibility but default to hidden
 defineProps({
   showDocumentation: {

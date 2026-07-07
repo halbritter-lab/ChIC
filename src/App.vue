@@ -67,6 +67,10 @@
           <div v-if="loadingError" class="validation-message">
             {{ loadingError }}
           </div>
+          <!-- Non-error notice, e.g. "N rows skipped" after an import -->
+          <div v-if="loadNotice" class="load-notice">
+            {{ loadNotice }}
+          </div>
         </div>
 
         <!-- Right column: Chart and progression groups -->
@@ -169,6 +173,7 @@ export default {
       downloadDataAsCsv,
       loadedData,
       errorLoading: loadingError, // Rename for template clarity
+      loadNotice,
     } = useDataPersistence();
 
     const version = packageInfo.version;
@@ -525,6 +530,7 @@ export default {
       showDocumentation,
       showControls,
       loadingError,
+      loadNotice,
       // Grouping
       enableGrouping,
       group,

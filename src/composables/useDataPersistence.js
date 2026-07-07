@@ -32,6 +32,38 @@ function parseHeight(raw) {
   return Number.isFinite(h) && h > 0 ? h : null;
 }
 
+// First present, non-blank value among the given keys (empty / whitespace-only counts
+// as absent, so a blank canonical key falls back to a populated header alias).
+function pick(row, keys) {
+  for (const k of keys) {
+    const v = row[k];
+    if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+  }
+  return undefined;
+}
+
+/**
+ * Map a raw file row to the canonical lowercase shape, accepting BOTH the import
+ * template headers (`id,age,tlv,height,group,groupColor`) AND the app's own export
+ * headers (`ID`, `Age (y)`, `TLV (ml)`, `Height (m)`, `Group`, `GroupColor`, `Class`).
+ * Without this, re-importing an exported JSON/CSV/Excel file drops every row because
+ * the keys never match (issue #5, round-trip). Computed export columns (htTLV, LGR,
+ * estimate flags) are intentionally ignored — class is always recomputed from the data.
+ */
+function normalizeImportRow(row) {
+  if (row == null || typeof row !== 'object') return null;
+  return {
+    id: pick(row, ['id', 'ID']),
+    age: pick(row, ['age', 'Age (y)', 'Age (years)']),
+    height: pick(row, ['height', 'Height (m)']),
+    tlv: pick(row, ['tlv', 'TLV (ml)', 'Total Liver Volume']),
+    group: pick(row, ['group', 'Group']),
+    groupColor: pick(row, ['groupColor', 'GroupColor']),
+    pg: pick(row, ['pg', 'PG']),
+    class: pick(row, ['class', 'Class']),
+  };
+}
+
 /**
  * Pure import transform: raw file rows -> canonical data-point rows.
  * - Rows missing id/age/tlv, or with out-of-range age/tlv, are dropped.
@@ -50,8 +82,12 @@ export function processRows(rawRows) {
   const parsed = [];
   let heightSum = 0;
   let heightCount = 0;
-  for (const row of rawRows) {
-    if (row == null || row.id == null || row.age == null || row.tlv == null) continue;
+  for (const rawRow of rawRows) {
+    const row = normalizeImportRow(rawRow);
+    if (row == null) continue;
+    const id = row.id == null ? '' : String(row.id).trim();
+    // Drop rows without a usable id, age, or tlv (a blank/whitespace id is not usable).
+    if (id === '' || row.age == null || row.tlv == null) continue;
     const age = Number(row.age);
     const tlv = Number(row.tlv);
     if (
@@ -69,16 +105,16 @@ export function processRows(rawRows) {
       heightSum += height;
       heightCount += 1;
     }
-    parsed.push({ raw: row, id: String(row.id), age, tlv, height });
+    parsed.push({ norm: row, id, age, tlv, height });
   }
 
   const cohortMeanHeight = heightCount > 0 ? heightSum / heightCount : null;
   const estimateHeight = cohortMeanHeight ?? CONFIG.MODEL.ASSUMED_HEIGHT_M;
 
   // Pass 2: classify each surviving row.
-  return parsed.map(({ raw, id, age, tlv, height }) => {
+  return parsed.map(({ norm, id, age, tlv, height }) => {
     // Informational only — the file's own class label is never trusted for classification.
-    const importedClass = legacyPgToLetter(raw.pg ?? raw.class ?? null);
+    const importedClass = legacyPgToLetter(norm.pg ?? norm.class ?? null);
 
     const measured = height !== null;
     const usedHeight = measured ? height : estimateHeight;
@@ -98,8 +134,8 @@ export function processRows(rawRows) {
       estimatedClass: measured ? null : cls,
       lgr: lgrFraction !== null ? (lgrFraction * 100).toFixed(2) : 'N/A',
       importedClass,
-      group: raw.group || '',
-      groupColor: raw.groupColor || null,
+      group: norm.group || '',
+      groupColor: norm.groupColor || null,
     };
   });
 }
@@ -123,9 +159,107 @@ export function buildExportRows(points) {
   }));
 }
 
+/**
+ * Minimal RFC-4180-ish CSV parser (dependency-free). Handles double-quoted
+ * fields, escaped quotes (`""` -> `"`), commas and newlines inside quotes, a
+ * leading UTF-8 BOM, and CRLF / CR / LF line endings. Returns an array of rows,
+ * each an array of raw string cells. Replaces naive `split('\n')`/`split(',')`,
+ * which corrupted any field containing a comma (e.g. a group label).
+ *
+ * `started` tracks whether the current record has begun, so a final record is
+ * flushed even when its only cell is an empty quoted string (`""`) and a trailing
+ * newline does not change the row count. Throws on an unterminated quote rather
+ * than silently importing a malformed field.
+ */
+export function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  let started = false; // current record has any field/quote/comma yet?
+  const s = String(text ?? '').replace(/^\uFEFF/, ''); // strip leading BOM
+  const endRow = () => {
+    row.push(field);
+    rows.push(row);
+    row = [];
+    field = '';
+    started = false;
+  };
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (s[i + 1] === '"') {
+          field += '"';
+          i++; // consume the escaped quote
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+      continue;
+    }
+    if (c === '"') {
+      inQuotes = true;
+      started = true;
+    } else if (c === ',') {
+      row.push(field);
+      field = '';
+      started = true;
+    } else if (c === '\n' || c === '\r') {
+      endRow();
+      if (c === '\r' && s[i + 1] === '\n') i++; // treat CRLF as one line break
+    } else {
+      field += c;
+      started = true;
+    }
+  }
+  if (inQuotes) throw new Error('Malformed CSV: unterminated quoted field.');
+  // Flush a final record that had content but no trailing line break.
+  if (started || field !== '' || row.length > 0) endRow();
+  return rows;
+}
+
+/** Quote a CSV field only when it contains a comma, double quote, or newline. */
+function csvEscape(value) {
+  const s = value === null || value === undefined ? '' : String(value);
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Build a well-formed CSV string from export rows keyed by `columns`. */
+export function toCsv(rows, columns) {
+  const header = columns.map(csvEscape).join(',');
+  const body = rows.map((row) => columns.map((col) => csvEscape(row[col])).join(','));
+  return [header, ...body].join('\n');
+}
+
 export function useDataPersistence() {
   const loadedData = ref([]); // Ref to hold data loaded from files
   const errorLoading = ref(null); // Ref to hold any loading errors
+  // Non-error notice, e.g. "N rows skipped" — surfaced separately from errorLoading.
+  const loadNotice = ref(null);
+
+  // Apply parsed raw rows: classify via processRows and report how many were dropped.
+  const applyLoaded = (rawRows) => {
+    const rows = processRows(rawRows);
+    const attempted = Array.isArray(rawRows) ? rawRows.length : 0;
+    const skipped = attempted - rows.length;
+    const skippedText = `${skipped} row${skipped === 1 ? '' : 's'} skipped (missing or out-of-range ID, age, or TLV)`;
+
+    if (rows.length === 0 && attempted > 0) {
+      // Every row was invalid. Report it as an error and keep the existing table —
+      // don't silently wipe the user's data (the empty-array watcher would leave the
+      // old rows visible, which would contradict a "N skipped" notice).
+      errorLoading.value = `No valid rows found — nothing imported. ${skippedText}.`;
+      loadedData.value = [];
+      loadNotice.value = null;
+      return;
+    }
+
+    loadedData.value = rows;
+    loadNotice.value = skipped > 0 ? `${skippedText}.` : null;
+  };
 
   // --- Internal File Input Handling ---
   let fileInput = null;
@@ -135,6 +269,7 @@ export function useDataPersistence() {
     if (!file) return;
 
     errorLoading.value = null; // Reset error on new attempt
+    loadNotice.value = null; // Reset skipped-row notice on new attempt
     const fileName = file.name.toLowerCase();
 
     if (fileName.endsWith('.json')) {
@@ -178,11 +313,12 @@ export function useDataPersistence() {
         if (!Array.isArray(fileData)) {
           throw new Error('JSON file does not contain an array.');
         }
-        loadedData.value = processRows(fileData);
+        applyLoaded(fileData);
       } catch (err) {
         console.error('Error loading JSON data:', err);
         errorLoading.value = `Error loading JSON: ${err.message}`;
         loadedData.value = [];
+        loadNotice.value = null;
       }
     };
     reader.onerror = (err) => {
@@ -224,11 +360,12 @@ export function useDataPersistence() {
         jsonData.push(rowData);
       });
 
-      loadedData.value = processRows(jsonData);
+      applyLoaded(jsonData);
     } catch (err) {
       console.error('Error reading Excel data:', err);
       errorLoading.value = `Error loading Excel: ${err.message}`;
       loadedData.value = [];
+      loadNotice.value = null;
     }
   };
 
@@ -236,44 +373,43 @@ export function useDataPersistence() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const csv = e.target.result;
-        const lines = csv.split('\n');
-        if (lines.length < 2) {
+        const matrix = parseCsv(e.target.result);
+        if (matrix.length < 2) {
           throw new Error('CSV file is empty or contains only headers.');
         }
 
         // Parse header row
-        const headers = lines[0].split(',').map((h) => h.trim());
+        const headers = matrix[0].map((h) => h.trim());
         const jsonData = [];
 
         // Parse data rows
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue; // Skip empty lines
+        for (let r = 1; r < matrix.length; r++) {
+          const cells = matrix[r];
+          if (cells.every((v) => v.trim() === '')) continue; // Skip blank lines
 
-          const values = line.split(',').map((v) => v.trim());
           const rowData = {};
-
           headers.forEach((header, index) => {
-            const value = values[index];
-            // Try to convert to number if it looks like one
-            if (value === '' || value === undefined) {
-              rowData[header] = null;
-            } else if (!isNaN(value)) {
-              rowData[header] = Number(value);
-            } else {
-              rowData[header] = value;
-            }
+            const raw = cells[index];
+            const value = raw === undefined ? '' : raw.trim();
+            // Keep cells as strings (null for blank). processRows() does the numeric
+            // coercion for age/tlv/height and preserves ids verbatim, so a leading-zero
+            // id like "00123" is not corrupted into a number.
+            rowData[header] = value === '' ? null : value;
           });
 
           jsonData.push(rowData);
         }
 
-        loadedData.value = processRows(jsonData);
+        if (jsonData.length === 0) {
+          throw new Error('CSV contains no data rows.');
+        }
+
+        applyLoaded(jsonData);
       } catch (err) {
         console.error('Error loading CSV data:', err);
         errorLoading.value = `Error loading CSV: ${err.message}`;
         loadedData.value = [];
+        loadNotice.value = null;
       }
     };
     reader.onerror = (err) => {
@@ -353,10 +489,9 @@ export function useDataPersistence() {
       return;
     }
     try {
-      const rows = buildExportRows(dataToSave).map((row) => EXPORT_COLUMNS.map((col) => row[col]));
-
-      // Create CSV string with headers and rows
-      const csvContent = [EXPORT_COLUMNS.join(','), ...rows.map((row) => row.join(','))].join('\n');
+      // Build a well-formed CSV: fields containing a comma/quote/newline are quoted
+      // so a group label with a comma cannot corrupt the file (symmetric with parseCsv).
+      const csvContent = toCsv(buildExportRows(dataToSave), EXPORT_COLUMNS);
 
       // Use the same approach as JSON - data URI
       const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
@@ -381,5 +516,6 @@ export function useDataPersistence() {
     downloadDataAsCsv,
     loadedData, // The reactive ref containing successfully loaded data
     errorLoading, // Reactive ref for displaying loading errors
+    loadNotice, // Reactive ref for non-error notices (e.g. N rows skipped)
   };
 }
