@@ -46,7 +46,7 @@ This project was developed with extensive assistance from multiple AI tools, inc
 
 ## License
 
-All code in this project is released under the **MIT License**. See [LICENSE](../LICENSE).
+All code in this project is released under the **MIT License**. See the license [here](../LICENSE).
 
 ## Contact
 
