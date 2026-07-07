@@ -5,7 +5,7 @@
 <h1 align="center">Charité Imaging Classification (ChIC)</h1>
 
 <p align="center">
-  An interactive web app for the prognostic assessment of <strong>Polycystic Liver Disease (PLD)</strong> progression.
+  An interactive web app for the prognostic assessment of <strong>Polycystic Liver Disease</strong> progression.
 </p>
 
 <p align="center">
