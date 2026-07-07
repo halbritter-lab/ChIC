@@ -281,6 +281,69 @@
         ]
       }
     </script>
+
+    <!-- No-flash boot. The SEO shell inside #app exists for no-JS crawlers and link scrapers.
+         For JS users we hide it immediately and show a minimal branded splash instead, so the
+         crawler shell (which reads like a GitHub/README page) never flashes before Vue mounts.
+         Vue replaces all of #app on mount, which removes the splash automatically. -->
+    <style>
+      .chic-seo-shell {
+        display: none;
+      }
+      .chic-app-splash {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        gap: 16px;
+        background: #ffffff;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        color: #2c3e50;
+      }
+      .chic-app-splash img {
+        width: 72px;
+        height: auto;
+        animation: chic-splash-pulse 1.4s ease-in-out infinite;
+      }
+      .chic-app-splash .chic-splash-label {
+        font-size: 0.95rem;
+        color: #5a6b7b;
+        letter-spacing: 0.02em;
+      }
+      @keyframes chic-splash-pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.55;
+          transform: scale(0.94);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .chic-app-splash img {
+          animation: none;
+        }
+      }
+    </style>
+    <noscript>
+      <style>
+        /* No JS (and non-rendering crawlers): show the SEO shell, hide the splash. */
+        .chic-seo-shell {
+          display: block;
+        }
+        .chic-app-splash {
+          display: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     <noscript>
@@ -466,6 +529,12 @@
         <p><a href="https://github.com/halbritter-lab/ChIC">Source code on GitHub</a></p>
 
         <p class="chic-loading">Loading the interactive ChIC tool…</p>
+      </div>
+      <!-- JS-only branded splash. Sits inside #app so Vue's mount removes it automatically.
+           Hidden for no-JS via the <noscript> override in <head>. -->
+      <div class="chic-app-splash" aria-hidden="true">
+        <img src="./favicon.png" alt="" width="72" />
+        <span class="chic-splash-label">Loading ChIC…</span>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>
