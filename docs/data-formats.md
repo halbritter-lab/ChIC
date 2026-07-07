@@ -2,7 +2,7 @@
 
 [← Documentation home](README.md)
 
-ChIC reads and writes patient data entirely in your browser — no data leaves your device (see [Privacy & offline use](privacy-and-offline.md)).
+ChIC reads and writes patient data entirely in your browser — no data leaves your device. See more about privacy and offline use [here](privacy-and-offline.md)).
 
 ## Import — batch upload
 
@@ -14,7 +14,7 @@ The application supports uploading multiple patient records at once in three for
 | **CSV**          | Comma-separated values with the same column structure as the Excel format — universally compatible with all spreadsheet apps.        |
 | **JSON**         | An array of patient objects with the properties: `id`, `age`, `height`, `tlv`, `group` (optional), `groupColor` (optional).          |
 
-All imported records are added to the chart and data table for immediate visualization and analysis. Height-adjusted TLV, class, and LGR are re-computed on load. Records without a height are estimated from the cohort-mean height and flagged as estimates.
+All imported records are added to the chart and data table for immediate visualization and analysis. Height-adjusted TLV, class and LGR are re-computed on load. Records without a height are estimated from the cohort-mean height and flagged as estimates.
 
 ## Export
 
