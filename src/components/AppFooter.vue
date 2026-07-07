@@ -116,9 +116,14 @@ const withBase = (path) =>
 .footer-text a {
   color: inherit;
   text-decoration: none;
+  /* WCAG 2.5.8 target size (technique C42): 13px/1.3 text is a ~15px-high
+     target; vertical padding lifts each link's hit box to ≥24px. */
+  display: inline-block;
+  padding-block: 5px;
 }
 .footer-text a:hover {
-  color: var(--banner-right);
+  /* hover blue needs 4.5:1 on the #f5f5f5 footer (banner-right was 3.04:1) */
+  color: var(--button-other-hover);
   text-decoration: underline;
   text-underline-offset: 2px;
   transition:

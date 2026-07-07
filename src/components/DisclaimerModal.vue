@@ -117,11 +117,13 @@ const reopenModal = () => {
   background-color: #0f2b5a;
 }
 
-/* Acknowledgment message styles */
+/* Acknowledgment message styles.
+   #595959 meets WCAG 1.4.3 AA: 5.31:1 on #e0e0e0, 7.0:1 on the white button
+   (#888 measured 2.68:1 / 3.54:1 in the Lighthouse audit). */
 .acknowledgment-message {
   font-size: 12px;
   background-color: #e0e0e0; /* changed to gray */
-  color: #888;
+  color: #595959;
   text-align: center;
   padding: 0px; /* Reduced padding */
   position: fixed; /* Keep it fixed at the bottom */
@@ -132,9 +134,9 @@ const reopenModal = () => {
 }
 .acknowledgment-message button {
   background-color: white;
-  color: #888;
-  border: 1px solid #888;
-  padding: 1px 6px; /* Reduced padding */
+  color: #595959;
+  border: 1px solid #595959;
+  padding: 4px 10px; /* keep the tap target comfortable (WCAG 2.5.8) */
   font-size: 12px;
   cursor: pointer;
   margin: 2px 5px 2px 0; /* Adjusted margin */
