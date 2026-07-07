@@ -40,7 +40,7 @@ Height-adjusted total liver volume is computed as `htTLV = TLV / height` (TLV in
 
 ## Technical overview
 
-The application is built with **Vue.js** and **Chart.js** for a responsive, interactive experience. Controls and input fields sit on the left, the chart on the right — a layout designed for ease of use and clear data presentation.
+The application is built with **Vue.js** and **Chart.js** for a responsive, interactive experience. Controls and input fields sit on the left,while the chart sits on the right. The layout is designed for ease of use and clear data presentation.
 
 ## References
 
