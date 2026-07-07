@@ -25,16 +25,16 @@
 
 ## File Structure
 
-| File | Change | Responsibility |
-| --- | --- | --- |
-| `src/composables/useDataPersistence.js` | Modify (3 edits) | Remove static exceljs import; `await import('exceljs')` inside the two Excel functions |
-| `src/composables/__tests__/useDataPersistence.test.js` | Modify (add describe block) | Assert the module has no static exceljs import and lazy-loads it at both sites |
-| `scripts/spa-404-fallback.mjs` | Create | Copy `dist/index.html` → `dist/404.html` (fail loudly if the source is missing) |
-| `scripts/__tests__/spa-404-fallback.test.js` | Create | Exercise the script against a temp `dist/` fixture (copy + missing-source cases) |
-| `package.json` | Modify (scripts) | Add `"postbuild": "node scripts/spa-404-fallback.mjs"` |
-| `.github/workflows/deploy.yml` | Modify (remove step) | Drop the redundant `cp dist/index.html dist/404.html` step |
-| `index.html` | Modify (2 lines) | `./favicon.png` → `%BASE_URL%favicon.png` (SEO shell + splash) so the fallback renders on deep paths |
-| `src/__tests__/indexHtml.test.js` | Modify (add test) | Assert the two body favicon refs use `%BASE_URL%` and no `./favicon.png` remains |
+| File                                                   | Change                      | Responsibility                                                                                       |
+| ------------------------------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/composables/useDataPersistence.js`                | Modify (3 edits)            | Remove static exceljs import; `await import('exceljs')` inside the two Excel functions               |
+| `src/composables/__tests__/useDataPersistence.test.js` | Modify (add describe block) | Assert the module has no static exceljs import and lazy-loads it at both sites                       |
+| `scripts/spa-404-fallback.mjs`                         | Create                      | Copy `dist/index.html` → `dist/404.html` (fail loudly if the source is missing)                      |
+| `scripts/__tests__/spa-404-fallback.test.js`           | Create                      | Exercise the script against a temp `dist/` fixture (copy + missing-source cases)                     |
+| `package.json`                                         | Modify (scripts)            | Add `"postbuild": "node scripts/spa-404-fallback.mjs"`                                               |
+| `.github/workflows/deploy.yml`                         | Modify (remove step)        | Drop the redundant `cp dist/index.html dist/404.html` step                                           |
+| `index.html`                                           | Modify (2 lines)            | `./favicon.png` → `%BASE_URL%favicon.png` (SEO shell + splash) so the fallback renders on deep paths |
+| `src/__tests__/indexHtml.test.js`                      | Modify (add test)           | Assert the two body favicon refs use `%BASE_URL%` and no `./favicon.png` remains                     |
 
 Two commits: **Commit 1** = rows 1–2 (Part 1). **Commit 2** = rows 3–8 (Part 2).
 
@@ -43,10 +43,12 @@ Two commits: **Commit 1** = rows 1–2 (Part 1). **Commit 2** = rows 3–8 (Part
 ## Task 1: Lazy-load exceljs (Part 1 → Commit 1)
 
 **Files:**
+
 - Modify: `src/composables/useDataPersistence.js` (remove line 2; edit `loadDataFromExcel` ~`:341`, `downloadDataAsExcel` ~`:452`)
 - Test: `src/composables/__tests__/useDataPersistence.test.js` (add a describe block)
 
 **Interfaces:**
+
 - Consumes: nothing from other tasks.
 - Produces: no new exported symbol. The public API of `useDataPersistence()` (`triggerLoad`, `saveDataAsJson`, `downloadDataAsExcel`, `downloadDataAsCsv`, `loadedData`, `errorLoading`, `loadNotice`) is unchanged. `downloadDataAsExcel` and `loadDataFromExcel` remain `async` with identical signatures and side effects; only the point at which exceljs is resolved moves inside them.
 
@@ -148,8 +150,9 @@ Expected: PASS — all existing tests in the file plus the two new assertions.
 
 Run: `npm run build`
 Expected:
-- **No** `(!) Some chunks are larger than 500 kB` warning.
-- The entry chunk `dist/assets/index-*.js` is ≈ **347 kB (123 kB gzip)** (down from 1,287 kB / 395 kB).
+
+- The entry chunk `dist/assets/index-*.js` is ≈ **347 kB (123 kB gzip)** (down from 1,287 kB / 395 kB) — under the 500 kB threshold.
+- Vite's `(!) Some chunks are larger than 500 kB` warning **still prints, but now for the on-demand `exceljs` chunk only** (939 kB), not the entry. That is the expected end state and satisfies the issue's "split out and loaded on demand" acceptance. Do **not** raise `chunkSizeWarningLimit` to hide it.
 - A separate `dist/assets/exceljs.min-*.js` chunk (≈ 939 kB / 271 kB gzip) exists and is **not** referenced by a `<script>` or `modulepreload` in `dist/index.html` (it loads on demand). Verify with:
 
   `grep -o 'exceljs[^"]*' dist/index.html || echo 'exceljs not in entry HTML (correct)'`
@@ -175,6 +178,7 @@ Expected (mobile throttle): **perf ≈ 88, FCP ≈ 3.0 s, LCP ≈ 3.1 s** — ma
 - [ ] **Step 9: Manually exercise xlsx export + import (zero-behaviour-change check)**
 
 Run `npm run dev`, open `http://localhost:8137/`, acknowledge the disclaimer, then:
+
 1. Enter a patient (e.g. ID `001`, age `45`, height `1.75`, TLV `3000`), calculate, and click the Excel **export** — confirm an `.xlsx` downloads and opens with the expected columns.
 2. Use the FAQ/upload flow to **import** that `.xlsx` back — confirm rows load and classify.
 
@@ -205,6 +209,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ## Task 2: Formalize the Pages 404 fallback in the build (Part 2 → Commit 2)
 
 **Files:**
+
 - Create: `scripts/spa-404-fallback.mjs`
 - Create: `scripts/__tests__/spa-404-fallback.test.js`
 - Modify: `package.json` (add `postbuild` script)
@@ -213,6 +218,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Modify: `src/__tests__/indexHtml.test.js` (add one test)
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1 (independent).
 - Produces: `scripts/spa-404-fallback.mjs`, invoked as `node scripts/spa-404-fallback.mjs` from the project root (cwd = repo root). It reads `dist/index.html` and writes `dist/404.html`; exits non-zero if `dist/index.html` is absent. No exported JS symbols — it is a runnable script (matching `scripts/pack-favicon-ico.mjs`), tested via child-process invocation against a temp cwd.
 
@@ -302,8 +308,8 @@ In `package.json`, add a `postbuild` entry immediately after `"build"` (npm runs
 In `.github/workflows/deploy.yml`, delete these two lines (the build now produces `dist/404.html`, which `upload-pages-artifact` already uploads):
 
 ```yaml
-      - name: SPA 404 fallback
-        run: cp dist/index.html dist/404.html
+- name: SPA 404 fallback
+  run: cp dist/index.html dist/404.html
 ```
 
 So the `build` job goes straight from the `Build` step to the `Upload Pages artifact` step.
@@ -313,13 +319,13 @@ So the `build` job goes straight from the `Build` step to the `Upload Pages arti
 Add this test to `src/__tests__/indexHtml.test.js` inside the existing `describe('index.html no-flash boot', …)` block:
 
 ```javascript
-  it('uses base-relative favicon refs so the 404 fallback renders on deep paths', () => {
-    // Served as 404.html at /ChIC/a/b, a "./favicon.png" resolves to /ChIC/a/favicon.png
-    // (404). The %BASE_URL% token resolves to /ChIC/favicon.png at any depth.
-    expect(html).not.toContain('src="./favicon.png"');
-    const baseRefs = html.match(/src="%BASE_URL%favicon\.png"/g) ?? [];
-    expect(baseRefs.length).toBe(2); // SEO shell <img> + splash <img>
-  });
+it('uses base-relative favicon refs so the 404 fallback renders on deep paths', () => {
+  // Served as 404.html at /ChIC/a/b, a "./favicon.png" resolves to /ChIC/a/favicon.png
+  // (404). The %BASE_URL% token resolves to /ChIC/favicon.png at any depth.
+  expect(html).not.toContain('src="./favicon.png"');
+  const baseRefs = html.match(/src="%BASE_URL%favicon\.png"/g) ?? [];
+  expect(baseRefs.length).toBe(2); // SEO shell <img> + splash <img>
+});
 ```
 
 - [ ] **Step 8: Run the test to verify it fails**
@@ -332,25 +338,25 @@ Expected: FAIL — `index.html` still contains `src="./favicon.png"` (lines 475 
 In `index.html`, change line 475 (SEO shell) from:
 
 ```html
-        <img src="./favicon.png" alt="Charité Imaging Classification logo" width="96" />
+<img src="./favicon.png" alt="Charité Imaging Classification logo" width="96" />
 ```
 
 to:
 
 ```html
-        <img src="%BASE_URL%favicon.png" alt="Charité Imaging Classification logo" width="96" />
+<img src="%BASE_URL%favicon.png" alt="Charité Imaging Classification logo" width="96" />
 ```
 
 and line 574 (splash) from:
 
 ```html
-        <img src="./favicon.png" alt="" width="72" />
+<img src="./favicon.png" alt="" width="72" />
 ```
 
 to:
 
 ```html
-        <img src="%BASE_URL%favicon.png" alt="" width="72" />
+<img src="%BASE_URL%favicon.png" alt="" width="72" />
 ```
 
 - [ ] **Step 10: Run the favicon test to verify it passes**
@@ -457,20 +463,20 @@ Expected: PR opens against `main`, CI (`ci.yml`) runs the full gate green.
 
 ## Self-Review — spec coverage
 
-| Spec requirement | Task/step |
-| --- | --- |
-| §3 exceljs dynamic import (3 edits, one file) | Task 1, Steps 3–5 |
-| §3.4 entry < 500 kB, exceljs chunk separate | Task 1, Step 7 |
-| §3.4 FCP/LCP improve (measured) | Task 1, Step 8 |
-| §3.4 xlsx export/import still work | Task 1, Step 9 |
-| §3.3 workbox precache **unchanged** | Global Constraints (no task touches `vite.config.js`) |
-| §4.4 postbuild copy script | Task 2, Steps 1–5 |
-| §4.4 remove deploy.yml cp | Task 2, Step 6 |
-| §4.4 favicon `%BASE_URL%` fix | Task 2, Steps 7–9 |
-| §4.5 `dist/404.html` == `dist/index.html` | Task 2, Step 11 |
-| §4.5 deep path mounts the app | Task 2, Step 12 |
-| §3.4 / §4.5 full CI gate green | Task 1 Step 10, Task 2 Step 13 |
-| §6 one PR, two atomic commits | Task 1 Step 11, Task 2 Step 14, Task 3 |
+| Spec requirement                              | Task/step                                             |
+| --------------------------------------------- | ----------------------------------------------------- |
+| §3 exceljs dynamic import (3 edits, one file) | Task 1, Steps 3–5                                     |
+| §3.4 entry < 500 kB, exceljs chunk separate   | Task 1, Step 7                                        |
+| §3.4 FCP/LCP improve (measured)               | Task 1, Step 8                                        |
+| §3.4 xlsx export/import still work            | Task 1, Step 9                                        |
+| §3.3 workbox precache **unchanged**           | Global Constraints (no task touches `vite.config.js`) |
+| §4.4 postbuild copy script                    | Task 2, Steps 1–5                                     |
+| §4.4 remove deploy.yml cp                     | Task 2, Step 6                                        |
+| §4.4 favicon `%BASE_URL%` fix                 | Task 2, Steps 7–9                                     |
+| §4.5 `dist/404.html` == `dist/index.html`     | Task 2, Step 11                                       |
+| §4.5 deep path mounts the app                 | Task 2, Step 12                                       |
+| §3.4 / §4.5 full CI gate green                | Task 1 Step 10, Task 2 Step 13                        |
+| §6 one PR, two atomic commits                 | Task 1 Step 11, Task 2 Step 14, Task 3                |
 
 **Placeholder scan:** none — every code/edit step shows the exact before/after content and exact commands with expected output.
 

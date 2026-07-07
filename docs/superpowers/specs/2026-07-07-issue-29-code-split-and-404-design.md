@@ -11,7 +11,7 @@
 
 ## 1. Context & Goals
 
-`npm run build` emits a **single application chunk of 1,286.96 kB (395.28 kB gzip)** and prints Vite's *"chunks larger than 500 kB"* warning. Under a throttled Lighthouse run this chunk dominates load: the reported Performance ~55 with FCP ~7.5 s / LCP ~8.6 s is entirely bundle-driven (CLS 0.001, A11y/BP 100). Separately, the router uses `createWebHistory(import.meta.env.BASE_URL)` with base `/ChIC/`; GitHub Pages has no built-in SPA fallback, so a deep-link/refresh on a non-root path would 404 — latent today (only the `/` route exists) but a live trap the moment a second route or a shared sub-path link appears.
+`npm run build` emits a **single application chunk of 1,286.96 kB (395.28 kB gzip)** and prints Vite's _"chunks larger than 500 kB"_ warning. Under a throttled Lighthouse run this chunk dominates load: the reported Performance ~55 with FCP ~7.5 s / LCP ~8.6 s is entirely bundle-driven (CLS 0.001, A11y/BP 100). Separately, the router uses `createWebHistory(import.meta.env.BASE_URL)` with base `/ChIC/`; GitHub Pages has no built-in SPA fallback, so a deep-link/refresh on a non-root path would 404 — latent today (only the `/` route exists) but a live trap the moment a second route or a shared sub-path link appears.
 
 **Success criteria (from the issue):**
 
@@ -27,23 +27,23 @@
 
 Measured with a **throwaway** `npx vite-bundle-visualizer -t raw-data` run (no analyzer dependency added to the repo), aggregating rendered/gzip bytes per package:
 
-| Package | rendered (kB) | gzip (kB) | share of entry | needed at first paint? |
-| --- | ---: | ---: | ---: | --- |
-| **exceljs** | 925.3 | 250.1 | 52.2% | **No** — only on import/export (user action) |
-| **chart.js** (+ `@kurkle/color`) | 493.3 | 104.1 | 27.8% | **Yes** — paints the main chart on load |
-| `@vue/runtime-core` + `reactivity` + `runtime-dom` + `shared` | 175.6 | 42.5 | 9.9% | Yes |
-| `vue-router` | 61.4 | 15.8 | 3.5% | Yes |
-| app `src/` | 114.2 | 35.0 | 6.4% | Yes |
-| **TOTAL (single chunk)** | **~1,287** | **395** | 100% | |
+| Package                                                       | rendered (kB) | gzip (kB) | share of entry | needed at first paint?                       |
+| ------------------------------------------------------------- | ------------: | --------: | -------------: | -------------------------------------------- |
+| **exceljs**                                                   |         925.3 |     250.1 |          52.2% | **No** — only on import/export (user action) |
+| **chart.js** (+ `@kurkle/color`)                              |         493.3 |     104.1 |          27.8% | **Yes** — paints the main chart on load      |
+| `@vue/runtime-core` + `reactivity` + `runtime-dom` + `shared` |         175.6 |      42.5 |           9.9% | Yes                                          |
+| `vue-router`                                                  |          61.4 |      15.8 |           3.5% | Yes                                          |
+| app `src/`                                                    |         114.2 |      35.0 |           6.4% | Yes                                          |
+| **TOTAL (single chunk)**                                      |    **~1,287** |   **395** |           100% |                                              |
 
 The single largest contributor — **exceljs at 52%** — is used only at two user-triggered call sites and is never needed for first paint.
 
 ### 2.2 Where the heavy deps are imported (verified)
 
-| Dep | Import sites | First-paint? |
-| --- | --- | --- |
-| `exceljs` | `src/composables/useDataPersistence.js:2` (static `import ExcelJS from 'exceljs'`, used in `loadDataFromExcel` + `downloadDataAsExcel`) · `src/components/FaqModal.vue:168` (**already** dynamic: `(await import('exceljs')).default`) | No |
-| `chart.js` | `src/components/ChartDisplay.vue:10` (`import { Chart, registerables, Filler }`) | **Yes** |
+| Dep        | Import sites                                                                                                                                                                                                                           | First-paint? |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `exceljs`  | `src/composables/useDataPersistence.js:2` (static `import ExcelJS from 'exceljs'`, used in `loadDataFromExcel` + `downloadDataAsExcel`) · `src/components/FaqModal.vue:168` (**already** dynamic: `(await import('exceljs')).default`) | No           |
+| `chart.js` | `src/components/ChartDisplay.vue:10` (`import { Chart, registerables, Filler }`)                                                                                                                                                       | **Yes**      |
 
 FaqModal already lazy-loads exceljs — so **the dynamic-import pattern is already established in this codebase**; the fix simply extends it to the one static importer.
 
@@ -51,11 +51,11 @@ FaqModal already lazy-loads exceljs — so **the dynamic-import pattern is alrea
 
 Applying dynamic `import()` to the two `useDataPersistence.js` exceljs sites (mirroring FaqModal), then optionally adding a `chart.js` manual chunk:
 
-| Variant | entry chunk | entry gzip | lazy / extra chunks | > 500 kB warning? |
-| --- | ---: | ---: | --- | --- |
-| Baseline | 1,286.96 kB | 395.28 kB | — | **Yes** |
-| **A: exceljs dynamic-import only** | **346.68 kB** | **123.47 kB** | `exceljs` 939 kB / 271 kB gzip (lazy) | **No** |
-| B: A + `chart.js` manualChunk | 140.92 kB | 52.27 kB | `chartjs` 205 kB / 70.5 kB gzip (**modulepreload**, render-blocking), `exceljs` 939/271 (lazy) | No |
+| Variant                            |   entry chunk |    entry gzip | lazy / extra chunks                                                                            | > 500 kB warning? |
+| ---------------------------------- | ------------: | ------------: | ---------------------------------------------------------------------------------------------- | ----------------- |
+| Baseline                           |   1,286.96 kB |     395.28 kB | —                                                                                              | **Yes**           |
+| **A: exceljs dynamic-import only** | **346.68 kB** | **123.47 kB** | `exceljs` 939 kB / 271 kB gzip (lazy)                                                          | **No**            |
+| B: A + `chart.js` manualChunk      |     140.92 kB |      52.27 kB | `chartjs` 205 kB / 70.5 kB gzip (**modulepreload**, render-blocking), `exceljs` 939/271 (lazy) | No                |
 
 > Note: the visualizer's "chart.js 493 kB" is the pre-tree-shake module size (`ChartDisplay` imports `registerables`); the actually-emitted split chunk is 205 kB / 70.5 kB gzip.
 
@@ -65,11 +65,11 @@ Two static servers each served the respective `dist/` at base `/ChIC/` (per the 
 
 **Mobile preset (simulated throttling — reproduces the issue's methodology):**
 
-| Build | Performance | FCP | LCP | TBT |
-| --- | ---: | ---: | ---: | ---: |
-| Baseline | **58** | 7.5 s | 8.1 s | 30 ms |
-| **A: exceljs-only** | **88** | **3.0 s** | **3.1 s** | 10 ms |
-| B: A + chart split | 83 | 3.2 s | 3.7 s | 20 ms |
+| Build               | Performance |       FCP |       LCP |   TBT |
+| ------------------- | ----------: | --------: | --------: | ----: |
+| Baseline            |      **58** |     7.5 s |     8.1 s | 30 ms |
+| **A: exceljs-only** |      **88** | **3.0 s** | **3.1 s** | 10 ms |
+| B: A + chart split  |          83 |     3.2 s |     3.7 s | 20 ms |
 
 **Desktop preset** (for reference; less throttled): baseline 91 (FCP 1.3 s / LCP 1.4 s) → B 99 (FCP 0.6 s / LCP 0.8 s). The desktop baseline already scores 91, which is why the issue's ~55 corresponds to the mobile/throttled profile.
 
@@ -85,12 +85,12 @@ The Variant-A prototype passed the full suite unchanged: **70/70 Vitest tests**.
 
 ### 3.1 Options weighed
 
-| Option | Entry gzip | FCP/LCP (mobile) | Behaviour risk | Verdict |
-| --- | ---: | ---: | --- | --- |
-| **Dynamic `import()` of exceljs** (chosen) | 123 kB | 58→88 | None — same async flow FaqModal already uses; export/import are already `async` | ✅ Smallest change, fits existing pattern, meets acceptance |
-| + `manualChunks` for chart.js | 52 kB | 58→83 (worse) | Low, but changes chunk graph | ❌ No first-load win; chart.js is critical-path |
-| Async `defineAsyncComponent(ChartDisplay)` | ~52 kB | chart paints late | **Changes render sequencing** — chart appears after a gap | ❌ Violates "zero behaviour change" |
-| `manualChunks` vendor-splitting only (no dynamic import) | still ~395 in one entry unless exceljs isolated | negligible | Low | ❌ Doesn't move exceljs off the critical parse |
+| Option                                                   |                                      Entry gzip |  FCP/LCP (mobile) | Behaviour risk                                                                  | Verdict                                                     |
+| -------------------------------------------------------- | ----------------------------------------------: | ----------------: | ------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **Dynamic `import()` of exceljs** (chosen)               |                                          123 kB |             58→88 | None — same async flow FaqModal already uses; export/import are already `async` | ✅ Smallest change, fits existing pattern, meets acceptance |
+| + `manualChunks` for chart.js                            |                                           52 kB |     58→83 (worse) | Low, but changes chunk graph                                                    | ❌ No first-load win; chart.js is critical-path             |
+| Async `defineAsyncComponent(ChartDisplay)`               |                                          ~52 kB | chart paints late | **Changes render sequencing** — chart appears after a gap                       | ❌ Violates "zero behaviour change"                         |
+| `manualChunks` vendor-splitting only (no dynamic import) | still ~395 in one entry unless exceljs isolated |        negligible | Low                                                                             | ❌ Doesn't move exceljs off the critical parse              |
 
 **Decision: dynamic `import()` of exceljs only.** Rationale: it is the single change that (a) drops the entry under 500 kB, (b) delivers the full measured FCP/LCP win, (c) reuses the exact `(await import('exceljs')).default` idiom already in `FaqModal.vue`, and (d) carries no behaviour change because both exceljs consumers (`downloadDataAsExcel`, `loadDataFromExcel`) are already `async`.
 
@@ -113,14 +113,15 @@ Both functions are already `async` and already wrapped in `try/catch`, so a dyna
 - **First load (the acceptance target):** the render-blocking entry the browser must fetch + parse + execute before mount drops from **395 kB → 123 kB gzip**. This is exactly what moves FCP/LCP (proven: 58→88). The exceljs chunk is fetched by the service worker **after** the page is interactive, at low priority, off the critical path.
 - **Repeat visit:** identical precache footprint (~7.25 MB) with or without the split — no regression, no improvement.
 
-**Decision: leave workbox `globPatterns` unchanged.** The acceptance criteria are met without touching it, and the alternative (`globIgnores: ['**/exceljs*.js']` + a `runtimeCaching` CacheFirst rule) would trade a **strict behaviour change** — a first-time xlsx export/import while offline would fail until the chunk is runtime-cached — for a first-visit *transfer* saving that is **not** in the acceptance set. Under the hard "zero behaviour change" constraint, that trade is out of scope.
+**Decision: leave workbox `globPatterns` unchanged.** The acceptance criteria are met without touching it, and the alternative (`globIgnores: ['**/exceljs*.js']` + a `runtimeCaching` CacheFirst rule) would trade a **strict behaviour change** — a first-time xlsx export/import while offline would fail until the chunk is runtime-cached — for a first-visit _transfer_ saving that is **not** in the acceptance set. Under the hard "zero behaviour change" constraint, that trade is out of scope.
 
 > **Optional future work (explicitly out of scope for #29):** excluding the exceljs chunk from precache via `globIgnores` + `runtimeCaching` would cut ~271 kB gzip from first-visit background transfer, at the cost of offline xlsx export/import not working until first online use (CSV/JSON export/import are unaffected — they use no exceljs). Revisit only if first-visit data budget becomes a goal and the offline-xlsx edge is deemed acceptable.
 
 ### 3.4 Part 1 acceptance criteria
 
-- [ ] `npm run build` emits **no** "chunks larger than 500 kB" warning; main entry chunk ≤ ~347 kB (123 kB gzip).
-- [ ] A separate `exceljs-*.js` chunk exists and is loaded only on import/export.
+- [ ] Main **entry** chunk drops under the 500 kB warning threshold: ≤ ~347 kB (123 kB gzip), down from 1,287 kB.
+- [ ] A separate `exceljs-*.js` chunk exists and is loaded only on import/export, and is **not** referenced by a `<script>`/`modulepreload` in the entry HTML.
+- [ ] Vite's "chunks larger than 500 kB" warning, **if it still prints, refers only to the intentionally on-demand `exceljs` chunk** (939 kB), never the entry. This satisfies the issue's acceptance ("or the heavy deps split out and loaded on demand"). Do **not** silence it by raising `build.chunkSizeWarningLimit` — that would also hide a future entry-chunk regression.
 - [ ] Lighthouse (mobile throttle, `dist` served at `/ChIC/`) FCP/LCP improve materially vs. baseline (target ≈ FCP 3.0 s / LCP 3.1 s / perf 88, matching the prototype).
 - [ ] xlsx **export** and **import** still work end-to-end in the dev server and the prod build (manual check).
 - [ ] `npm test` (70+ green), `lint`, `format:check`, `typecheck`, `build` all pass.
@@ -141,11 +142,11 @@ Both functions are already `async` and already wrapped in `try/catch`, so a dyna
 
 ### 4.3 Options weighed
 
-| Option | Local build self-sufficient? | Extra hop? | Moving parts | Verdict |
-| --- | --- | --- | --- | --- |
-| **`postbuild` npm script copies index.html→404.html** (chosen) | Yes | No | 1 tiny Node script | ✅ Consolidates the copy into the build; deploy.yml step becomes redundant |
-| Document & close (no code) | No | No | 0 | ❌ Leaves gaps 1–3 open |
-| `spa-github-pages` redirect (`public/404.html` with redirect script + index.html restore snippet) | Yes | **Yes** (redirect round-trip) | 2 scripts | ❌ Extra complexity/hop with no benefit for a copy-of-index approach; only pays off when you must preserve the exact deep path in `location`, which this app doesn't need |
+| Option                                                                                            | Local build self-sufficient? | Extra hop?                    | Moving parts       | Verdict                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------- | ---------------------------- | ----------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`postbuild` npm script copies index.html→404.html** (chosen)                                    | Yes                          | No                            | 1 tiny Node script | ✅ Consolidates the copy into the build; deploy.yml step becomes redundant                                                                                                |
+| Document & close (no code)                                                                        | No                           | No                            | 0                  | ❌ Leaves gaps 1–3 open                                                                                                                                                   |
+| `spa-github-pages` redirect (`public/404.html` with redirect script + index.html restore snippet) | Yes                          | **Yes** (redirect round-trip) | 2 scripts          | ❌ Extra complexity/hop with no benefit for a copy-of-index approach; only pays off when you must preserve the exact deep path in `location`, which this app doesn't need |
 
 **Decision: formalize the existing copy into the build via a `postbuild` npm lifecycle script**, remove the now-redundant `cp` from `deploy.yml`, and fix the two `./favicon.png` refs to `%BASE_URL%favicon.png` (matching the absolute `%BASE_URL%` icon links already in `<head>`) so the fallback renders correctly on any depth. This keeps the copy-of-index approach (no redirect hop) while making local builds self-sufficient and decoupling correctness from the deploy workflow.
 
