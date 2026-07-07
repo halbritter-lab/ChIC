@@ -48,7 +48,13 @@
 
       <div class="footer-logos">
         <a v-for="link in footerLinks" :key="link.name" :href="link.url" target="_blank">
-          <img :src="withBase(link.img)" :alt="link.alt" class="institution-logo" />
+          <img
+            :src="withBase(link.img)"
+            :alt="link.alt"
+            :width="link.width"
+            :height="link.height"
+            class="institution-logo"
+          />
         </a>
       </div>
     </div>
@@ -86,11 +92,16 @@ const withBase = (path) =>
   margin-top: 20px; /* Add some space above the footer */
 }
 
+/* Logo row: normalize by HEIGHT so the three marks read as one visual size
+   (width-capping made the boxy CeRKiD logo 89px tall next to a 39px DFG wordmark).
+   Width varies per logo; the intrinsic width/height attributes on the <img> keep
+   the aspect ratio and prevent layout shift while images load. */
 .institution-logo,
 .funder-logo {
-  max-width: 120px;
-  margin: 0 20px;
-  vertical-align: middle; /* Align logos nicely */
+  height: 52px;
+  width: auto;
+  max-width: min(200px, 70vw); /* never force the row wider than a small phone */
+  vertical-align: middle;
 }
 
 .footer-box {
@@ -132,10 +143,22 @@ const withBase = (path) =>
 }
 .footer-logos {
   display: flex;
+  /* Wrap instead of overflowing: a centered flex row that overflows clips BOTH
+     ends (Charité/CeRKiD left, Heisenberg right) with no way to scroll to them. */
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 24px;
+  gap: 16px 32px; /* single spacing system — no per-logo margins */
   width: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 800px) {
+  .institution-logo,
+  .funder-logo {
+    height: 44px;
+  }
 }
 .footer-divider {
   width: 90%;
