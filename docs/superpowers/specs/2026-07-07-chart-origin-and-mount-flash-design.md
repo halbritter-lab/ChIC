@@ -83,11 +83,58 @@ Design details (UI/UX):
   Pages would 404. This is a _separate_ latent issue and is **not** the reported homepage flash
   (root `/ChIC/` serves `index.html` directly). Left for a follow-up.
 
+## Revision 2 — residual flicker on refresh (2026-07-07)
+
+After Fix 2 shipped, a **short flicker on refresh** remained. A frame-by-frame CDP screencast of a
+warm reload (Playwright, 60 fps) isolated two causes the first fix did not address:
+
+1. **The splash itself flashed.** On a warm/cached reload Vue mounts in ~100 ms, so the centered
+   "Loading ChIC…" splash appeared for a single frame, then vanished — a flash-of-spinner.
+2. **Theme FOUC (worse in dark mode).** The splash background was hard-coded `#ffffff`, and the
+   app's dark background (`.dark-theme { background:#1a1a2e }`) is only applied by JS on mount. So a
+   returning **dark-mode** user saw a **white flash** before the dark app painted.
+
+Lighthouse (prod, simulated throttle) confirmed the flicker is **not** layout shift — **CLS = 0.002**
+— i.e. a paint/FOUC problem, not a reflow. A11y and Best-Practices were already 100.
+
+Two fixes, both established best practice (see Sources):
+
+### Fix 2a — delay the splash (no flash on fast loads)
+
+The splash starts `opacity: 0` and fades in only after a **300 ms** delay
+(`animation: chic-splash-in 0.2s ease-out 0.3s forwards`). A fast/warm load mounts and replaces
+`#app` before the delay elapses, so the splash **never becomes visible** — no flicker. It appears
+only for a genuinely slow first load (verified by blocking the app chunk: splash shows at
+`opacity:1` after 300 ms in both themes). `prefers-reduced-motion` keeps the delay but drops the
+fade + logo pulse.
+
+### Fix 2b — themed pre-mount background (no white-on-dark flash)
+
+A tiny **render-blocking inline `<head>` script** reads the same `localStorage 'theme'` as
+`useTheme.js` and sets `html[data-chic-theme="dark"]` before first paint; CSS gives `html` a
+`#ffffff` / `#1a1a2e` base and the splash `background: transparent` so it inherits the themed base.
+Render-blocking is intentional and ~150 bytes (web.dev/FART guidance). Only `localStorage` is used —
+**not** `prefers-color-scheme` — because the app itself ignores system preference (defaults to
+light). `useTheme.applyTheme()` now also toggles the `data-chic-theme` attribute so an in-session
+theme switch keeps the base background correct.
+
+**Evidence (Playwright filmstrips, warm reload):** light → plain white blank that matches the app
+(no splash frame); dark → dark `#1a1a2e` blank (no white flash, no splash frame). Lighthouse after:
+A11y 100, Best-Practices 100, CLS 0.001 — no regression.
+
+**Still out of scope:** the 1.28 MB JS bundle (FCP/LCP under throttle) — a code-splitting concern,
+not the flicker; and the missing `public/404.html` (deep-link refresh).
+
+**Sources:** [web.dev / CSS-Tricks "Flash of inAccurate coloR Theme"](https://css-tricks.com/flash-of-inaccurate-color-theme-fart/) (inline blocking theme script);
+NN/g & common loader guidance (delay a spinner ~300 ms; don't show it for sub-300 ms loads).
+
 ## Verification
 
 - **Unit (Vitest):** (a) `CONFIG.CHART_Y_MIN === CONFIG.MODEL.CLASS_BASELINE_ML_PER_M` encodes
   "origin at baseline"; (b) an `index.html` structural test asserts the no-flash mechanism exists
-  (shell hidden by default + `<noscript>` override + splash present).
-- **Build/lint:** `npm run lint`, `npm run format:check`, `npm run build`, `npm test` all green.
-- **Browser (Playwright, scratchpad — not committed):** re-capture "after" — origin at (15, 600),
-  no dead-zone; first paint shows the splash, never the GitHub-style shell.
+  (shell hidden by default + `<noscript>` override + splash present, splash delayed, themed
+  pre-mount script + dark base background); (c) a `useTheme` test pins the `data-chic-theme` sync.
+- **Build/lint:** `npm run lint`, `npm run format:check`, `npm run build`, `npm test` all green (70 tests).
+- **Browser (Playwright + Lighthouse, scratchpad — not committed):** origin at (15, 600), no
+  dead-zone; warm-reload filmstrips show no splash flash and no white-on-dark flash in either theme;
+  slow-load still shows a themed splash; Lighthouse A11y/BP 100, CLS ≈ 0.001.
