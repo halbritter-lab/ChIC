@@ -42,7 +42,7 @@ Full documentation lives in [**`docs/`**](docs/README.md):
 | 🔗 [URL parameters](url-parameters.md)             | Preset inputs and embed/kiosk mode via URL query parameters.                                |
 | 🔒 [Privacy & offline use](privacy-and-offline.md) | Client-side data storage and Progressive Web App (PWA) install/offline behaviour.           |
 | ⚠️ [Disclaimer](disclaimer.md)                     | Full disclaimer and usage guidelines.                                                       |
-| 📑 [Citation & credits](citation.md)               | How to cite ChIC, plus creators and contributors.                                           |
+| 📑 [Citation & credits](citation.md)               | How to cite the ChIC, plus creators and contributors.                                           |
 
 ## Quick start
 
