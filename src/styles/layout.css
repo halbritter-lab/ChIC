@@ -32,19 +32,8 @@
     min-width: 100%;
   }
 
-  /* Let Chart.js own the <canvas>: with responsive:true + maintainAspectRatio:false
-     it sizes the drawing buffer to the container. Forcing the canvas to 100% x 100%
-     with !important desyncs that buffer from the display box and stretches the plot
-     (issue #7). Size the CONTAINER only, with an explicit bounded height so the log
-     axis stays readable in portrait without overflowing a landscape phone. The
-     `.right-column` qualifier raises specificity (0,2,0) so this wins over
-     `controls.css .chart-container { height: 450px }` (0,1,0) regardless of the
-     @import order, and clamp() keeps it between 360px and 520px — never collapsing. */
-  .right-column .chart-container {
-    width: 100%;
-    max-width: 100%;
-    height: clamp(360px, 60vh, 520px);
-    padding: 0 10px;
-    box-sizing: border-box;
-  }
+  /* No chart-container override here: the chart keeps the same 5/3 aspect ratio on
+     every device (issue #7 reopen — "make sure aspect ratio is the same"). Sizing
+     lives in ONE place, controls.css .chart-container; a mobile height override
+     would change the class-band slopes relative to desktop. */
 }

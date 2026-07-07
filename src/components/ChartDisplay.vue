@@ -86,6 +86,18 @@ const initChart = () => {
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : undefined;
     const tickColor = isDark ? '#dfeaf7' : undefined;
 
+    // The chart keeps a fixed 5/3 aspect ratio on every device (issue #7), so on
+    // phones the whole canvas is small; scale the axis typography with the canvas
+    // width so titles/ticks don't crowd out the plot area.
+    const axisTitleFont = (ctx) => ({ size: ctx.chart.width < 520 ? 12 : 16, weight: 'bold' });
+    const axisTickFont = (ctx) => ({ size: ctx.chart.width < 520 ? 10 : 12 });
+
+    // The rotated full y-title (~267px at 12px) is taller than the plot on small
+    // canvases and gets truncated; fall back to the established abbreviation.
+    const Y_TITLE_FULL = 'Height-Adjusted Total Liver Volume (htTLV)';
+    const Y_TITLE_SHORT = 'htTLV';
+    const yTitleFor = (width) => (width < 520 ? Y_TITLE_SHORT : Y_TITLE_FULL);
+
     // Generate data for background lines/areas based on formulas
     const lineLength = CONFIG.CHART_X_MAX - CONFIG.CHART_X_MIN + 1;
     const startAge = CONFIG.CHART_X_MIN;
@@ -296,7 +308,12 @@ const initChart = () => {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false, // Set back to false to allow explicit CSS height
+        maintainAspectRatio: false, // the container enforces the 5/3 ratio via CSS (issue #7)
+        // Chart.js invokes onResize before its own update('resize'), so option
+        // mutations here are picked up by the layout pass that follows.
+        onResize: (chart, size) => {
+          chart.options.scales.y.title.text = yTitleFor(size.width);
+        },
         events: ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'],
         scales: {
           x: {
@@ -308,13 +325,11 @@ const initChart = () => {
             title: {
               display: true,
               text: 'Age (years)',
-              font: {
-                size: 16,
-                weight: 'bold',
-              },
+              font: axisTitleFont,
             },
             ticks: {
               color: tickColor,
+              font: axisTickFont,
             },
             min: CONFIG.CHART_X_MIN,
             max: CONFIG.CHART_X_MAX,
@@ -327,14 +342,12 @@ const initChart = () => {
             },
             title: {
               display: true,
-              text: 'Height-Adjusted Total Liver Volume (htTLV)',
-              font: {
-                size: 16,
-                weight: 'bold',
-              },
+              text: yTitleFor(chartCanvas.value.parentElement.clientWidth),
+              font: axisTitleFont,
             },
             ticks: {
               color: tickColor,
+              font: axisTickFont,
               autoSkip: false,
               callback: function (value) {
                 return CONFIG.CHART_Y_TICKS.includes(value) ? value.toLocaleString() : '';
@@ -519,7 +532,8 @@ watch(
   justify-content: center;
   align-items: center;
   margin-top: 20px;
-  width: 100%;
+  /* No width/height here: sizing (fixed 5/3 aspect ratio, issue #7) lives solely in
+     styles/controls.css — a scoped rule would out-specify it and re-fork the cascade. */
   position: relative;
 }
 
