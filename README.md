@@ -36,7 +36,7 @@ Full documentation lives in [**`docs/`**](docs/README.md):
 
 | Page                                               | What it covers                                                                              |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 📖 [Clinical background](clinical-background.md)   | What PLD is, the science behind the classification, its publication history, and the model. |
+| 📖 [Clinical background](clinical-background.md)   | What PLD is, the science behind the classification, its publication history and the model. |
 | 🗺️ [User guide](user-guide.md)                     | Features and an annotated walkthrough of every part of the interface.                       |
 | 🔄 [Data formats](data-formats.md)                 | Batch **import** (Excel / CSV / JSON) and **export** (Excel / CSV / JSON / PNG) reference.  |
 | 🔗 [URL parameters](url-parameters.md)             | Preset inputs and embed/kiosk mode via URL query parameters.                                |
