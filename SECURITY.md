@@ -1,6 +1,6 @@
 # Security Policy
 
-ChIC is an informational/educational research tool, **not** a medical device, and
+ChIC is an informational/educational research tool, **not** a medical device and
 must not be used for diagnosis or treatment decisions.
 
 ## Reporting a vulnerability
