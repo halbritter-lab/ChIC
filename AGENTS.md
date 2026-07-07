@@ -25,7 +25,7 @@ It is a PWA, deployed to GitHub Pages, and gated behind a medical disclaimer. It
 
 ```bash
 npm ci            # install (uses package-lock.json)
-npm run dev       # Vite dev server on http://localhost:8080
+npm run dev       # Vite dev server on http://localhost:8137
 npm run build     # production build -> dist/
 npm run preview   # serve the production build locally
 npm run lint      # ⚠️ runs eslint WITH --fix — mutates files. See below.

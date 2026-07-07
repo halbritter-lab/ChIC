@@ -7,7 +7,7 @@ ChIC — Charité Imaging Classification: a Vue 3 + Vite SPA that classifies Pol
 ## Fast facts
 
 - Stack: Vue 3 (mixed Options + Composition API), Vite 6, Chart.js 4, plain JavaScript, ESLint. No tests.
-- Install `npm ci` · dev `npm run dev` (port 8080) · build `npm run build` · lint `npm run lint`.
+- Install `npm ci` · dev `npm run dev` (port 8137) · build `npm run build` · lint `npm run lint`.
 - `npm run lint` **auto-fixes in place**. To check without changing files:
   `npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore`
 - Verify changes with `npm run build` + manual check in the dev server. There are no tests to rely on.
