@@ -23,7 +23,7 @@ Node ≥22 has a built-in WebSocket client, so raw CDP works without dependencie
 3. `PUT /json/new` returns a target — but it IGNORES the url param; you must
    `Page.navigate` explicitly after connecting the WebSocket.
 4. `Emulation.setDeviceMetricsOverride` per viewport (set `deviceScaleFactor: 3,
-   mobile: true` for phone cases), sleep ~900ms for Chart.js's resize observer,
+mobile: true` for phone cases), sleep ~900ms for Chart.js's resize observer,
    then `Runtime.evaluate` measurements and `Page.captureScreenshot`
    (`captureBeyondViewport: true` for full page).
 
