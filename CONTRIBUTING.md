@@ -6,7 +6,7 @@ Thanks for your interest in improving the Charité Imaging Classification app.
 
 ```bash
 npm ci            # install (Node 20 — see .nvmrc)
-npm run dev       # dev server on http://localhost:8080
+npm run dev       # dev server on http://localhost:8137
 npm run build     # production build
 npm run preview   # serve the production build
 ```
