@@ -15,6 +15,12 @@ export default {
           img: 'dfg_logo_schriftzug_schwarz_foerderung_en.gif',
           alt: 'DFG Logo',
         },
+        {
+          name: 'Heisenberg-Programm',
+          url: 'https://www.dfg.de/en/research-funding/funding-opportunities/programmes/individual/heisenberg',
+          img: 'Heisenberg-Programm_400x235.png',
+          alt: 'DFG Heisenberg-Programm Logo',
+        },
       ],
     };
   },
