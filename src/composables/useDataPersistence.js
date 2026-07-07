@@ -221,9 +221,16 @@ export function parseCsv(text) {
   return rows;
 }
 
-/** Quote a CSV field only when it contains a comma, double quote, or newline. */
+/**
+ * Quote a CSV field only when it contains a comma, double quote, or newline.
+ * A leading `=`, `+`, `-`, `@`, tab, or CR is prefixed with an apostrophe so
+ * spreadsheets treat the cell as text, not a formula (CWE-1236 — user-controlled
+ * ID/Group/GroupColor round-trip through import unchecked). Plain numbers are
+ * exempt: a negative LGR like `-1.23` is inert and must stay numeric.
+ */
 function csvEscape(value) {
-  const s = value === null || value === undefined ? '' : String(value);
+  let s = value === null || value === undefined ? '' : String(value);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(?:\.\d+)?$/.test(s)) s = `'${s}`;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
