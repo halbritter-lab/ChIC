@@ -5,6 +5,8 @@
 - **Author:** Bernt Popp (with Claude Code)
 - **Scope:** Make the ChIC web app findable by, and legible to, the readership of the ChIC manuscript (JHEP Reports Short Communication). SEO metadata, social/academic previews, structured data, and audience-fit crawlable content. **No new runtime dependencies. No change to the clinical model, calculator logic, or App.vue state.**
 
+> **Correction (2026-07-07, during execution):** the primary ChIC manuscript is **in preparation** (not submitted, not a preprint). Any reference below that treats it as an "in press" / "JHEP Reports, 2026" citable `ScholarlyArticle` (`#paper` node) was **not shipped**. The implemented `index.html` omits the `#paper` node, points `isBasedOn` at the two genuinely-published predecessors (Sierks 2022, Schönauer 2024), and states the ChIC manuscript is "in preparation." Read the citation passages below with that correction in mind.
+
 ---
 
 ## 1. Context & Goals
@@ -61,16 +63,16 @@ Extracted from `ChIC_3rdDraft_Clean_2026-07-06.docx` and `_Supplement_2026-07-06
 
 ## 3. Decisions Log (locked)
 
-| #    | Decision                                                                                                                                                                             | Rationale                                                                                                                            |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| D-1  | **Canonical URL = `https://halbritter-lab.github.io/ChIC/`** (hardcoded, absolute).                                                                                                 | User decision; matches the live deploy. Kept in one commented "SEO CONFIG" block so a future domain change is a single find/replace. |
-| D-2  | **All SEO metadata is static in `index.html`**; the client-side `updateMetaTag` injection in `App.vue` is **removed**.                                                              | Scrapers don't run JS. Static tags cover every crawler; also trims the App.vue god file. Static + app describe the same subject → progressive enhancement, not cloaking. |
-| D-3  | **Crawlable prose lives inside the `#app` mount node** (Vue replaces it on mount) **plus a `<noscript>` fallback**, styled as an intentional branded landing to avoid an ugly flash. | Non-JS crawlers/scrapers get full content; interactive users get the app. No cloaking (equivalent subject matter both ways).        |
-| D-4  | **OG image is built only from ChIC lab logo assets. The DFG and Heisenberg-Programm marks are excluded.**                                                                           | Standing constraint: the DFG/Heisenberg logo needs prior written DFG consent before shipping. The OG card must not create a new surface that carries it. |
-| D-5  | **Google Scholar Highwire `citation_*` tags are NOT placed on this page — ever, not even commented.** Academic linkage ships via Dublin Core + JSON-LD `isBasedOn` + visible citation links. If Scholar indexing is later desired, the correct vehicle is a **separate article/abstract landing page**, not this SPA. | Google Scholar's inclusion guidelines want scholarly article/abstract pages, not companion tools; `citation_*` on a tool page risks Scholar indexing the tool as the article (misattribution). (Codex review, blocking.) |
-| D-6  | **No new dependencies.** OG image is generated once by an available local tool (browser screenshot of a self-contained HTML template, or ImageMagick) and committed as a static PNG. | Honors the repo's "no deps unless asked" rule; the image is a build _input_, not a build step.                                       |
-| D-7  | **Absolute URLs (canonical, `og:image`) are hardcoded to production.** Relative asset refs continue to use `%BASE_URL%`.                                                            | OG/canonical require absolute URLs; `%BASE_URL%` is a path (`/ChIC/`), not a full origin. Harmless in dev.                          |
-| D-8  | Age range wording in prose says **"from age 15"** and avoids pinning an upper bound.                                                                                                | The repo is internally inconsistent (README 15–85 vs app cap 80); SEO copy must not assert a number that contradicts the UI.        |
+| #   | Decision                                                                                                                                                                                                                                                                                                              | Rationale                                                                                                                                                                                                                |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D-1 | **Canonical URL = `https://halbritter-lab.github.io/ChIC/`** (hardcoded, absolute).                                                                                                                                                                                                                                   | User decision; matches the live deploy. Kept in one commented "SEO CONFIG" block so a future domain change is a single find/replace.                                                                                     |
+| D-2 | **All SEO metadata is static in `index.html`**; the client-side `updateMetaTag` injection in `App.vue` is **removed**.                                                                                                                                                                                                | Scrapers don't run JS. Static tags cover every crawler; also trims the App.vue god file. Static + app describe the same subject → progressive enhancement, not cloaking.                                                 |
+| D-3 | **Crawlable prose lives inside the `#app` mount node** (Vue replaces it on mount) **plus a `<noscript>` fallback**, styled as an intentional branded landing to avoid an ugly flash.                                                                                                                                  | Non-JS crawlers/scrapers get full content; interactive users get the app. No cloaking (equivalent subject matter both ways).                                                                                             |
+| D-4 | **OG image is built only from ChIC lab logo assets. The DFG and Heisenberg-Programm marks are excluded.**                                                                                                                                                                                                             | Standing constraint: the DFG/Heisenberg logo needs prior written DFG consent before shipping. The OG card must not create a new surface that carries it.                                                                 |
+| D-5 | **Google Scholar Highwire `citation_*` tags are NOT placed on this page — ever, not even commented.** Academic linkage ships via Dublin Core + JSON-LD `isBasedOn` + visible citation links. If Scholar indexing is later desired, the correct vehicle is a **separate article/abstract landing page**, not this SPA. | Google Scholar's inclusion guidelines want scholarly article/abstract pages, not companion tools; `citation_*` on a tool page risks Scholar indexing the tool as the article (misattribution). (Codex review, blocking.) |
+| D-6 | **No new dependencies.** OG image is generated once by an available local tool (browser screenshot of a self-contained HTML template, or ImageMagick) and committed as a static PNG.                                                                                                                                  | Honors the repo's "no deps unless asked" rule; the image is a build _input_, not a build step.                                                                                                                           |
+| D-7 | **Absolute URLs (canonical, `og:image`) are hardcoded to production.** Relative asset refs continue to use `%BASE_URL%`.                                                                                                                                                                                              | OG/canonical require absolute URLs; `%BASE_URL%` is a path (`/ChIC/`), not a full origin. Harmless in dev.                                                                                                               |
+| D-8 | Age range wording in prose says **"from age 15"** and avoids pinning an upper bound.                                                                                                                                                                                                                                  | The repo is internally inconsistent (README 15–85 vs app cap 80); SEO copy must not assert a number that contradicts the UI.                                                                                             |
 
 ---
 
@@ -92,7 +94,10 @@ Insert a single, commented **"SEO CONFIG"** block into `<head>` (after the chars
   name="keywords"
   content="polycystic liver disease, PLD, ADPLD, ADPKD, height-adjusted total liver volume, htTLV, total liver volume, liver events, risk prediction, volume classification, Charité Imaging Classification, ChIC, PKD1, PKD2, GANAB, PRKCSH, SEC63"
 />
-<meta name="author" content="Carolin Beatrice Brigl, Dana Sierks, Ria Schönauer, Bernt Popp, Jan Halbritter" />
+<meta
+  name="author"
+  content="Carolin Beatrice Brigl, Dana Sierks, Ria Schönauer, Bernt Popp, Jan Halbritter"
+/>
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="theme-color" content="#00bf7d" />
 <link rel="canonical" href="https://halbritter-lab.github.io/ChIC/" />
@@ -103,13 +108,22 @@ Insert a single, commented **"SEO CONFIG"** block into `<head>` (after the chars
 ```html
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Charité Imaging Classification (ChIC)" />
-<meta property="og:title" content="ChIC — Charité Imaging Classification for Polycystic Liver Disease" />
-<meta property="og:description" content="Classify PLD progression from height-adjusted total liver volume (htTLV) and age to predict liver-event risk in ADPKD and ADPLD. Free, research-based." />
+<meta
+  property="og:title"
+  content="ChIC — Charité Imaging Classification for Polycystic Liver Disease"
+/>
+<meta
+  property="og:description"
+  content="Classify PLD progression from height-adjusted total liver volume (htTLV) and age to predict liver-event risk in ADPKD and ADPLD. Free, research-based."
+/>
 <meta property="og:url" content="https://halbritter-lab.github.io/ChIC/" />
 <meta property="og:image" content="https://halbritter-lab.github.io/ChIC/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Charité Imaging Classification (ChIC) — polycystic liver disease progression by class A–E" />
+<meta
+  property="og:image:alt"
+  content="Charité Imaging Classification (ChIC) — polycystic liver disease progression by class A–E"
+/>
 <meta property="og:locale" content="en_US" />
 ```
 
@@ -117,8 +131,14 @@ Insert a single, commented **"SEO CONFIG"** block into `<head>` (after the chars
 
 ```html
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="ChIC — Charité Imaging Classification for Polycystic Liver Disease" />
-<meta name="twitter:description" content="Classify PLD progression from htTLV and age to predict liver-event risk in ADPKD and ADPLD. Free, research-based." />
+<meta
+  name="twitter:title"
+  content="ChIC — Charité Imaging Classification for Polycystic Liver Disease"
+/>
+<meta
+  name="twitter:description"
+  content="Classify PLD progression from htTLV and age to predict liver-event risk in ADPKD and ADPLD. Free, research-based."
+/>
 <meta name="twitter:image" content="https://halbritter-lab.github.io/ChIC/og-image.png" />
 <meta name="twitter:image:alt" content="ChIC — polycystic liver disease progression classes A–E" />
 ```
@@ -182,17 +202,17 @@ Replace the empty `<div id="app"></div>` with a mount node that contains a **sta
 
 ## 5. File-by-file change list
 
-| File                                              | Change                                                                                                          | Risk  |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----- |
-| `index.html`                                      | Add SEO CONFIG head block (§4.1), JSON-LD (§4.2), static shell inside `#app` + `<noscript>` + inline shell CSS (§4.4). Update `<title>`. | Med   |
-| `public/og-image.png`                             | New 1200×630 social image (§4.3). ChIC assets only.                                                            | Low   |
-| `scripts/og-image.html`                           | New self-contained template used to generate the OG image (kept for regen).                                    | Low   |
-| `public/robots.txt`                               | Add `Sitemap:` line; explicit allow-all (§4.5).                                                                | Low   |
-| `public/sitemap.xml`                              | Add `<lastmod>`, `<changefreq>`, `<priority>` (§4.5).                                                          | Low   |
-| `src/App.vue`                                     | Remove `updateMetaTag` helper + calls + `document.title` (§4.6).                                               | Low   |
-| `docs/superpowers/specs/2026-07-07-…-design.md`   | This spec.                                                                                                     | —     |
-| `docs/RECOMMENDATIONS.md` _(optional)_            | Add a "Tier 2 — Discoverability/SEO" row pointing at this spec, so the roadmap stays the source of truth.      | Low   |
-| `README.md` _(optional, publication checklist)_   | Note the canonical URL is now wired for SEO; DOI/PMID still TBD.                                               | Low   |
+| File                                            | Change                                                                                                                                   | Risk |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `index.html`                                    | Add SEO CONFIG head block (§4.1), JSON-LD (§4.2), static shell inside `#app` + `<noscript>` + inline shell CSS (§4.4). Update `<title>`. | Med  |
+| `public/og-image.png`                           | New 1200×630 social image (§4.3). ChIC assets only.                                                                                      | Low  |
+| `scripts/og-image.html`                         | New self-contained template used to generate the OG image (kept for regen).                                                              | Low  |
+| `public/robots.txt`                             | Add `Sitemap:` line; explicit allow-all (§4.5).                                                                                          | Low  |
+| `public/sitemap.xml`                            | Add `<lastmod>`, `<changefreq>`, `<priority>` (§4.5).                                                                                    | Low  |
+| `src/App.vue`                                   | Remove `updateMetaTag` helper + calls + `document.title` (§4.6).                                                                         | Low  |
+| `docs/superpowers/specs/2026-07-07-…-design.md` | This spec.                                                                                                                               | —    |
+| `docs/RECOMMENDATIONS.md` _(optional)_          | Add a "Tier 2 — Discoverability/SEO" row pointing at this spec, so the roadmap stays the source of truth.                                | Low  |
+| `README.md` _(optional, publication checklist)_ | Note the canonical URL is now wired for SEO; DOI/PMID still TBD.                                                                         | Low  |
 
 **Explicitly NOT touched:** `vite.config.js` (PWA manifest already has name/description), `formulasConfig.js`, `config.js`, `ChartDisplay.vue`, `useDataPersistence.js`, router, mixins, any calculator logic.
 
@@ -226,15 +246,15 @@ At paper acceptance / DOI assignment, activate full academic linkage. **Do not a
 
 ## 8. Risks & mitigations
 
-| Risk                                                                                     | Mitigation                                                                                                                       |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **FOUC** — static shell flashes before Vue mounts.                                       | Style the shell as an intentional branded landing (logo + one paragraph + skeleton), centered; it reads as a loading state, not a glitch. Mount is sub-second. |
-| **Cloaking suspicion** — different content for crawlers vs users.                        | Same subject matter both ways; shell is genuinely visible pre-mount and to non-JS agents; nothing is `display:none`-hidden-from-users-only. |
-| **Scholar misattribution** — tool page indexed as the article.                           | `citation_*` tags never emitted on this page (D-5); linkage via DC + JSON-LD `isBasedOn` + visible citation only. A separate article/abstract page is the correct Scholar vehicle if ever needed. |
-| **DFG/Heisenberg consent** — OG image inadvertently carries the DFG mark.               | OG image uses ChIC assets only; DFG/Heisenberg explicitly excluded (D-4); reviewer checks the committed PNG.                     |
-| **Absolute-URL drift** if a custom domain is later adopted.                              | All absolute URLs sit in one commented SEO CONFIG block → single find/replace (D-1).                                            |
-| **Vite strips/relocates head tags or the shell.**                                        | Verification step 1–2 inspects the built `dist/index.html`, not just source.                                                     |
-| **PWA precache bloat** from the new PNG.                                                  | og-image < 150 KB; `globPatterns` already includes png — negligible; verify precache size in build output.                      |
+| Risk                                                                      | Mitigation                                                                                                                                                                                        |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **FOUC** — static shell flashes before Vue mounts.                        | Style the shell as an intentional branded landing (logo + one paragraph + skeleton), centered; it reads as a loading state, not a glitch. Mount is sub-second.                                    |
+| **Cloaking suspicion** — different content for crawlers vs users.         | Same subject matter both ways; shell is genuinely visible pre-mount and to non-JS agents; nothing is `display:none`-hidden-from-users-only.                                                       |
+| **Scholar misattribution** — tool page indexed as the article.            | `citation_*` tags never emitted on this page (D-5); linkage via DC + JSON-LD `isBasedOn` + visible citation only. A separate article/abstract page is the correct Scholar vehicle if ever needed. |
+| **DFG/Heisenberg consent** — OG image inadvertently carries the DFG mark. | OG image uses ChIC assets only; DFG/Heisenberg explicitly excluded (D-4); reviewer checks the committed PNG.                                                                                      |
+| **Absolute-URL drift** if a custom domain is later adopted.               | All absolute URLs sit in one commented SEO CONFIG block → single find/replace (D-1).                                                                                                              |
+| **Vite strips/relocates head tags or the shell.**                         | Verification step 1–2 inspects the built `dist/index.html`, not just source.                                                                                                                      |
+| **PWA precache bloat** from the new PNG.                                  | og-image < 150 KB; `globPatterns` already includes png — negligible; verify precache size in build output.                                                                                        |
 
 ---
 
