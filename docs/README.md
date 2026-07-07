@@ -15,7 +15,7 @@ ChIC is an **informational, educational, and research tool** — it is not a dia
 | Page                                               | What it covers                                                                              |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | 📖 [Clinical background](clinical-background.md)   | What PLD is, the science behind the classification, its publication history, and the model. |
-| 🖥️ [User guide](user-guide.md)                     | Features and an annotated walkthrough of every part of the interface.                       |
+| 🗺️ [User guide](user-guide.md)                     | Features and an annotated walkthrough of every part of the interface.                       |
 | 🔄 [Data formats](data-formats.md)                 | Batch **import** (Excel / CSV / JSON) and **export** (Excel / CSV / JSON / PNG) reference.  |
 | 🔗 [URL parameters](url-parameters.md)             | Preset inputs and embed/kiosk mode via URL query parameters.                                |
 | 🔒 [Privacy & offline use](privacy-and-offline.md) | Client-side data storage and Progressive Web App (PWA) install/offline behaviour.           |
