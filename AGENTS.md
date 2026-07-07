@@ -18,8 +18,8 @@ It is a PWA, deployed to GitHub Pages, and gated behind a medical disclaimer. It
 - **Vue 3** (mixed Options + Composition API — see conventions below), **vue-router 4** (single route).
 - **Vite 6** build, **vite-plugin-pwa** for the service worker.
 - **Chart.js 4** for the plot; **exceljs** for Excel I/O.
-- Plain **JavaScript** (no TypeScript), **ESLint** for linting. No test framework yet.
-- Node 20 in CI; repo currently has no `.nvmrc`/`engines` pin.
+- Plain **JavaScript** (no TypeScript). **ESLint** (flat config) + **Prettier** + **Vitest**; **vue-tsc** typecheck is advisory.
+- Node 20, pinned via `.nvmrc` + `package.json` `engines`.
 
 ## Commands
 
@@ -28,12 +28,15 @@ npm ci            # install (uses package-lock.json)
 npm run dev       # Vite dev server on http://localhost:8137
 npm run build     # production build -> dist/
 npm run preview   # serve the production build locally
-npm run lint      # ⚠️ runs eslint WITH --fix — mutates files. See below.
+npm run lint      # eslint . — CHECK-ONLY (does not mutate files)
+npm run lint:fix  # eslint . --fix
+npm run format:check   # prettier --check .
+npm test          # vitest run
+npm run typecheck # vue-tsc --noEmit (advisory)
 ```
 
-- **`npm run lint` auto-fixes in place.** There is no check-only lint script yet. In CI or when you want to _see_ violations without changing files, run:
-  `npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore`
-- There are **no tests**. Do not claim a change is verified by tests. Verify by running `npm run build` (must succeed) and exercising the affected flow in `npm run dev`.
+- **`npm run lint` is check-only** (`eslint .`); use `npm run lint:fix` to auto-fix. CI (`.github/workflows/ci.yml`) runs `lint → format:check → typecheck → test → build`.
+- **There ARE tests now** (Vitest, under `src/**/__tests__/`). Verify a change with `npm test` + `npm run build`, and exercise the affected flow in `npm run dev`. State honestly if a change has no test coverage.
 
 ## Architecture map — where things live
 
@@ -70,35 +73,32 @@ npm run lint      # ⚠️ runs eslint WITH --fix — mutates files. See below.
 
 These are verified, fragile facts. Changing them silently breaks features.
 
-1. **Two class codes exist: internal `PG1`–`PG5` vs. UI `Class A`–`E`.** The mapping is `pgLabelMap` / `formatPGLabel` in `App.vue` (`PG1→A … PG5→E`). Any classification change must keep both in sync.
+1. **Classification uses class letters `A`–`E` end to end.** State stores `class` (a letter); the display label comes from `formatClassLabel` in `src/domain/classification.js` (`'A' → 'Class A'`). Legacy `PG1`–`PG5` codes only ever appear in _imported files_ and are mapped to letters at the import boundary via `legacyPgToLetter`. Don't reintroduce internal `PG*` codes.
 
-2. **⚠️ Classification is currently duplicated and OUT OF SYNC across two files (known bug).**
-   - Interactive path: `App.vue` `progressionGroup()` (~`:409`) uses **four** thresholds → **five** classes (`PG1`–`PG5`, i.e. Class A–E).
-   - Import path: `useDataPersistence.js` `processLoadedRow()` (~`:72`) uses **two** thresholds → only **three** classes (`PG1`/`PG2`/`PG3`).
-   - **Consequence:** the same patient gets a different class when typed in vs. loaded from a file; imported rows can never be Class D/E. If you touch classification, fix **both** or (better) extract one shared classifier in `formulasConfig.js` and call it from both paths.
+2. **Classification is unified in one pure module — keep it that way.** `src/domain/classification.js` (`classify`, `heightAdjustedTLV`, `liverGrowthRate`), fed by `CONFIG.MODEL`, is the single source of truth. Both the interactive path (`App.vue` `progressionGroup`, ~`:235`) and the import path (`useDataPersistence.js` `processRows`) call it, so a typed-in and an imported patient get the same A–E class. If you change the clinical model, change it **only here** — never fork a second copy (that fork was the original bug).
 
 3. **Chart datasets are order-sensitive.** `ChartDisplay.vue` (~`:120–289`) paints class bands using dataset **array order**, fractional `order` values, and relative `fill: '+1'/'-1'` references between adjacent datasets. Inserting or reordering a dataset silently breaks the shaded regions.
 
 4. **Chart dataset labels are magic keys.** `updateChart` finds the patient series by `label === 'Patient Data'`; download logic hides `label === 'Selected Point'`. **Do not rename these strings.**
 
-5. **The `App.vue` ↔ `ChartDisplay` imperative contract is `defineExpose` + `ref`, and is partly broken.** `ChartDisplay.vue:449` exposes only `{ downloadChart, updateChartPoint }`. `App.vue` also calls `updatePointStyle(...)` (`:644`) and `clearChart()` (`:692`) — **these methods do not exist**; the calls are silent no-ops (swallowed by `?.`). When adding imperative chart ops, add them to `defineExpose`. Don't assume the two phantom calls work.
+5. **The `App.vue` ↔ `ChartDisplay` imperative contract is `defineExpose` + `ref`.** `ChartDisplay.vue` exposes `{ downloadChart, updateChartPoint, updatePointStyle, clearChart }` (`defineExpose`, ~`:473`). `clearChart` clears **only** the `Patient Data` and `Selected Point` datasets — never the threshold curves / class fills. When adding imperative chart ops, add them to `defineExpose` and keep them dataset-label-scoped.
 
 6. **Query-param API (embed/kiosk mode).** `App.vue` (~`:318`) reads `?patientId=&age=&tlv=` (auto-calculates) plus `?acknowledgeBanner=true` and `showFooter/showCitation/showDocumentation/showControls=false`. Preserve these when refactoring init.
 
-7. **Config is split-brain.** Input limits come from `CONFIG` (`config/config.js`), but chart **Y-axis bounds, tick arrays, colors, and the constants `600`/`10100`/`850`** are hardcoded in `ChartDisplay.vue` / `formulasConfig.js`. Changing a limit in one place does not propagate. `NORMALIZATION_FACTOR: 850` (import fallback) and `600` (threshold base) are unreconciled — don't assume they're the same knob.
+7. **`CONFIG` (`src/config/config.js`) is the single source of truth for constants.** Model params (`CLASS_BASELINE_ML_PER_M: 600`, `GROWTH_RATE_CUTOFFS`, `ASSUMED_HEIGHT_M`), input ranges, and chart Y/X bounds + tick arrays + `CLASS_COLORS` all live there; the domain module and `ChartDisplay.vue` import from it. The old `NORMALIZATION_FACTOR: 850` import fallback is **gone** — height-less imports estimate htTLV from the cohort-mean height (else `CONFIG.MODEL.ASSUMED_HEIGHT_M`) and are flagged as estimates. Add new constants to `CONFIG`, not inline.
 
-## Known deployment / config bugs (fix deliberately, verify against live URL)
+## Deployment / config (resolved — kept for context)
 
-- **`vite.config.js` `base` is `/pld-progression-grouper/`** but this repo is `halbritter-lab/ChIC` (Pages serves at `/ChIC/`). This is leftover from the sibling project — assets will 404 on the real Pages path. Confirm the intended URL before changing.
-- **CI deploys only on push to `main`**, but the GitHub default branch is `copilot/start-from-version-1`. Landing on the default branch does not deploy.
-- **`dist/` is committed** despite `.gitignore` listing `/dist`. CI rebuilds it; don't hand-edit committed build output.
-- **Service worker is doubly registered:** `vite-plugin-pwa` (autoUpdate) self-registers `sw.js`, but `src/registerServiceWorker.js` (imported in `main.js` PROD) also registers a nonexistent `service-worker.js` using Vue-CLI-era `process.env.*` globals that are undefined under Vite. The hand-rolled path is dead/broken; let the plugin own PWA.
+- **Base path** is `/ChIC/` in build, `/` in dev (`vite.config.js:7`); the router passes `import.meta.env.BASE_URL` to `createWebHistory`, and footer logos resolve through `withBase(...)` in `AppFooter.vue`. Assets serve correctly at `https://halbritter-lab.github.io/ChIC/`.
+- **CI is split:** `.github/workflows/ci.yml` runs `lint → format:check → typecheck → test → build` on PRs/pushes; `.github/workflows/deploy.yml` builds and publishes to Pages **on push to `main`** (now the default branch), with a `404.html` SPA fallback.
+- **`dist/` is no longer tracked** (`.gitignore` is honored); CI rebuilds it. Don't commit build output.
+- **PWA is owned solely by `vite-plugin-pwa`** (autoUpdate `sw.js`); the old hand-rolled `registerServiceWorker.js` was removed.
 
 ## When you make changes
 
 - Prefer the **smallest change that fits the existing pattern**. Match surrounding style, naming, and comment density.
 - Honor the **600 LOC cap and Boy-Scout refactor rules above** — every file you touch comes out DRY/KISS/SOLID, modularized, and under the cap.
-- After code changes: run `npm run build` (must pass) and `npx eslint <changed files>` (see check-only command above). State honestly that there are no tests.
+- After code changes: run `npm test`, `npm run lint`, `npm run format:check`, and `npm run build` (all must pass). Add/extend Vitest coverage for logic you touch; state honestly where a change has none.
 - If you fix a bug listed above, update this file so the next agent isn't warned about a problem that's already solved.
 - Don't add dependencies, formatters, or CI without being asked — see `docs/RECOMMENDATIONS.md` for the agreed roadmap and pick from it.
 
