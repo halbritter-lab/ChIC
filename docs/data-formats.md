@@ -2,7 +2,7 @@
 
 [← Documentation home](README.md)
 
-ChIC reads and writes patient data entirely in your browser — no data leaves your device. See more about privacy and offline use [here](privacy-and-offline.md)).
+ChIC reads and writes patient data entirely in your browser — no data leaves your device. See more about privacy and offline use [here](privacy-and-offline.md).
 
 ## Import — batch upload
 
