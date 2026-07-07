@@ -419,19 +419,6 @@ export default {
       }
     });
 
-    // Helper function to update or create meta tags
-    function updateMetaTag(name, content) {
-      let tag = document.querySelector(`meta[name="${name}"]`);
-      if (tag) {
-        tag.setAttribute('content', content);
-      } else {
-        tag = document.createElement('meta');
-        tag.setAttribute('name', name);
-        tag.setAttribute('content', content);
-        document.head.appendChild(tag);
-      }
-    }
-
     const updateChartPoint = (index) => {
       const sample = dataPoints.value[index];
       // Update the corresponding chart point backgroundColor based on groupColor.
@@ -499,17 +486,8 @@ export default {
       initFromQuery();
       document.documentElement.style.setProperty('--modal-max-width', CONFIG.MODAL_MAX_WIDTH);
       document.documentElement.style.setProperty('--modal-max-height', CONFIG.MODAL_MAX_HEIGHT);
-      document.title = 'Charité Imaging Classification';
-      updateMetaTag(
-        'description',
-        'Charité Imaging Classification is a Vue.js web application, based on extensive research, offering insights into Polycystic Liver Disease (PLD) progression. Developed by Bernt Popp, Ria Schönauer, Dana Sierks, and Jan Halbritter, this tool facilitates understanding of PLD for both educational and research purposes.'
-      );
-      updateMetaTag(
-        'keywords',
-        'PLD, Polycystic Liver Disease, Liver Health, Medical Research, Data Visualization, Vue.js, Web Application, Liver Disease Progression, Medical Education, Healthcare Technology'
-      );
-      updateMetaTag('author', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
-      updateMetaTag('creator', 'Bernt Popp, Ria Schönauer, Dana Sierks, Jan Halbritter');
+      // Page title and SEO meta tags are declared statically in index.html so that non-JS
+      // crawlers and link-preview scrapers can read them; no client-side injection here.
     });
 
     return {
