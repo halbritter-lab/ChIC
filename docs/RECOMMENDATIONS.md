@@ -8,7 +8,7 @@ This document is the agreed backlog. Items are grouped by tier and ordered by va
 
 ## TL;DR
 
-The app builds and works, but it carries **three real correctness bugs**, an **incomplete rebrand that breaks the deploy path**, and **no quality gates** (no check-only lint, no tests, no CI lint, EOL ESLint). None are hard to fix. Do Tier 0 (correctness + deploy) first — those affect users. Then Tier 1 (tooling foundation) to make the repo safe for parallel/agentic work. Tiers 2–3 are polish and hardening.
+The app builds and works, but it carries **three real correctness bugs**, an **incomplete rebrand that breaks the deploy path** and **no quality gates** (no check-only lint, no tests, no CI lint, EOL ESLint). None are hard to fix. Do Tier 0 (correctness + deploy) first — those affect users. Then Tier 1 (tooling foundation) to make the repo safe for parallel/agentic work. Tiers 2–3 are polish and hardening.
 
 ---
 
