@@ -35,8 +35,9 @@
 | `.github/workflows/deploy.yml`                         | Modify (remove step)        | Drop the redundant `cp dist/index.html dist/404.html` step                                           |
 | `index.html`                                           | Modify (2 lines)            | `./favicon.png` → `%BASE_URL%favicon.png` (SEO shell + splash) so the fallback renders on deep paths |
 | `src/__tests__/indexHtml.test.js`                      | Modify (add test)           | Assert the two body favicon refs use `%BASE_URL%` and no `./favicon.png` remains                     |
+| `vitest.config.js`                                     | Modify (include glob)       | Add `scripts/**` so the new script test (outside `src/`) is discovered (implementation deviation)    |
 
-Two commits: **Commit 1** = rows 1–2 (Part 1). **Commit 2** = rows 3–8 (Part 2).
+Two commits: **Commit 1** = rows 1–2 (Part 1). **Commit 2** = rows 3–9 (Part 2).
 
 ---
 
@@ -432,15 +433,16 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - [ ] **Step 1: Push the branch and open the PR**
 
 ```bash
-git push -u origin docs/issue-29-perf-and-404-plan
+# Branch renamed from docs/issue-29-perf-and-404-plan (it now carries code, not just docs).
+git push -u origin fix/issue-29-code-split-and-404
 gh pr create --title "Perf + deploy: code-split exceljs, formalize Pages 404 fallback (closes #29)" \
   --body "$(cat <<'EOF'
 Closes #29. Two independent commits.
 
 **1. Code-split (`perf: lazy-load exceljs`)** — exceljs (52% of the 1.28 MB
 entry) now loads on demand. Entry chunk 395 → 123 kB gzip (under Vite's
-500 kB warning); Lighthouse mobile perf 58 → 88, FCP 7.5 → 3.0 s, LCP
-8.1 → 3.1 s. Both consumers were already async → zero behaviour change.
+500 kB warning); Lighthouse mobile perf 58 → 85, FCP 7.5 → 3.0 s, LCP
+8.1 → 3.6 s. Both consumers were already async → zero behaviour change.
 Workbox precache left unchanged (see spec §3.3: changing it would break
 offline xlsx).
 
