@@ -34,15 +34,15 @@ The **Charité Imaging Classification (ChIC)** helps clinicians and researchers 
 
 Full documentation lives in [**`docs/`**](docs/README.md):
 
-| Page                                                 | What it covers                                    |
-| ---------------------------------------------------- | ------------------------------------------------- |
-| [Clinical background](docs/clinical-background.md)   | The science, the model, and publication history.  |
-| [User guide](docs/user-guide.md)                     | Features and an annotated tour of the interface.  |
-| [Data formats](docs/data-formats.md)                 | Batch import & export (Excel / CSV / JSON / PNG). |
-| [URL parameters](docs/url-parameters.md)             | Preset inputs and embed/kiosk mode via the URL.   |
-| [Privacy & offline use](docs/privacy-and-offline.md) | Client-side storage and PWA install/offline.      |
-| [Disclaimer](docs/disclaimer.md)                     | Full disclaimer and usage guidelines.             |
-| [Citation & credits](docs/citation.md)               | How to cite ChIC, plus creators and contributors. |
+| Page                                               | What it covers                                                                              |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 📖 [Clinical background](clinical-background.md)   | What PLD is, the science behind the classification, its publication history, and the model. |
+| 🗺️ [User guide](user-guide.md)                     | Features and an annotated walkthrough of every part of the interface.                       |
+| 🔄 [Data formats](data-formats.md)                 | Batch **import** (Excel / CSV / JSON) and **export** (Excel / CSV / JSON / PNG) reference.  |
+| 🔗 [URL parameters](url-parameters.md)             | Preset inputs and embed/kiosk mode via URL query parameters.                                |
+| 🔒 [Privacy & offline use](privacy-and-offline.md) | Client-side data storage and Progressive Web App (PWA) install/offline behaviour.           |
+| ⚠️ [Disclaimer](disclaimer.md)                     | Full disclaimer and usage guidelines.                                                       |
+| 📑 [Citation & credits](citation.md)               | How to cite ChIC, plus creators and contributors.                                           |
 
 ## Quick start
 
