@@ -14,7 +14,7 @@ ChIC is a Vue 3 + Vite SPA (client-rendered, GitHub Pages) implementing the **Ch
 **The problem (verified against the code):**
 
 - `index.html` `<head>` is effectively empty — only `<title>` + favicons. No description, canonical, Open Graph, Twitter Card, or structured data in the static HTML.
-- The only metadata is injected **client-side** in `App.vue` `onMounted` via `updateMetaTag` (`App.vue:422–433`, called `:503–512`). Social and academic scrapers (X/Twitter, LinkedIn, Slack, WhatsApp, **Google Scholar**, ResearchGate, ORCID) do **not** run JavaScript, so they see the empty shell → **blank preview cards, no academic linkage.**
+- The only metadata is injected **client-side** in `App.vue` `onMounted` via `updateMetaTag` (`App.vue:422–433`, called `:503–512`). Social/academic/link-preview scrapers (X/Twitter, LinkedIn, Slack, WhatsApp, ResearchGate, ORCID) generally do **not** execute JavaScript, so they see the empty shell → **blank preview cards.** Google Search _can_ render JS, but static HTML is more reliable and gives first-wave/raw-fetch coverage; relying on client-side injection is the wrong default.
 - That injected copy is developer-centric ("a Vue.js web application"); its keywords omit the entire clinical vocabulary the audience actually searches.
 - `robots.txt` does not reference the sitemap; `sitemap.xml` has one bare `<loc>`, no `<lastmod>`.
 - A Google Search Console verification file already exists (`public/google3fdf6e14e925e463.html`) but the sitemap is not wired for submission.
@@ -24,8 +24,8 @@ ChIC is a Vue 3 + Vite SPA (client-rendered, GitHub Pages) implementing the **Ch
 1. A shared link to the app renders a rich preview card (title, description, image) on X/Twitter, LinkedIn, Slack, WhatsApp, and iMessage — verified against the raw HTML, no JS.
 2. The raw HTML (`curl`, no JS) contains an audience-accurate title, meta description, canonical URL, Open Graph + Twitter tags, JSON-LD, and human-readable prose using the manuscript vocabulary.
 3. `sitemap.xml` is valid and referenced by `robots.txt`; ready to submit in the existing GSC property.
-4. Structured data validates (Google Rich Results Test / schema.org validator) with no errors; the FAQ is rich-result eligible.
-5. Academic linkage to the paper is wired and one edit away from activation once the DOI/PMID exist.
+4. Structured data validates on the schema.org validator with no errors. (Note: Google **retired FAQ rich results in 2026**, so `FAQPage` ships as semantic markup for schema/AI crawlers, not for a Google FAQ rich result.)
+5. Academic linkage to the paper is present via visible citation links + JSON-LD `isBasedOn`; DOI/PMID identifiers are added to the article node once assigned. **Google Scholar `citation_*` tags are deliberately never placed on this tool page** (see D-5).
 6. `npm run build` succeeds; `npx eslint` clean on touched files; app behaviour unchanged (calculator, disclaimer gate, query-param embed mode, PWA).
 
 **Non-goals (YAGNI, locked):** no prerender/SSR build step; no new dependencies (runtime or build); no restructuring of the in-app calculator UI or App.vue state/logic beyond deleting the now-redundant client-side meta injection; no change to the validated statistical model, thresholds, or class semantics; no custom domain (canonical stays GitHub Pages).
@@ -67,7 +67,7 @@ Extracted from `ChIC_3rdDraft_Clean_2026-07-06.docx` and `_Supplement_2026-07-06
 | D-2  | **All SEO metadata is static in `index.html`**; the client-side `updateMetaTag` injection in `App.vue` is **removed**.                                                              | Scrapers don't run JS. Static tags cover every crawler; also trims the App.vue god file. Static + app describe the same subject → progressive enhancement, not cloaking. |
 | D-3  | **Crawlable prose lives inside the `#app` mount node** (Vue replaces it on mount) **plus a `<noscript>` fallback**, styled as an intentional branded landing to avoid an ugly flash. | Non-JS crawlers/scrapers get full content; interactive users get the app. No cloaking (equivalent subject matter both ways).        |
 | D-4  | **OG image is built only from ChIC lab logo assets. The DFG and Heisenberg-Programm marks are excluded.**                                                                           | Standing constraint: the DFG/Heisenberg logo needs prior written DFG consent before shipping. The OG card must not create a new surface that carries it. |
-| D-5  | **Google Scholar Highwire `citation_*` tags are authored but commented out** until the DOI/PMID exist; Dublin Core + JSON-LD `isBasedOn` linkage ships now.                          | Live `citation_*` tags on a tool page risk Scholar indexing the tool as the article. DC + `isBasedOn` are safe and unambiguous.     |
+| D-5  | **Google Scholar Highwire `citation_*` tags are NOT placed on this page — ever, not even commented.** Academic linkage ships via Dublin Core + JSON-LD `isBasedOn` + visible citation links. If Scholar indexing is later desired, the correct vehicle is a **separate article/abstract landing page**, not this SPA. | Google Scholar's inclusion guidelines want scholarly article/abstract pages, not companion tools; `citation_*` on a tool page risks Scholar indexing the tool as the article (misattribution). (Codex review, blocking.) |
 | D-6  | **No new dependencies.** OG image is generated once by an available local tool (browser screenshot of a self-contained HTML template, or ImageMagick) and committed as a static PNG. | Honors the repo's "no deps unless asked" rule; the image is a build _input_, not a build step.                                       |
 | D-7  | **Absolute URLs (canonical, `og:image`) are hardcoded to production.** Relative asset refs continue to use `%BASE_URL%`.                                                            | OG/canonical require absolute URLs; `%BASE_URL%` is a path (`/ChIC/`), not a full origin. Harmless in dev.                          |
 | D-8  | Age range wording in prose says **"from age 15"** and avoids pinning an upper bound.                                                                                                | The repo is internally inconsistent (README 15–85 vs app cap 80); SEO copy must not assert a number that contradicts the UI.        |
@@ -78,7 +78,7 @@ Extracted from `ChIC_3rdDraft_Clean_2026-07-06.docx` and `_Supplement_2026-07-06
 
 ### 4.1 Static `<head>` metadata (`index.html`)
 
-Insert a single, commented **"SEO CONFIG"** block into `<head>` (after the charset/viewport lines, before favicons). Exact content:
+Insert a single, commented **"SEO CONFIG"** block into `<head>` (after the charset/viewport lines, before favicons). **Replace the existing `<title>` at `index.html:52` — do not add a second `<title>`.** Exact content:
 
 **Primary:**
 
@@ -125,19 +125,21 @@ Insert a single, commented **"SEO CONFIG"** block into `<head>` (after the chars
 
 **Dublin Core (academic indexers):** `DC.title`, `DC.creator` (repeat per author), `DC.subject`, `DC.description`, `DC.publisher` = "Charité – Universitätsmedizin Berlin", `DC.type` = "InteractiveResource", `DC.format` = "text/html", `DC.identifier` = canonical URL, `DC.language` = "en", `DC.rights` = "MIT License".
 
-**Google Scholar (commented, D-5):** a clearly-labelled `<!-- Google Scholar citation tags — UNCOMMENT AND FILL AT PUBLICATION -->` block containing `citation_title`, `citation_author` (repeat per author, "Last, First"), `citation_journal_title` = "JHEP Reports", `citation_publication_date` = "2026", `citation_doi`, `citation_pmid` — with `TODO:` placeholders for DOI/PMID.
+**Google Scholar:** **not emitted** (D-5). No `citation_*` tags on this page. Paper linkage is carried by the visible "How to cite" block (§4.4) and the JSON-LD `isBasedOn`/`citation` edges (§4.2).
 
 ### 4.2 Structured data — JSON-LD `@graph` (`index.html`, one `<script type="application/ld+json">`)
 
-A single `@graph` with these nodes (IDs cross-referenced):
+A single `@graph` with these nodes (IDs cross-referenced). Schema-type precision matters — Codex flagged the audience/enum handling and the `#paper` identifiers:
 
-1. **`WebApplication`** (`@id` = canonical `#webapp`): `name` "Charité Imaging Classification (ChIC)", `alternateName` "ChIC", `url`, `description` (audience copy), `applicationCategory` "HealthApplication", `operatingSystem` "Any (web browser)", `browserRequirements` "Requires JavaScript.", `isAccessibleForFree` true, `offers` {`@type` Offer, `price` "0", `priceCurrency` "USD"}, `inLanguage` "en", `softwareVersion` "0.2.1" (from `package.json`), `image` = og-image URL, `license` "https://opensource.org/licenses/MIT", `about` → `#pld`, `audience` → MedicalAudience {Clinician, MedicalResearcher}, `isBasedOn` → `#paper`, `citation` → [`#sierks2022`, `#schonauer2024`], `author`/`publisher` → Organization "Charité – Universitätsmedizin Berlin".
-2. **`MedicalWebPage`** (`#page`): `about` → `#pld`, `medicalAudience` [Clinician, MedicalResearcher], `lastReviewed` "2026-07-07", `mainEntity` → `#webapp`.
-3. **`MedicalCondition`** (`#pld`): `name` "Polycystic Liver Disease", `alternateName` ["PLD", "ADPLD"], `associatedAnatomy` liver, `code`/`sameAs` where safe (e.g. Orphanet/OMIM link for PLD — optional, only if a stable URL is certain).
-4. **`FAQPage`** (`#faq`): `mainEntity` = the same Q&A pairs rendered in the visible content (§4.4) — kept in sync.
-5. **`ScholarlyArticle`** ×3 (`#paper`, `#sierks2022`, `#schonauer2024`): `headline`, `author` list, `isPartOf` Periodical (journal name), `datePublished`, `sameAs` = DOI/PubMed URL. `#paper` DOI/PMID are `TODO` placeholders; the two predecessors are fully populated (PMID 36246085, 38101549).
+1. **`WebApplication`** (`@id` = `…/#webapp`): `name` "Charité Imaging Classification (ChIC)", `alternateName` "ChIC", `url` = canonical, `description` (audience copy), `applicationCategory` "HealthApplication", `operatingSystem` "Any (web browser)", `browserRequirements` "Requires JavaScript.", `isAccessibleForFree` true, `offers` {`@type` Offer, `price` "0", `priceCurrency` "USD"}, `inLanguage` "en", `softwareVersion` "0.2.1" (from `package.json`), `image` = og-image URL, `license` "https://opensource.org/licenses/MIT", **`codeRepository`/`sameAs` = "https://github.com/halbritter-lab/ChIC"**, `about` → `#pld`, **`audience` → a `MedicalAudience` node with textual `audienceType` ["Clinician", "Medical researcher"]** (not the enum values — `WebApplication.audience` expects an `Audience`), `isBasedOn` → `#paper`, `citation` → [`#sierks2022`, `#schonauer2024`], `author`/`publisher` → Organization "Charité – Universitätsmedizin Berlin".
+2. **`MedicalWebPage`** (`#page`): `url` = canonical, `name`, `description`, `inLanguage` "en", `about` → `#pld`, **`medicalAudience` → schema enum URLs `https://schema.org/Clinician`, `https://schema.org/MedicalResearcher`**, `primaryImageOfPage` = og-image URL, `lastReviewed` "2026-07-07", `dateModified` "2026-07-07", `mainEntity` → `#webapp`.
+3. **`MedicalCondition`** (`#pld`): `name` "Polycystic Liver Disease", `alternateName` ["PLD", "ADPLD"], `associatedAnatomy` liver. Add `code`/`sameAs` (Orphanet/OMIM) **only if a stable URL is certain**; otherwise omit — do not guess.
+4. **`FAQPage`** (`#faq`): `mainEntity` = the same Q&A pairs rendered in the visible content (§4.4), kept in sync. **Semantic markup only** — Google retired FAQ rich results in 2026, so this is for schema/AI-crawler comprehension, not a SERP rich result.
+5. **`ScholarlyArticle`** ×3:
+   - **`#paper`** (this manuscript): `headline`, `author` list, `isPartOf` Periodical "JHEP Reports", `datePublished` "2026", `creativeWorkStatus` "In press". **Omit `sameAs`/DOI/PMID entirely until real URLs exist** — placeholder URLs cannot honestly pass the zero-errors gate (`sameAs` requires a URL). Add `identifier`(DOI)/`sameAs`(PubMed) at publication.
+   - **`#sierks2022`, `#schonauer2024`** (predecessors): fully populated — `headline`, authors, `isPartOf`, `datePublished`, and `sameAs` = the PubMed URLs (PMID 36246085, 38101549).
 
-**Validation gate:** the JSON must pass the schema.org validator and Google Rich Results Test with zero errors before commit.
+**Validation gate:** the JSON passes the schema.org validator with zero errors before commit. No Google FAQ rich result is expected (FAQ node 4 above is semantic-only).
 
 ### 4.3 Open Graph image (`public/og-image.png`)
 
@@ -153,13 +155,14 @@ Replace the empty `<div id="app"></div>` with a mount node that contains a **sta
 - Semantic HTML: one `<h1>`, section headings, a definition list for the glossary, and `<details>`/`<summary>` (or `<h3>`+`<p>`) for the FAQ.
 - **Content outline (all drawn from §2):**
   - **H1:** "Charité Imaging Classification (ChIC) for Polycystic Liver Disease"
+  - **Disclaimer line (top of shell, visible):** a short, prominent sentence directly under the H1 — "Informational and educational; not a diagnostic device." This mirrors the app's disclaimer framing so the clinical-risk prose is never presented to a non-JS reader without it. (Codex should-fix.)
   - **What it is / who it's for:** 2–3 sentences — a free, research-based tool that classifies PLD progression by age and htTLV into classes A–E to help clinicians and researchers estimate liver-event risk in ADPKD and ADPLD.
   - **How the classes work:** htTLV = TLV ÷ height; classes A–E by compound annual growth-rate bands; higher class → higher liver-event risk. One line on the 585-patient, multi-centre basis.
   - **Glossary** (`<dl>`): PLD, ADPLD, ADPKD, htTLV, TLV, liver events, LGR.
   - **FAQ** (mirrors `#faq` JSON-LD): "What is htTLV?"; "What do ChIC classes A–E mean?"; "Is ChIC a diagnostic device?" (→ reinforces the disclaimer: informational/educational, not diagnostic); "How does ChIC differ from the Mayo Imaging Classification?"; "Which genes cause PLD?"; "How do I cite ChIC?"
   - **How to cite:** this paper (DOI/PMID TBD) + predecessors (PMID 36246085, 38101549), with links.
   - **Links:** source code (GitHub), the paper, the two predecessor papers.
-- **`<noscript>`** immediately after `#app`: a short "JavaScript is required for the interactive tool" note plus the same core links (paper, source, predecessors), so a JS-disabled human still lands somewhere useful.
+- **`<noscript>`** immediately after `#app`: a short "JavaScript is required for the interactive tool" note, the disclaimer sentence ("Informational and educational; not a diagnostic device."), and the same core links (paper, source, predecessors), so a JS-disabled human still lands somewhere useful and correctly framed.
 - **Styling:** inline `<style>` in `index.html` for the shell only (no dependency on the app's CSS, which loads later). Neutral, centered, branded; visible for the sub-second before Vue mounts.
 - **No hidden text / no cloaking:** the shell is genuinely visible pre-mount and to non-JS agents; it is not `display:none`.
 
@@ -199,7 +202,7 @@ Replace the empty `<div id="app"></div>` with a mount node that contains a **sta
 
 1. **Build:** `npm run build` succeeds; `dist/index.html` contains the head block, JSON-LD, and static shell (Vite must preserve them and rewrite `%BASE_URL%` correctly).
 2. **Raw HTML / no-JS:** `curl -s` (or view-source) of the built `dist/index.html` shows title, description, canonical, OG, Twitter, JSON-LD, and the prose — proving scrapers see it.
-3. **Structured data:** paste the JSON-LD into the schema.org validator / Google Rich Results Test → zero errors; FAQ recognized.
+3. **Structured data:** paste the JSON-LD into the schema.org validator → zero errors; every node type recognized. (Google Rich Results Test will show no FAQ rich result — expected, since Google retired it in 2026.)
 4. **Social preview:** validate OG/Twitter tags parse (e.g., opengraph.xyz or the platform debuggers) against the built HTML; og-image loads and is 1200×630.
 5. **Sitemap/robots:** `sitemap.xml` validates as XML; `robots.txt` lists the sitemap.
 6. **App unchanged:** `npm run dev` → disclaimer gate, calculator (manual entry → class A–E, htTLV, LGR), import/export, and `?patientId=&age=&tlv=&acknowledgeBanner=true` embed mode all behave as before; the static shell is replaced cleanly by the app on mount (no persistent duplicate/FOUC after mount).
@@ -210,13 +213,14 @@ Replace the empty `<div id="app"></div>` with a mount node that contains a **sta
 
 ## 7. Publication checklist (hand-off, not code)
 
-At paper acceptance / DOI assignment, three edits activate full academic linkage:
+At paper acceptance / DOI assignment, activate full academic linkage. **Do not add `citation_*` tags** (D-5) — the steps below are the complete set:
 
-1. **`index.html`** — uncomment and fill the Google Scholar `citation_*` block; fill `#paper` DOI/PMID in the JSON-LD.
+1. **`index.html` JSON-LD** — on the `#paper` node, add `identifier` (DOI) and `sameAs` (PubMed URL), and change `creativeWorkStatus` from "In press" to `datePublished` (final) as appropriate.
 2. **`src/components/AppFooter.vue`** — replace `pubmed.ncbi.nlm.nih.gov/TBD/` with the real PMID.
 3. **`README.md`** — replace `PMID:TBD` occurrences.
-4. **Manuscript** — set the tool-availability sentence URL to exactly `https://halbritter-lab.github.io/ChIC/`.
-5. **GSC** — submit `https://halbritter-lab.github.io/ChIC/sitemap.xml` in the existing verified property; request indexing.
+4. **Static shell "How to cite" (`index.html`)** — fill the DOI/PMID in the visible citation.
+5. **Manuscript** — set the tool-availability sentence URL to exactly `https://halbritter-lab.github.io/ChIC/`.
+6. **GSC** — submit `https://halbritter-lab.github.io/ChIC/sitemap.xml` in the existing verified property; request indexing.
 
 ---
 
@@ -226,7 +230,7 @@ At paper acceptance / DOI assignment, three edits activate full academic linkage
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | **FOUC** — static shell flashes before Vue mounts.                                       | Style the shell as an intentional branded landing (logo + one paragraph + skeleton), centered; it reads as a loading state, not a glitch. Mount is sub-second. |
 | **Cloaking suspicion** — different content for crawlers vs users.                        | Same subject matter both ways; shell is genuinely visible pre-mount and to non-JS agents; nothing is `display:none`-hidden-from-users-only. |
-| **Scholar misattribution** — tool page indexed as the article.                           | Highwire `citation_*` tags held (commented) until DOI exists; only DC + JSON-LD `isBasedOn` ship now (D-5).                     |
+| **Scholar misattribution** — tool page indexed as the article.                           | `citation_*` tags never emitted on this page (D-5); linkage via DC + JSON-LD `isBasedOn` + visible citation only. A separate article/abstract page is the correct Scholar vehicle if ever needed. |
 | **DFG/Heisenberg consent** — OG image inadvertently carries the DFG mark.               | OG image uses ChIC assets only; DFG/Heisenberg explicitly excluded (D-4); reviewer checks the committed PNG.                     |
 | **Absolute-URL drift** if a custom domain is later adopted.                              | All absolute URLs sit in one commented SEO CONFIG block → single find/replace (D-1).                                            |
 | **Vite strips/relocates head tags or the shell.**                                        | Verification step 1–2 inspects the built `dist/index.html`, not just source.                                                     |
