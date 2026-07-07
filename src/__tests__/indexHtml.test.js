@@ -41,4 +41,12 @@ describe('index.html no-flash boot', () => {
       /html\[data-chic-theme=['"]dark['"]\]\s*\{\s*background-color:\s*#1a1a2e/i
     );
   });
+
+  it('uses base-relative favicon refs so the 404 fallback renders on deep paths', () => {
+    // Served as 404.html at /ChIC/a/b, a "./favicon.png" resolves to /ChIC/a/favicon.png
+    // (404). The %BASE_URL% token resolves to /ChIC/favicon.png at any depth.
+    expect(html).not.toContain('src="./favicon.png"');
+    const baseRefs = html.match(/src="%BASE_URL%favicon\.png"/g) ?? [];
+    expect(baseRefs.length).toBe(2); // SEO shell <img> + splash <img>
+  });
 });

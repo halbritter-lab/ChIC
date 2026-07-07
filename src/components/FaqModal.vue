@@ -15,13 +15,11 @@
             }}
             years).
           </li>
-          <li>
-            <strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in ml (0-20000).
-          </li>
+          <li><strong>Enter Total Liver Volume (TLV):</strong> Input the TLV in ml (0-20000).</li>
           <li><strong>Calculate:</strong> Click "Calculate" to add the data point to the chart.</li>
           <li>
-            <strong>View Results:</strong> The height-adjusted TLV (htTLV), Charité Imaging
-            Class (A–E) and LGR will be displayed.
+            <strong>View Results:</strong> The height-adjusted TLV (htTLV), Charité Imaging Class
+            (A–E) and LGR will be displayed.
           </li>
         </ol>
 

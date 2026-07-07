@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { processRows, buildExportRows, parseCsv, toCsv } from '../useDataPersistence.js';
 import { CONFIG } from '@/config/config.js';
 import { heightAdjustedTLV, classify, formatHtTLV } from '@/domain/classification.js';
@@ -282,5 +284,21 @@ describe('toCsv — formula-injection neutralization (CWE-1236)', () => {
   it('leaves ordinary values and empty cells untouched', () => {
     const csv = toCsv([{ ID: 'P001', Group: '' }], ['ID', 'Group']);
     expect(csv).toBe('ID,Group\nP001,');
+  });
+});
+
+describe('useDataPersistence — exceljs is code-split (issue #29)', () => {
+  const source = readFileSync(
+    resolve(process.cwd(), 'src/composables/useDataPersistence.js'),
+    'utf8'
+  );
+
+  it('has no top-level static exceljs import (keeps it out of the entry chunk)', () => {
+    expect(source).not.toMatch(/^\s*import\s+ExcelJS\s+from\s+['"]exceljs['"]/m);
+  });
+
+  it('dynamically imports exceljs at both Excel call sites', () => {
+    const dynamicImports = source.match(/await import\(['"]exceljs['"]\)/g) ?? [];
+    expect(dynamicImports.length).toBe(2);
   });
 });
