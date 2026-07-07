@@ -36,7 +36,7 @@ ChIC assigns a **Charité Imaging Class** by comparing a patient's htTLV against
 | **Class D** | 3–4 % / year      | Rapid       |
 | **Class E** | > 4 % / year      | Very rapid  |
 
-Height-adjusted total liver volume is computed as `htTLV = TLV / height` (TLV in ml, height in m). The Liver Growth Rate (LGR, % / year) is derived from serial measurements. The clinical model and all tunable constants are defined in the source (`src/domain/classification.js` and `src/config/config.js`); see [AGENTS.md](../AGENTS.md) for details.
+Height-adjusted total liver volume is computed as `htTLV = TLV / height` (TLV in ml, height in m). The liver growth rate (LGR, % / year) is derived from serial measurements. The clinical model and all tunable constants are defined in the source (`src/domain/classification.js` and `src/config/config.js`); see [AGENTS.md](../AGENTS.md) for details.
 
 ## Technical overview
 
