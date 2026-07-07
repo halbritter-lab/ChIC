@@ -1,5 +1,4 @@
 import { ref } from 'vue';
-import ExcelJS from 'exceljs';
 import { CONFIG } from '@/config/config';
 import {
   heightAdjustedTLV,
@@ -338,6 +337,7 @@ export function useDataPersistence() {
 
   const loadDataFromExcel = async (file) => {
     try {
+      const ExcelJS = (await import('exceljs')).default;
       const arrayBuffer = await file.arrayBuffer();
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(arrayBuffer);
@@ -450,6 +450,7 @@ export function useDataPersistence() {
       return;
     }
     try {
+      const ExcelJS = (await import('exceljs')).default;
       const worksheetData = buildExportRows(dataToSave);
 
       const workbook = new ExcelJS.Workbook();
