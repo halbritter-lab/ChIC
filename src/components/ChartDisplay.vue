@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, defineProps, defineExpose } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { Chart, registerables, Filler } from 'chart.js'; // Added Filler for background fills
 import { formulas } from '@/config/formulasConfig'; // Import formulas
 import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits, ticks and class colors
@@ -227,7 +227,10 @@ const initChart = () => {
           {
             type: 'line',
             label: 'Baseline',
-            data: Array.from({ length: lineLength }, (_, i) => ({ x: startAge + i, y: 600 })),
+            data: Array.from({ length: lineLength }, (_, i) => ({
+              x: startAge + i,
+              y: CONFIG.MODEL.CLASS_BASELINE_ML_PER_M,
+            })),
             borderColor: 'transparent',
             borderWidth: 0,
             showLine: false,

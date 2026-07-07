@@ -1,7 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import { processRows, buildExportRows } from '../useDataPersistence.js';
+import { processRows, buildExportRows, parseCsv, toCsv } from '../useDataPersistence.js';
 import { CONFIG } from '@/config/config.js';
 import { heightAdjustedTLV, classify, formatHtTLV } from '@/domain/classification.js';
+
+// Mirror the row-object assembly that loadDataFromCsv performs after parseCsv,
+// so tests can exercise the import path down to processRows without the DOM.
+// Cells are kept as strings (null for blank); processRows() does the coercion.
+function csvToRowObjects(text) {
+  const matrix = parseCsv(text);
+  const headers = matrix[0].map((h) => h.trim());
+  return matrix.slice(1).map((cells) => {
+    const row = {};
+    headers.forEach((header, i) => {
+      const v = cells[i] === undefined ? '' : cells[i].trim();
+      row[header] = v === '' ? null : v;
+    });
+    return row;
+  });
+}
 
 const ASSUMED = CONFIG.MODEL.ASSUMED_HEIGHT_M; // 1.70
 
@@ -83,6 +99,46 @@ describe('processRows — validation', () => {
     expect(processRows(null)).toEqual([]);
     expect(processRows(undefined)).toEqual([]);
   });
+
+  it('drops rows whose id is blank or whitespace-only', () => {
+    const out = processRows([
+      { id: 'ok', age: 40, tlv: 3400, height: 1.7 },
+      { id: '', age: 40, tlv: 3400, height: 1.7 }, // empty id
+      { id: '   ', age: 40, tlv: 3400, height: 1.7 }, // whitespace id
+    ]);
+    expect(out.map((r) => r.id)).toEqual(['ok']);
+  });
+});
+
+describe('processRows — export/import header aliasing (round-trip)', () => {
+  it('re-imports the app’s own export headers and preserves ids (incl. leading zeros)', () => {
+    const first = processRows([
+      { id: '007', age: 40, tlv: 3400, height: 1.7 }, // measured, leading-zero id
+      { id: 'e1', age: 50, tlv: 3400 }, // height-less -> estimated
+    ]);
+    const reimported = processRows(buildExportRows(first)); // keys: ID, Age (y), Height (m)...
+    expect(reimported.map((r) => r.id)).toEqual(['007', 'e1']);
+
+    const m = reimported.find((r) => r.id === '007');
+    expect(m.htlvEstimated).toBe(false);
+    expect(m.class).toBe(first[0].class); // measured class stable across round-trip
+
+    const e = reimported.find((r) => r.id === 'e1');
+    expect(e.htlvEstimated).toBe(true); // height-less row stays an estimate
+    expect(e.class).toBeNull();
+  });
+
+  it('accepts a lowercase-id string verbatim without numeric coercion', () => {
+    const [r] = processRows(csvToRowObjects('id,age,tlv,height\n"00123",40,3400,1.7'));
+    expect(r.id).toBe('00123');
+  });
+
+  it('falls back to a header alias when the canonical key is blank/whitespace', () => {
+    const [r] = processRows([
+      { id: '   ', ID: '007', 'Age (y)': 40, 'TLV (ml)': 3400, 'Height (m)': 1.7 },
+    ]);
+    expect(r.id).toBe('007');
+  });
 });
 
 describe('processRows — legacy pg is informational, class is recomputed', () => {
@@ -126,5 +182,72 @@ describe('buildExportRows', () => {
 
   it('returns [] for non-array input', () => {
     expect(buildExportRows(null)).toEqual([]);
+  });
+});
+
+describe('parseCsv — quote-aware parsing', () => {
+  it('keeps a comma inside a quoted field as one cell', () => {
+    expect(parseCsv('id,group\np1,"North, Ward"')).toEqual([
+      ['id', 'group'],
+      ['p1', 'North, Ward'],
+    ]);
+  });
+
+  it('unescapes doubled quotes inside a quoted field', () => {
+    expect(parseCsv('a\n"say ""hi"""')).toEqual([['a'], ['say "hi"']]);
+  });
+
+  it('tolerates CRLF line endings and a trailing newline', () => {
+    expect(parseCsv('a,b\r\n1,2\r\n')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
+  });
+
+  it('preserves a newline inside a quoted field', () => {
+    expect(parseCsv('a\n"line1\nline2"')).toEqual([['a'], ['line1\nline2']]);
+  });
+
+  it('import path preserves a comma-containing group label end to end', () => {
+    const rows = csvToRowObjects('id,age,tlv,height,group\np1,40,3400,1.7,"North, Ward"');
+    const [r] = processRows(rows);
+    expect(r.id).toBe('p1');
+    expect(r.group).toBe('North, Ward');
+    expect(r.htlvEstimated).toBe(false);
+  });
+
+  it('flushes a final empty quoted field with or without a trailing newline', () => {
+    // EOF shape must not change the row count.
+    expect(parseCsv('id\n""')).toEqual([['id'], ['']]);
+    expect(parseCsv('id\n""\n')).toEqual([['id'], ['']]);
+  });
+
+  it('throws on an unterminated quoted field instead of importing garbage', () => {
+    expect(() => parseCsv('id\n"abc')).toThrow(/unterminated/i);
+  });
+
+  it('strips a leading UTF-8 BOM so the first header is clean', () => {
+    expect(parseCsv('\uFEFFid,age\np1,40')).toEqual([
+      ['id', 'age'],
+      ['p1', '40'],
+    ]);
+  });
+});
+
+describe('toCsv — correct quoting (symmetric with parseCsv)', () => {
+  it('quotes only fields containing a comma, quote, or newline', () => {
+    const csv = toCsv([{ ID: 'x', Group: 'A, B' }], ['ID', 'Group']);
+    expect(csv).toBe('ID,Group\nx,"A, B"');
+  });
+
+  it('doubles interior quotes', () => {
+    const csv = toCsv([{ ID: 'x', Group: 'a"b' }], ['ID', 'Group']);
+    expect(csv).toBe('ID,Group\nx,"a""b"');
+  });
+
+  it('round-trips a comma-containing value through toCsv -> parseCsv', () => {
+    const value = 'North, Ward';
+    const csv = toCsv([{ Group: value }], ['Group']);
+    expect(parseCsv(csv)[1][0]).toBe(value);
   });
 });

@@ -391,6 +391,17 @@ body.dark-theme .controls .download-menu button.menu-item:hover:not(:disabled) {
   text-align: center;
 }
 
+/* Non-error import notice (e.g. "N rows skipped") — amber, distinct from the red error. */
+.load-notice {
+  color: #8a6d3b;
+  background-color: #fcf8e3;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #faebcc;
+  border-radius: 0.25rem;
+  text-align: center;
+}
+
 /* Temporary debug panel */
 .debug-panel {
   position: fixed;
