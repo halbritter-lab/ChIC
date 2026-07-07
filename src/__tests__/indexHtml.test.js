@@ -24,4 +24,21 @@ describe('index.html no-flash boot', () => {
   it('renders a branded splash inside #app for JS users', () => {
     expect(html).toContain('chic-app-splash');
   });
+
+  it('delays the splash so fast/warm loads never flash it', () => {
+    // The splash starts hidden and only fades in after a delay, so a fast mount
+    // (which removes #app before the delay elapses) never shows it.
+    expect(html).toMatch(/\.chic-app-splash\s*\{[^}]*opacity:\s*0/);
+    expect(html).toMatch(/animation:\s*chic-splash-in[^;]*0\.3s/);
+  });
+
+  it('sets the pre-mount theme background before first paint (no white-on-dark flash)', () => {
+    // Inline, render-blocking script keyed to the same localStorage 'theme' as useTheme.js.
+    expect(html).toMatch(/getItem\(\s*['"]theme['"]\s*\)\s*===\s*['"]dark['"]/);
+    expect(html).toMatch(/setAttribute\(\s*['"]data-chic-theme['"]\s*,\s*['"]dark['"]\s*\)/);
+    // Dark base background matches the app's .dark-theme colour (#1a1a2e).
+    expect(html).toMatch(
+      /html\[data-chic-theme=['"]dark['"]\]\s*\{\s*background-color:\s*#1a1a2e/i
+    );
+  });
 });
