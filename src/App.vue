@@ -25,8 +25,8 @@
       @print-page="printPage"
     />
 
-    <!-- Main content area -->
-    <div class="content">
+    <!-- Main content area (single <main> landmark for assistive tech) -->
+    <main class="content">
       <!-- Two column layout -->
       <div class="two-column-layout">
         <!-- Left column: Input controls -->
@@ -110,7 +110,7 @@
       <CitationSection :show-citation="showCitation" />
       <!-- Use the DocumentationSection component -->
       <DocumentationSection :show-documentation="showDocumentation" />
-    </div>
+    </main>
 
     <!-- Use the AppFooter component -->
     <!-- Note: footerLinks prop is provided by the footerMixin -->

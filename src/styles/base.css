@@ -20,9 +20,10 @@ body {
   --banner-right: #3498db; /* right/light */
   --button-calc: var(--banner-left); /* match left ribbon color */
   --button-calc-hover: #243347; /* slightly darker hover near banner-left */
-  --button-other-hover: #67b9f0; /* lighter hover for other controls */
-  --button-other: var(--banner-right);
-  --button-other-hover: #167bb6; /* slightly darker hover for non-Calculate buttons */
+  /* Button blues darker than the ribbon so white 14px text meets WCAG 1.4.3 AA
+     (4.5:1): #167bb6 = 4.62:1, hover #0f6295 = 6.56:1. #3498db was 3.15:1. */
+  --button-other: #167bb6;
+  --button-other-hover: #0f6295;
 }
 /* REMOVED: .app-version, .app-commit styles as they are now in AppHeader.vue */
 /* REMOVED: .header, .app-logo, .app-title styles as they are now in AppHeader.vue */

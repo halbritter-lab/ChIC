@@ -388,9 +388,14 @@ onMounted(() => {
   margin: 10px 0;
 }
 
+/* Placeholder grays meet WCAG 1.4.3 AA (4.5:1): #666 on white = 5.74:1,
+   #9d9d9d on the dark-theme .controls bg (#16213e) = 5.86:1 (#888 was 4.48:1). */
 .httlv-placeholder {
-  color: #888;
+  color: #666;
   font-style: italic;
+}
+.dark-theme .httlv-placeholder {
+  color: #9d9d9d;
 }
 
 /* Color suggestion dropdown for Group Color input */
