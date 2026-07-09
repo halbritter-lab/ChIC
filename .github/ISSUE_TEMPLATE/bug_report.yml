@@ -1,0 +1,63 @@
+name: Bug report
+description: Report a problem with the ChIC application
+title: '[bug] '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve ChIC. Please describe the problem below.
+
+        > ⚠️ ChIC is a research/educational tool, **not** a medical device.
+        > **Do not include identifiable patient data** in this report (no names, dates of birth, MRNs, or full dates).
+        > For open-ended feedback or questions, use [GitHub Discussions](https://github.com/halbritter-lab/ChIC/discussions/new?category=ideas) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What went wrong?
+      description: A clear description of the problem and what you expected instead.
+      placeholder: When I ..., ChIC did ..., but I expected ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the exact inputs (age / height / TLV) or the shape of the imported file, if relevant. Remember — no identifiable patient data.
+      placeholder: |
+        1. Go to ...
+        2. Enter age 50, height 1.75, TLV 15000
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in the app header (e.g. 0.5.5). Prefilled automatically when you open this form from the app's "Report a bug" link.
+      placeholder: e.g. 0.5.5
+    validations:
+      required: false
+  - type: input
+    id: page-url
+    attributes:
+      label: Page URL
+      description: The URL you were on. Prefilled automatically from the app's "Report a bug" link.
+      placeholder: https://halbritter-lab.github.io/ChIC/
+    validations:
+      required: false
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + version
+      placeholder: e.g. Chrome 126, Firefox 128, Safari 17
+    validations:
+      required: false
+  - type: textarea
+    id: console
+    attributes:
+      label: Screenshots / console output
+      description: If applicable. Drag images here; paste any browser console errors.
+    validations:
+      required: false

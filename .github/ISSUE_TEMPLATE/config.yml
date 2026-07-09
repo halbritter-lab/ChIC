@@ -1,0 +1,10 @@
+# Steer people to the right channel: structured bugs -> Issue Forms (above);
+# open-ended feedback / questions -> GitHub Discussions.
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Feedback & questions (GitHub Discussions)
+    url: https://github.com/halbritter-lab/ChIC/discussions/new?category=ideas
+    about: Suggestions, questions, or general feedback about ChIC. No GitHub account needed to read; a free account is needed to post.
+  - name: 📖 Documentation
+    url: https://github.com/halbritter-lab/ChIC/blob/main/README.md
+    about: Read the README and docs before opening an issue.

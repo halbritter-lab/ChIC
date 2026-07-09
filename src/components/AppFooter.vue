@@ -28,18 +28,21 @@
         </p>
         <p class="footer-break" aria-hidden="true" />
         <p>
-          <a
-            href="https://github.com/halbritter-lab/ChIC/blob/main/README.md"
-            target="_blank"
-            rel="noopener noreferrer"
+          <a :href="links.documentation" target="_blank" rel="noopener noreferrer"
             ><strong>Documentation Page</strong></a
           >
           &nbsp;|&nbsp;
+          <a :href="links.feedbackDiscussions" target="_blank" rel="noopener noreferrer"
+            ><strong>Give feedback</strong></a
+          >
+          &nbsp;|&nbsp;
           <a
-            href="https://docs.google.com/forms/d/1MM4g1Ukjiy73ThWUMHARDcyQg-PwOWuI46kQV5HwXmY/viewform?edit_requested=true"
+            :href="bugReportHref"
             target="_blank"
             rel="noopener noreferrer"
-            ><strong>Feedback Form</strong></a
+            @pointerdown="refreshBugHref"
+            @focus="refreshBugHref"
+            ><strong>Report a bug</strong></a
           >
         </p>
       </div>
@@ -47,7 +50,13 @@
       <hr class="footer-divider" />
 
       <div class="footer-logos">
-        <a v-for="link in footerLinks" :key="link.name" :href="link.url" target="_blank">
+        <a
+          v-for="link in footerLinks"
+          :key="link.name"
+          :href="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <img
             :src="withBase(link.img)"
             :alt="link.alt"
@@ -62,9 +71,12 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
+import { LINKS as links, buildBugReportUrl } from '@/config/links';
+
 // Define props received from the parent component (App.vue)
 // footerLinks are expected to be provided by a mixin or parent state
-defineProps({
+const props = defineProps({
   showFooter: {
     type: Boolean,
     default: true,
@@ -73,7 +85,24 @@ defineProps({
     type: Array,
     default: () => [], // Default to an empty array
   },
+  // App version, surfaced from package.json by App.vue — prefilled into the bug report.
+  version: {
+    type: String,
+    default: '',
+  },
 });
+
+// "Report a bug" opens a prefilled GitHub Issue Form. Rebuild the href with the CURRENT
+// page URL just before navigation (on hover/focus/pointerdown) so a kiosk/deep-linked
+// URL is captured accurately rather than whatever it was at first render.
+const bugReportHref = ref(buildBugReportUrl({ version: props.version }));
+const refreshBugHref = () => {
+  bugReportHref.value = buildBugReportUrl({
+    version: props.version,
+    url: typeof window !== 'undefined' ? window.location.href : undefined,
+  });
+};
+onMounted(refreshBugHref);
 
 // Resolve public/ asset filenames against the Vite base path (/ChIC/ in production)
 // so footer logos load correctly on the GitHub Pages subpath. Absolute URLs pass through.

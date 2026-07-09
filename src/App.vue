@@ -114,7 +114,7 @@
 
     <!-- Use the AppFooter component -->
     <!-- Note: footerLinks prop is provided by the footerMixin -->
-    <AppFooter :show-footer="showFooter" :footer-links="footerLinks" />
+    <AppFooter :show-footer="showFooter" :footer-links="footerLinks" :version="version" />
   </div>
 </template>
 
