@@ -53,9 +53,13 @@ export function buildBugReportUrl({ version, url } = {}) { /* appends &version=&
 **Fix:** In `useQueryParams.js`, coerce `tlv` and `height` with the exact `age` pattern (numeric → Number, else keep raw string so a genuinely non-numeric param still surfaces a real error):
 
 ```js
-if (q.height) { const p = Number(q.height); height.value = Number.isFinite(p) ? p : q.height; }
-if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFinite(p) ? p : q.tlv; }
+// Trim first so a whitespace-only param isn't coerced to 0 (codex #4).
+const num = (raw) => { const t = String(raw).trim(); if (t === '') return null; const n = Number(t); return Number.isFinite(n) ? n : raw; };
+if (q.height) { const v = num(q.height); if (v !== null) height.value = v; }
+if (q.tlv)    { const v = num(q.tlv);    if (v !== null) totalLiverVolume.value = v; }
 ```
+
+(`tlv=0` remains accepted — `TLV_MIN=0` — and plots at the log-axis floor; pre-existing behaviour, out of scope.)
 
 **Docs:** `docs/url-parameters.md` — the "Set all inputs" example (line 40–44) and the auto-calc note (line 18) must state that **`height` is required to plot a class** (the auto-calc guard returns early without a valid height). Add `&height=1.75` to that example so following it actually plots.
 
@@ -71,9 +75,14 @@ if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFi
 
 **Fix:**
 
-1. `useDataPoints.js` — unify the sentinel on `-1`: initialise `editingIndex = ref(-1)`; in `addOrUpdatePoint`, guard `editingIndex.value >= 0` and reset to `-1`. Reset `editingIndex = -1` inside `removeDataPoint` (and clamp/adjust so a stale index can't point past the array). This makes delete clear the highlight and keeps the ring guard correct.
-2. `ChartDisplay.vue` — call `drawRingOverlay()` from the deep `dataPoints` watcher (`:503`) so the ring repositions/clears on any data change (covers deleting a *different* row while one is highlighted, and index shifts). Also clear the SVG overlay in `clearChart()` (`:444`) so reset/clear removes a stale ring.
-3. Sweep `App.vue` for `editingIndex` assignments (`:356`, `:423`) — already `-1`/index; confirm consistency with the unified sentinel.
+1. `useDataPoints.js` — unify the sentinel on `-1`, changing **init + guard + reset together** (a partial change makes the next add write `dataPoints[-1]`): initialise `editingIndex = ref(-1)`; in `addOrUpdatePoint`, guard `editingIndex.value >= 0` (not `!== null`) and reset to `-1`.
+2. `useDataPoints.js` `removeDataPoint` — **index-aware** adjustment, not unconditional reset (codex finding #1). Given the removed `index` and current `editingIndex e`:
+   - `e === index` (deleted the edited row) → `-1`;
+   - `e > index` (deleted a row **above** the edited one) → `e - 1` (indices shifted down);
+   - `e < index` (deleted a row **below**) → unchanged.
+   This keeps the ring on the correct point when a *different* row is deleted, and clears it when the edited row is deleted.
+3. `ChartDisplay.vue` — call `drawRingOverlay()` from the deep `dataPoints` watcher (`:503`) so the ring repositions/clears on any data change. Guard `drawRingOverlay()` to bail when the selected point's `htlv` is not finite (an uncalculable row has `htlv: null`; `getPixelForValue(null)` would draw a bogus ring — codex #8). Clear the SVG overlay in `clearChart()` (`:444`).
+4. Sweep every `editingIndex` read/write for the `-1` sentinel: `App.vue:85,103,356,423,520`, `DataTable.vue:24,103` (change the prop `default: null` → `default: -1`), `ChartDisplay.vue:24,43,289–294,522`.
 
 **Tests:** `useDataPoints` unit test — after `removeDataPoint`, `editingIndex === -1`; after edit then remove, still `-1`.
 
@@ -101,7 +110,8 @@ if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFi
 
 - `useDataPersistence.js` `processRows` (`:77–140`):
   - Remove Pass-1 cohort accumulation (`:104–106`, `:110–111`) and `estimateHeight`.
-  - Keep every row that has a usable **id** (id remains the one hard requirement to form a row). For each row, compute only when age, tlv, and a valid height are all present/in-range; otherwise mark `uncalculable: true` with `htlv: null`, `class: null`, `lgr: 'N/A'`. Drop the `htlvEstimated`/`estimatedHtTLV`/`estimatedClass` fields.
+  - Keep every row that has a usable **id** (id remains the one hard requirement to form a row). For each row, compute only when age, tlv, and a valid height are all present **and in range** (`AGE_MIN/MAX`, `TLV_MIN/MAX`, and — new — `HEIGHT_MIN/MAX`; today `parseHeight` only checks positivity, so an import height of 0.1 or 5 m is wrongly "measured" — codex #11); otherwise mark `uncalculable: true` with `htlv: null`, `class: null`, `lgr: 'N/A'`. Drop the `htlvEstimated`/`estimatedHtTLV`/`estimatedClass` fields.
+  - Note (pre-existing, out of scope): duplicate non-blank IDs remain allowed and would collide on `:key="point.id"`; not introduced by this change. Add a composite `:key` only if it stays clean.
   - A row with an unusable/blank id is still dropped (can't key the table/`v-for`), and counted in the notice.
 - `classification.js` is already null-safe (returns `NaN`/`null` on bad input) — no change.
 - `config.js` — remove `MODEL.ASSUMED_HEIGHT_M` (`:9`).
@@ -125,7 +135,7 @@ if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFi
 **Repo config (GitHub, via `gh`/files):**
 
 - Enable Discussions: `gh api -X PATCH repos/halbritter-lab/ChIC -f has_discussions=true` (currently `false`). Enabling auto-creates default categories (General, Ideas, Q&A, …); feedback targets **Ideas** (`?category=ideas`). Renaming a category to "Feedback" is UI-only and left to the maintainer — the link uses the stable `ideas` slug.
-- `.github/ISSUE_TEMPLATE/bug_report.yml` (new Issue **Form**, replacing the legacy `bug_report.md`): fields for description, steps to reproduce, expected/actual, plus **App version** and **Page URL** inputs (prefillable via query param), and the existing "no identifiable patient data" note. `labels: [bug]`.
+- `.github/ISSUE_TEMPLATE/bug_report.yml` (new Issue **Form**, replacing the legacy `bug_report.md`): fields for description, steps to reproduce, expected/actual, plus version/page-URL inputs with **`id: version`** and **`id: page-url`** (GitHub prefills a form field by its `id`, which must match the query key exactly — codex #12), and the existing "no identifiable patient data" note. `labels: [bug]`. `buildBugReportUrl` appends `&version=<encoded>&page-url=<encoded>`.
 - `.github/ISSUE_TEMPLATE/config.yml` (new): `blank_issues_enabled: false` + `contact_links` → Discussions ("Ideas") for questions/feedback and the docs README.
 
 **App changes:**
@@ -136,6 +146,7 @@ if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFi
   - **"Report a bug"** → `buildBugReportUrl({ version, url: location.href })` (page URL + app version prefilled). Version comes via a prop from `App.vue` (`packageInfo.version`, already available) to keep the component pure/testable; `location.href` read in a tiny click handler.
   - Keep the existing "Documentation Page" link but source its href from `LINKS.documentation`.
 - `disclaimerMixin.js:24` — source the contact mailto from `LINKS.contactEmail` (value already correct; just de-hardcode).
+- `AppFooter.vue:50` — add `rel="noopener noreferrer"` to the existing footer **logo** links (currently `target="_blank"` with no `rel`) — boy-scout for Lighthouse Best Practices (codex #13).
 
 **Tests:** unit-test `buildBugReportUrl` (encodes version + page-url params, correct base). Component smoke: footer renders "Give feedback" + "Report a bug" with expected hrefs.
 
@@ -155,7 +166,7 @@ if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFi
 - **Single subtitle**: "Risk stratification for polycystic liver disease" (replaces the green clashing subtitle). Optional muted URL line `halbritter-lab.github.io/ChIC`.
 - All content inside the **1080×600 safe zone**; generous whitespace; WCAG-contrast text. No green.
 
-**Rasterisation (no new dep):** render the SVG/an HTML wrapper at a 1200×630 viewport in headless Chrome (the same browser used for verification) and screenshot to `public/og-image.png`; keep it 1200×630 and < 150 KB. (Fallback: one-off `npx @resvg/resvg-js-cli` — not committed.)
+**Rasterisation (no new dep):** author `scripts/og-image.html` — a self-contained 1200×630 page that references the logo **by served path** (via the running preview server) rather than inlining a 2 MB base64 blob (codex #14) — render it at a 1200×630 viewport in headless Chrome and screenshot to `public/og-image.png`; keep it 1200×630 and < 150 KB. The old `scripts/og-image.svg` is replaced by this HTML source (kept in `scripts/`, never `public/`). (Fallback: one-off `npx @resvg/resvg-js-cli` — not committed.)
 
 **Meta tags:** already correct (`index.html:81–83`, `:100`, absolute + base-path OK). Update `og:image:alt` (`:86`) and `twitter:image:alt` (`:103`) to match the new copy (drop "classes A–E" phrasing if the subtitle changed). No other meta changes.
 
@@ -172,7 +183,7 @@ if (q.tlv)    { const p = Number(q.tlv);    totalLiverVolume.value = Number.isFi
 5. **#42** (edit SVG → rasterise via headless Chrome → verify).
 6. Update **AGENTS.md** (invariant #7) and docs.
 7. **Adversarial review with codex** on the spec (now) and again on the full diff before finalising.
-8. Full gate: `npm test` + `npm run lint` + `npm run format:check` + `npm run typecheck` + `npm run build`, then **Lighthouse 100** on the production build across all four categories, and a manual pass of each fixed flow.
+8. Full gate: `npm test` + `npm run lint` + `npm run format:check` + `npm run typecheck` + `npm run build`, then **Lighthouse measured** on the production build (served at the `/ChIC/` base path) across all four categories, a manual pass of each fixed flow, and iterative fixes for any blocker (color contrast → Accessibility; missing `rel` → Best Practices; SEO). Lighthouse 100 is the **target, verified by measurement** — real scores reported, remaining blockers fixed or honestly flagged (codex #15). Tap-target size is not scored in the four default categories in current Lighthouse, but contrast and `rel` are.
 
 ## Risks
 
