@@ -65,7 +65,7 @@
 
 <script setup>
 // Define props received from the parent component (App.vue)
-const props = defineProps({
+defineProps({
   version: {
     type: String,
     required: true,
