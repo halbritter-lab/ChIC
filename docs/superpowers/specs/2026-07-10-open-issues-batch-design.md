@@ -39,7 +39,9 @@ export const LINKS = {
   contactEmail: 'jan.halbritter@charite.de',
 };
 // Build a bug-report URL with the reporter's context prefilled (page URL, app version).
-export function buildBugReportUrl({ version, url } = {}) { /* appends &version=&page-url= URL-encoded */ }
+export function buildBugReportUrl({ version, url } = {}) {
+  /* appends &version=&page-url= URL-encoded */
+}
 ```
 
 `AppFooter.vue` and `disclaimerMixin.js` (and anywhere else touched) import from here instead of hardcoding. The two citation PMID links in the footer are content, not touched.
@@ -54,9 +56,20 @@ export function buildBugReportUrl({ version, url } = {}) { /* appends &version=&
 
 ```js
 // Trim first so a whitespace-only param isn't coerced to 0 (codex #4).
-const num = (raw) => { const t = String(raw).trim(); if (t === '') return null; const n = Number(t); return Number.isFinite(n) ? n : raw; };
-if (q.height) { const v = num(q.height); if (v !== null) height.value = v; }
-if (q.tlv)    { const v = num(q.tlv);    if (v !== null) totalLiverVolume.value = v; }
+const num = (raw) => {
+  const t = String(raw).trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : raw;
+};
+if (q.height) {
+  const v = num(q.height);
+  if (v !== null) height.value = v;
+}
+if (q.tlv) {
+  const v = num(q.tlv);
+  if (v !== null) totalLiverVolume.value = v;
+}
 ```
 
 (`tlv=0` remains accepted — `TLV_MIN=0` — and plots at the log-axis floor; pre-existing behaviour, out of scope.)
@@ -80,7 +93,7 @@ if (q.tlv)    { const v = num(q.tlv);    if (v !== null) totalLiverVolume.value 
    - `e === index` (deleted the edited row) → `-1`;
    - `e > index` (deleted a row **above** the edited one) → `e - 1` (indices shifted down);
    - `e < index` (deleted a row **below**) → unchanged.
-   This keeps the ring on the correct point when a *different* row is deleted, and clears it when the edited row is deleted.
+     This keeps the ring on the correct point when a _different_ row is deleted, and clears it when the edited row is deleted.
 3. `ChartDisplay.vue` — call `drawRingOverlay()` from the deep `dataPoints` watcher (`:503`) so the ring repositions/clears on any data change. Guard `drawRingOverlay()` to bail when the selected point's `htlv` is not finite (an uncalculable row has `htlv: null`; `getPixelForValue(null)` would draw a bogus ring — codex #8). Clear the SVG overlay in `clearChart()` (`:444`).
 4. Sweep every `editingIndex` read/write for the `-1` sentinel: `App.vue:85,103,356,423,520`, `DataTable.vue:24,103` (change the prop `default: null` → `default: -1`), `ChartDisplay.vue:24,43,289–294,522`.
 
@@ -92,7 +105,7 @@ if (q.tlv)    { const v = num(q.tlv);    if (v !== null) totalLiverVolume.value 
 
 ## Issue #36 — Lowest threshold line (T1) renders wrong
 
-**Root cause:** The visible `Threshold 1` line dataset (`ChartDisplay.vue:254–264`) has `order: 5` — the highest order in the threshold group, so Chart.js draws it **first / furthest back**. Its two translucent fills (`T1 Above Fill` `order 4.5`, `T1 Below Fill` `order 4.6`) draw *on top of* it, over-painting the ~2px stroke from both sides → the lowest line looks thin/dim/broken. T2–T4 carry their fill on the same dataset, so their strokes always sit above their own fill. (Contract confirmed by `Patient Data` `order: -1` = drawn on top.)
+**Root cause:** The visible `Threshold 1` line dataset (`ChartDisplay.vue:254–264`) has `order: 5` — the highest order in the threshold group, so Chart.js draws it **first / furthest back**. Its two translucent fills (`T1 Above Fill` `order 4.5`, `T1 Below Fill` `order 4.6`) draw _on top of_ it, over-painting the ~2px stroke from both sides → the lowest line looks thin/dim/broken. T2–T4 carry their fill on the same dataset, so their strokes always sit above their own fill. (Contract confirmed by `Patient Data` `order: -1` = drawn on top.)
 
 **Fix:** Lower only the **draw order** of the `Threshold 1` line dataset to below its fills — `order: 4.4` (any value `< 4.5`, still `> -1` so patient points stay on top). This changes z-order only: the dataset stays in the same array position and no `fill: '+1'/'-1'` adjacency changes, so invariant #3 (bands) is preserved.
 
@@ -117,7 +130,7 @@ if (q.tlv)    { const v = num(q.tlv);    if (v !== null) totalLiverVolume.value 
 - `config.js` — remove `MODEL.ASSUMED_HEIGHT_M` (`:9`).
 - `DataTable.vue` — replace the `≈`-estimate branches (`:36–54`) with plain measured values; render `class`/`htlv` as `N/A` (via `formatClassLabel`/`formatHtTLV` null-handling or a fallback) when `uncalculable`. Replace the estimate footer note (`:88–91`) with an "N of M rows could not be calculated (missing height, age, or TLV)" notice driven by an `uncalculableCount` computed. Add a `title`/tooltip explaining why. Keep the red note styling.
 - `useDataPersistence.js` export (`buildExportRows` `:143–159`, `EXPORT_COLUMNS` `:12–25`, Excel numFmt `:466`): drop `htTLV_estimated`/`estimatedHtTLV`/`estimatedClass`; keep uncalculable rows in the export with blank htTLV and `Class` = `N/A`. `normalizeImportRow` already ignores computed columns → round-trip safe.
-- `applyLoaded` skipped-notice text (`:254`) — since uncalculable rows are now *kept* not dropped, the "N skipped" wording only covers unusable-id rows; add the uncalculable count to the user-facing message (or surface it from the table). Keep the two notices distinct and honest.
+- `applyLoaded` skipped-notice text (`:254`) — since uncalculable rows are now _kept_ not dropped, the "N skipped" wording only covers unusable-id rows; add the uncalculable count to the user-facing message (or surface it from the table). Keep the two notices distinct and honest.
 - Interactive/query paths already require height → unaffected (kiosk `?...` without height simply plots nothing, already documented).
 
 **Docs & invariants:** rewrite **AGENTS.md invariant #7** (drop the estimation sentence; document the "could not calculate" model). Update `README.md`, `docs/data-formats.md`, `docs/clinical-background.md`, and the `processRows` header comment (`:66–76`) and `config.js:9` comment.
