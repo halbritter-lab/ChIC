@@ -17,9 +17,6 @@ const EXPORT_COLUMNS = [
   'htTLV',
   'Class',
   'LGR (%/y)',
-  'htTLV_estimated',
-  'estimatedHtTLV',
-  'estimatedClass',
   'Group',
   'GroupColor',
 ];
@@ -65,78 +62,68 @@ function normalizeImportRow(row) {
 
 /**
  * Pure import transform: raw file rows -> canonical data-point rows.
- * - Rows missing id/age/tlv, or with out-of-range age/tlv, are dropped.
- * - Measured height  -> htTLV, class computed and flagged as validated.
- * - Missing height   -> htTLV estimated from the cohort mean height (over rows that
- *                        HAVE a height); if no row has a height, from the assumed
- *                        default. Estimates go to estimatedHtTLV/estimatedClass and
- *                        the row is flagged (class stays null — not a validated class).
+ * - A usable (non-blank) `id` is the one hard requirement; rows without it are dropped
+ *   (an id keys the table and export). Everything else is kept.
+ * - A row is CLASSIFIED only when age, TLV, and height are all present and in range
+ *   (AGE_MIN/MAX, TLV_MIN/MAX, HEIGHT_MIN/MAX). ChIC classifies on height-adjusted TLV,
+ *   so a missing or out-of-range height is treated exactly like a missing age or TLV.
+ * - Otherwise the row is kept but flagged `uncalculable: true` with htlv/class null and
+ *   lgr 'N/A'. It is shown in the table as "N/A" and is NOT plotted (issue #37 — height
+ *   is no longer estimated from a cohort mean, because the plausible height range is too
+ *   wide to guess).
  * - Any incoming legacy `pg`/`class` is mapped for information only; class is always
  *   recomputed from the data.
  */
 export function processRows(rawRows) {
   if (!Array.isArray(rawRows)) return [];
 
-  // Pass 1: validate + parse, accumulating the cohort mean over rows that have a height.
-  const parsed = [];
-  let heightSum = 0;
-  let heightCount = 0;
+  const out = [];
   for (const rawRow of rawRows) {
     const row = normalizeImportRow(rawRow);
     if (row == null) continue;
     const id = row.id == null ? '' : String(row.id).trim();
-    // Drop rows without a usable id, age, or tlv (a blank/whitespace id is not usable).
-    if (id === '' || row.age == null || row.tlv == null) continue;
-    const age = Number(row.age);
-    const tlv = Number(row.tlv);
-    if (
-      !Number.isFinite(age) ||
-      !Number.isFinite(tlv) ||
-      age < CONFIG.AGE_MIN ||
-      age > CONFIG.AGE_MAX ||
-      tlv < CONFIG.TLV_MIN ||
-      tlv > CONFIG.TLV_MAX
-    ) {
+    if (id === '') continue; // blank/whitespace id is not usable
+
+    // Informational only — the file's own class label is never trusted for classification.
+    const importedClass = legacyPgToLetter(row.pg ?? row.class ?? null);
+
+    const age = row.age == null ? NaN : Number(row.age);
+    const tlv = row.tlv == null ? NaN : Number(row.tlv);
+    const height = parseHeight(row.height); // positive number or null
+
+    const ageOk = Number.isFinite(age) && age >= CONFIG.AGE_MIN && age <= CONFIG.AGE_MAX;
+    const tlvOk = Number.isFinite(tlv) && tlv >= CONFIG.TLV_MIN && tlv <= CONFIG.TLV_MAX;
+    const heightOk = height !== null && height >= CONFIG.HEIGHT_MIN && height <= CONFIG.HEIGHT_MAX;
+
+    const base = {
+      id,
+      // Keep finite values for display (incl. out-of-range, so the user sees the offending
+      // number); drop non-numeric to null (blank cell).
+      age: Number.isFinite(age) ? age : null,
+      height, // number (may be out of range) or null
+      tlv: Number.isFinite(tlv) ? tlv : null,
+      importedClass,
+      group: row.group || '',
+      groupColor: row.groupColor || null,
+    };
+
+    if (!(ageOk && tlvOk && heightOk)) {
+      out.push({ ...base, htlv: null, class: null, lgr: 'N/A', uncalculable: true });
       continue;
     }
-    const height = parseHeight(row.height);
-    if (height !== null) {
-      heightSum += height;
-      heightCount += 1;
-    }
-    parsed.push({ norm: row, id, age, tlv, height });
-  }
 
-  const cohortMeanHeight = heightCount > 0 ? heightSum / heightCount : null;
-  const estimateHeight = cohortMeanHeight ?? CONFIG.MODEL.ASSUMED_HEIGHT_M;
-
-  // Pass 2: classify each surviving row.
-  return parsed.map(({ norm, id, age, tlv, height }) => {
-    // Informational only — the file's own class label is never trusted for classification.
-    const importedClass = legacyPgToLetter(norm.pg ?? norm.class ?? null);
-
-    const measured = height !== null;
-    const usedHeight = measured ? height : estimateHeight;
-    const htlv = heightAdjustedTLV(tlv, usedHeight);
+    const htlv = heightAdjustedTLV(tlv, height);
     const cls = classify(htlv, age);
     const lgrFraction = age >= CONFIG.AGE_MIN_LGR ? liverGrowthRate(age, htlv) : null;
-
-    return {
-      id,
-      age,
-      height,
-      tlv,
-      htlv: measured ? htlv : null,
-      htlvEstimated: !measured,
-      estimatedHtTLV: measured ? null : htlv,
-      class: measured ? cls : null,
-      estimatedClass: measured ? null : cls,
+    out.push({
+      ...base,
+      htlv,
+      class: cls,
       lgr: lgrFraction !== null ? (lgrFraction * 100).toFixed(2) : 'N/A',
-      importedClass,
-      group: norm.group || '',
-      groupColor: norm.groupColor || null,
-    };
-  });
+      uncalculable: false,
+    });
+  }
+  return out;
 }
 
 /** Pure export transform: canonical rows -> export-shaped rows (one object per row). */
@@ -144,15 +131,14 @@ export function buildExportRows(points) {
   if (!Array.isArray(points)) return [];
   return points.map((p) => ({
     ID: p.id,
-    'Age (y)': p.age,
+    'Age (y)': p.age ?? '',
     'Height (m)': p.height ?? '',
-    'TLV (ml)': p.tlv,
+    'TLV (ml)': p.tlv ?? '',
     htTLV: p.htlv != null ? formatHtTLV(p.htlv) : '',
-    Class: p.class ?? '',
+    // Uncalculable rows carry an explicit 'N/A' so an exported file shows they could not
+    // be classified (rather than a blank that reads like "not filled in").
+    Class: p.uncalculable ? 'N/A' : (p.class ?? ''),
     'LGR (%/y)': p.lgr,
-    htTLV_estimated: !!p.htlvEstimated,
-    estimatedHtTLV: p.estimatedHtTLV != null ? formatHtTLV(p.estimatedHtTLV) : '',
-    estimatedClass: p.estimatedClass ?? '',
     Group: p.group || '',
     GroupColor: p.groupColor || '',
   }));
@@ -246,17 +232,20 @@ export function useDataPersistence() {
   // Non-error notice, e.g. "N rows skipped" — surfaced separately from errorLoading.
   const loadNotice = ref(null);
 
-  // Apply parsed raw rows: classify via processRows and report how many were dropped.
+  // Apply parsed raw rows: classify via processRows, then report (a) how many rows were
+  // dropped for an unusable id and (b) how many were kept but could not be calculated.
   const applyLoaded = (rawRows) => {
     const rows = processRows(rawRows);
     const attempted = Array.isArray(rawRows) ? rawRows.length : 0;
+    // Only rows without a usable id are dropped now; everything else is kept (issue #37).
     const skipped = attempted - rows.length;
-    const skippedText = `${skipped} row${skipped === 1 ? '' : 's'} skipped (missing or out-of-range ID, age, or TLV)`;
+    const uncalculable = rows.filter((r) => r.uncalculable).length;
+    const plural = (n) => (n === 1 ? '' : 's');
+    const skippedText = `${skipped} row${plural(skipped)} skipped (missing or blank ID)`;
 
     if (rows.length === 0 && attempted > 0) {
-      // Every row was invalid. Report it as an error and keep the existing table —
-      // don't silently wipe the user's data (the empty-array watcher would leave the
-      // old rows visible, which would contradict a "N skipped" notice).
+      // Every row was unusable. Report it as an error and keep the existing table —
+      // don't silently wipe the user's data.
       errorLoading.value = `No valid rows found — nothing imported. ${skippedText}.`;
       loadedData.value = [];
       loadNotice.value = null;
@@ -264,7 +253,15 @@ export function useDataPersistence() {
     }
 
     loadedData.value = rows;
-    loadNotice.value = skipped > 0 ? `${skippedText}.` : null;
+    const notices = [];
+    if (skipped > 0) notices.push(skippedText);
+    if (uncalculable > 0) {
+      notices.push(
+        `${uncalculable} row${plural(uncalculable)} could not be calculated ` +
+          `(missing or out-of-range height, age, or TLV) — shown as N/A and not plotted`
+      );
+    }
+    loadNotice.value = notices.length > 0 ? `${notices.join('. ')}.` : null;
   };
 
   // --- Internal File Input Handling ---
@@ -463,7 +460,6 @@ export function useDataPersistence() {
         'TLV (ml)': '0',
         htTLV: '0.00',
         'LGR (%/y)': '0.00',
-        estimatedHtTLV: '0.00',
       };
       worksheet.columns = EXPORT_COLUMNS.map((col) =>
         numFmts[col] ? { header: col, key: col, numFmt: numFmts[col] } : { header: col, key: col }

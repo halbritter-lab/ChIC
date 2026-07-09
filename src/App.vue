@@ -302,19 +302,17 @@ export default {
       displayLiverGrowthRate.value =
         liverGrowthRate.value !== null ? liverGrowthRate.value * 100 : null;
 
-      // Interactive path always has a measured height (guarded above), so this is a
-      // validated ChIC class — never an estimate.
+      // Interactive path always has a measured, in-range height (guarded above), so this
+      // is always a calculable, validated ChIC class.
       const newData = {
         id: patientId.value,
         age: age.value,
         height: height.value,
         tlv: totalLiverVolume.value,
         htlv: heightAdjustedTLV.value, // numeric for chart
-        htlvEstimated: false,
-        estimatedHtTLV: null,
         class: progressionGroup.value,
-        estimatedClass: null,
         lgr: liverGrowthRate.value !== null ? (liverGrowthRate.value * 100).toFixed(2) : 'N/A',
+        uncalculable: false,
         group: enableGrouping.value ? group.value : '',
         groupColor: enableGrouping.value ? groupColor.value : null,
       };

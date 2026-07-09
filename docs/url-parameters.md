@@ -15,7 +15,7 @@ The Charité Imaging Classification tool supports **URL query parameters** that 
 | `height`    | Sets the patient's height in meters.              |
 | `tlv`       | Sets the Total Liver Volume (TLV) in milliliters. |
 
-> When `patientId`, `age`, and `tlv` are all present, the tool auto-calculates and plots the point on load.
+> When `patientId`, `age`, and `tlv` are all present, the tool auto-calculates on load. A **Charité Imaging Class is only plotted when a valid `height` is also supplied**, because the model classifies on height-adjusted TLV (`htTLV = TLV / height`). Without `height`, the inputs are filled in but no point is placed on the chart.
 
 ### Display toggles
 
@@ -37,10 +37,10 @@ Each accepts `true` or `false`.
 https://halbritter-lab.github.io/ChIC/?patientId=12345&age=50
 ```
 
-**Set all inputs and acknowledge the banner** — ID `12345`, age `50`, TLV `15000` ml:
+**Set all inputs and acknowledge the banner** — ID `12345`, age `50`, height `1.75` m, TLV `15000` ml. Because `height` is included, the point is classified and plotted on load:
 
 ```
-https://halbritter-lab.github.io/ChIC/?patientId=12345&age=50&tlv=15000&acknowledgeBanner=true
+https://halbritter-lab.github.io/ChIC/?patientId=12345&age=50&height=1.75&tlv=15000&acknowledgeBanner=true
 ```
 
 **Embed / kiosk mode** — hide the footer and controls, but keep the citation and documentation link:

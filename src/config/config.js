@@ -6,7 +6,8 @@ export const CONFIG = {
   MODEL: {
     CLASS_BASELINE_ML_PER_M: 600, // htTLV baseline at age 0
     GROWTH_RATE_CUTOFFS: [0.01, 0.02, 0.03, 0.04], // A/B, B/C, C/D, D/E boundaries
-    ASSUMED_HEIGHT_M: 1.7, // fallback for height-less imports (flagged as estimate)
+    // (No height estimation: a row without a valid height cannot be classified and is
+    //  flagged "could not calculate" — issue #37 — rather than estimated from a mean.)
   },
 
   // --- Input validation ranges (D8: 15–85, fits manuscript + README) ---

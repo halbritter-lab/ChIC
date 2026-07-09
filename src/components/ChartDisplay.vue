@@ -43,6 +43,9 @@ const drawRingOverlay = () => {
   if (props.editingIndex < 0 || props.editingIndex >= props.dataPoints.length) return;
 
   const point = props.dataPoints[props.editingIndex];
+  // An uncalculable row (missing height/age/TLV — issue #37) has htlv: null and is not
+  // plotted; getPixelForValue(null) would place the ring at a bogus coordinate, so skip.
+  if (!point || !Number.isFinite(point.htlv)) return;
   const canvas = chartCanvas.value;
   const canvasRect = canvas.getBoundingClientRect();
   const containerRect = overlayCanvas.value.parentElement.getBoundingClientRect();
@@ -250,7 +253,15 @@ const initChart = () => {
             fill: false,
             order: 4.7,
           },
-          // Visible Threshold T1 line drawn on top of fills
+          // Visible Threshold T1 line drawn on top of fills.
+          // order must be BELOW its two fills (T1 Above Fill 4.5, T1 Below Fill 4.6) so the
+          // stroke paints in front of them — a higher order draws first/behind and the
+          // translucent fills then over-paint the line, making the lowest line look faded
+          // and broken (issue #36). T2–T4 carry their fill on the same dataset, so their
+          // strokes already sit above their fill; T1's line is a separate dataset and needs
+          // this explicit lower order. 4.4 < 4.5 keeps it above the fills but still behind
+          // the patient points (order -1). No array position or fill '+1'/'-1' target changes,
+          // so the class bands (invariant #3) are unaffected.
           {
             type: 'line',
             label: 'Threshold 1',
@@ -260,7 +271,7 @@ const initChart = () => {
             showLine: true,
             pointRadius: 0,
             fill: false,
-            order: 5,
+            order: 4.4,
           },
           // Patient Data: render this dataset last so points appear above fills and lines
           {
@@ -448,6 +459,8 @@ const clearChart = () => {
     if (i !== -1) chartInstance.data.datasets[i].data = [];
   }
   chartInstance.update();
+  // Also remove any highlight ring so a reset/clear leaves no stale overlay (issue #35).
+  drawRingOverlay();
 };
 
 // Function to download the chart as PNG
@@ -512,6 +525,10 @@ watch(
       // Animate on initial load if data is present
       updateChart(props.dataPoints.length > 0);
     }
+    // Reposition or clear the highlight ring on any data change. Deleting a point only
+    // changes dataPoints (not editingIndex-by-value when a different row is removed), so
+    // the editingIndex watcher alone would leave a stale ring at old coordinates (issue #35).
+    drawRingOverlay();
   },
   { deep: true }
 );

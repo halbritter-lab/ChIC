@@ -37,8 +37,25 @@ export function useQueryParams({
         ? Math.min(Math.max(parsed, CONFIG.AGE_MIN), CONFIG.AGE_MAX)
         : q.age;
     }
-    if (q.height) height.value = q.height;
-    if (q.tlv) totalLiverVolume.value = q.tlv;
+    // Coerce numeric params to Number so validation (Number.isFinite) accepts them —
+    // a raw string like "15000" fails Number.isFinite and would surface a spurious
+    // "must be a number" error (issue #43). Trim first so a whitespace-only value is
+    // not silently coerced to 0; keep a genuinely non-numeric value verbatim so real
+    // validation errors still surface.
+    const asNumber = (raw) => {
+      const t = String(raw).trim();
+      if (t === '') return null;
+      const n = Number(t);
+      return Number.isFinite(n) ? n : raw;
+    };
+    if (q.height) {
+      const v = asNumber(q.height);
+      if (v !== null) height.value = v;
+    }
+    if (q.tlv) {
+      const v = asNumber(q.tlv);
+      if (v !== null) totalLiverVolume.value = v;
+    }
     if (q.patientId && q.age && q.tlv) {
       calculateDataPoint();
     }

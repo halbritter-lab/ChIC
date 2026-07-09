@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { processRows, buildExportRows, parseCsv, toCsv } from '../useDataPersistence.js';
-import { CONFIG } from '@/config/config.js';
 import { heightAdjustedTLV, classify, formatHtTLV } from '@/domain/classification.js';
 
 // Mirror the row-object assembly that loadDataFromCsv performs after parseCsv,
@@ -21,80 +20,77 @@ function csvToRowObjects(text) {
   });
 }
 
-const ASSUMED = CONFIG.MODEL.ASSUMED_HEIGHT_M; // 1.70
-
-describe('processRows — measured height', () => {
-  it('matches the manual domain classify path and flags as validated', () => {
+describe('processRows — calculable (measured) height', () => {
+  it('matches the manual domain classify path and is flagged calculable', () => {
     const [r] = processRows([{ id: 'p1', age: 40, tlv: 3400, height: 1.7 }]);
     const expectedHtlv = heightAdjustedTLV(3400, 1.7); // 2000
     expect(r.htlv).toBeCloseTo(expectedHtlv, 6);
-    expect(r.htlvEstimated).toBe(false);
+    expect(r.uncalculable).toBe(false);
     expect(r.class).toBe(classify(expectedHtlv, 40));
-    expect(r.estimatedHtTLV).toBeNull();
-    expect(r.estimatedClass).toBeNull();
   });
 
   it('parses comma-decimal heights', () => {
     const [r] = processRows([{ id: 'p1', age: 40, tlv: 3400, height: '1,7' }]);
-    expect(r.htlvEstimated).toBe(false);
+    expect(r.uncalculable).toBe(false);
     expect(r.htlv).toBeCloseTo(2000, 6);
   });
 });
 
-describe('processRows — cohort-mean estimate before global fallback', () => {
-  it('uses the mean of present heights (1.6 & 1.8 -> 1.7) for a height-less row', () => {
+describe('processRows — height is no longer estimated (issue #37)', () => {
+  it('keeps a height-less row but flags it uncalculable (no cohort-mean estimate)', () => {
     const out = processRows([
       { id: 'a', age: 50, tlv: 3200, height: 1.6 },
       { id: 'b', age: 50, tlv: 3600, height: 1.8 },
       { id: 'c', age: 50, tlv: 3400 }, // no height
     ]);
     const c = out.find((r) => r.id === 'c');
-    const expected = heightAdjustedTLV(3400, 1.7);
-    expect(c.htlvEstimated).toBe(true);
-    expect(c.estimatedHtTLV).toBeCloseTo(expected, 6);
-    expect(c.estimatedClass).toBe(classify(expected, 50));
+    expect(c.uncalculable).toBe(true);
+    expect(c.htlv).toBeNull();
+    expect(c.class).toBeNull();
+    expect(c.lgr).toBe('N/A');
+    // The estimate fields are gone entirely.
+    expect(c).not.toHaveProperty('htlvEstimated');
+    expect(c).not.toHaveProperty('estimatedHtTLV');
+    expect(c).not.toHaveProperty('estimatedClass');
   });
 
-  it('prefers the cohort mean over the assumed fallback (asymmetric mean 1.8)', () => {
-    const c = processRows([
-      { id: 'a', age: 50, tlv: 3000, height: 1.6 },
-      { id: 'b', age: 50, tlv: 3000, height: 2.0 }, // mean = 1.8
-      { id: 'c', age: 50, tlv: 3400 },
-    ]).find((r) => r.id === 'c');
-    expect(c.estimatedHtTLV).toBeCloseTo(heightAdjustedTLV(3400, 1.8), 6);
-    // and NOT the assumed-height fallback
-    expect(c.estimatedHtTLV).not.toBeCloseTo(heightAdjustedTLV(3400, ASSUMED), 3);
-  });
-
-  it('falls back to the assumed height when no row has a height', () => {
-    const [r] = processRows([{ id: 'c', age: 50, tlv: 3400 }]);
-    expect(r.htlvEstimated).toBe(true);
-    expect(r.estimatedHtTLV).toBeCloseTo(heightAdjustedTLV(3400, ASSUMED), 6);
+  it('treats an out-of-range height like a missing one (HEIGHT_MIN/MAX enforced on import)', () => {
+    const tooShort = processRows([{ id: 's', age: 40, tlv: 3400, height: 0.1 }])[0];
+    const tooTall = processRows([{ id: 't', age: 40, tlv: 3400, height: 5 }])[0];
+    expect(tooShort.uncalculable).toBe(true);
+    expect(tooTall.uncalculable).toBe(true);
+    expect(tooShort.htlv).toBeNull();
+    // The offending height is still shown so the user can fix it.
+    expect(tooShort.height).toBe(0.1);
+    expect(tooTall.height).toBe(5);
   });
 });
 
-describe('processRows — estimated rows carry no validated class', () => {
-  it('leaves class null and sets estimatedClass', () => {
+describe('processRows — uncalculable rows carry no class', () => {
+  it('leaves class null and flags the row', () => {
     const [r] = processRows([{ id: 'x', age: 30, tlv: 5000 }]);
     expect(r.class).toBeNull();
-    expect(r.estimatedClass).toBe(classify(heightAdjustedTLV(5000, ASSUMED), 30));
-    expect(typeof r.estimatedClass).toBe('string');
+    expect(r.uncalculable).toBe(true);
   });
 });
 
 describe('processRows — validation', () => {
-  it('drops malformed / out-of-range rows', () => {
+  it('drops only rows without a usable id; keeps others as uncalculable', () => {
     const out = processRows([
       { id: 'ok', age: 40, tlv: 3400, height: 1.7 },
-      { age: 40, tlv: 3400 }, // missing id
-      { id: 'noage', tlv: 3400 }, // missing age
-      { id: 'notlv', age: 40 }, // missing tlv
-      { id: 'badage', age: 5, tlv: 3400 }, // age below AGE_MIN
-      { id: 'bigtlv', age: 40, tlv: 999999 }, // tlv above TLV_MAX
-      { id: 'nan', age: 'abc', tlv: 3400 }, // non-numeric age
-      null, // junk
+      { age: 40, tlv: 3400 }, // missing id -> DROPPED
+      { id: 'noage', tlv: 3400, height: 1.7 }, // missing age -> kept, uncalculable
+      { id: 'notlv', age: 40, height: 1.7 }, // missing tlv -> kept, uncalculable
+      { id: 'badage', age: 5, tlv: 3400, height: 1.7 }, // age below AGE_MIN -> kept, uncalculable
+      { id: 'bigtlv', age: 40, tlv: 999999, height: 1.7 }, // tlv above TLV_MAX -> kept, uncalculable
+      { id: 'nan', age: 'abc', tlv: 3400, height: 1.7 }, // non-numeric age -> kept, uncalculable
+      null, // junk -> DROPPED
     ]);
-    expect(out.map((r) => r.id)).toEqual(['ok']);
+    expect(out.map((r) => r.id)).toEqual(['ok', 'noage', 'notlv', 'badage', 'bigtlv', 'nan']);
+    expect(out.find((r) => r.id === 'ok').uncalculable).toBe(false);
+    for (const id of ['noage', 'notlv', 'badage', 'bigtlv', 'nan']) {
+      expect(out.find((r) => r.id === id).uncalculable).toBe(true);
+    }
   });
 
   it('returns [] for non-array input', () => {
@@ -115,18 +111,18 @@ describe('processRows — validation', () => {
 describe('processRows — export/import header aliasing (round-trip)', () => {
   it('re-imports the app’s own export headers and preserves ids (incl. leading zeros)', () => {
     const first = processRows([
-      { id: '007', age: 40, tlv: 3400, height: 1.7 }, // measured, leading-zero id
-      { id: 'e1', age: 50, tlv: 3400 }, // height-less -> estimated
+      { id: '007', age: 40, tlv: 3400, height: 1.7 }, // calculable, leading-zero id
+      { id: 'e1', age: 50, tlv: 3400 }, // height-less -> uncalculable
     ]);
     const reimported = processRows(buildExportRows(first)); // keys: ID, Age (y), Height (m)...
     expect(reimported.map((r) => r.id)).toEqual(['007', 'e1']);
 
     const m = reimported.find((r) => r.id === '007');
-    expect(m.htlvEstimated).toBe(false);
+    expect(m.uncalculable).toBe(false);
     expect(m.class).toBe(first[0].class); // measured class stable across round-trip
 
     const e = reimported.find((r) => r.id === 'e1');
-    expect(e.htlvEstimated).toBe(true); // height-less row stays an estimate
+    expect(e.uncalculable).toBe(true); // height-less row stays uncalculable across round-trip
     expect(e.class).toBeNull();
   });
 
@@ -158,28 +154,25 @@ describe('processRows — legacy pg is informational, class is recomputed', () =
 });
 
 describe('buildExportRows', () => {
-  it('includes the three estimate columns and separates measured vs estimated rows', () => {
+  it('drops the estimate columns and marks uncalculable rows as N/A', () => {
     const points = processRows([
       { id: 'm', age: 40, tlv: 3400, height: 1.7 },
-      { id: 'e', age: 40, tlv: 3400 }, // height-less -> estimated
+      { id: 'e', age: 40, tlv: 3400 }, // height-less -> uncalculable
     ]);
     const ex = buildExportRows(points);
 
-    expect(Object.keys(ex[0])).toEqual(
+    expect(Object.keys(ex[0])).not.toEqual(
       expect.arrayContaining(['htTLV_estimated', 'estimatedHtTLV', 'estimatedClass'])
     );
 
     const m = ex.find((r) => r.ID === 'm');
-    expect(m.htTLV_estimated).toBe(false);
     expect(m.Class).toBe(classify(heightAdjustedTLV(3400, 1.7), 40));
-    expect(m.estimatedHtTLV).toBe('');
-    expect(m.estimatedClass).toBe('');
+    expect(m.htTLV).toBe(formatHtTLV(heightAdjustedTLV(3400, 1.7)));
 
     const e = ex.find((r) => r.ID === 'e');
-    expect(e.htTLV_estimated).toBe(true);
-    expect(e.Class).toBe('');
-    expect(e.estimatedHtTLV).toBe(formatHtTLV(heightAdjustedTLV(3400, ASSUMED)));
-    expect(e.estimatedClass).toBe(classify(heightAdjustedTLV(3400, ASSUMED), 40));
+    expect(e.Class).toBe('N/A'); // explicit could-not-calculate marker
+    expect(e.htTLV).toBe('');
+    expect(e['LGR (%/y)']).toBe('N/A');
   });
 
   it('returns [] for non-array input', () => {
@@ -215,7 +208,7 @@ describe('parseCsv — quote-aware parsing', () => {
     const [r] = processRows(rows);
     expect(r.id).toBe('p1');
     expect(r.group).toBe('North, Ward');
-    expect(r.htlvEstimated).toBe(false);
+    expect(r.uncalculable).toBe(false);
   });
 
   it('flushes a final empty quoted field with or without a trailing newline', () => {

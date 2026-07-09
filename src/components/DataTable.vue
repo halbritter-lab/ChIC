@@ -32,23 +32,23 @@
           <td>{{ point.age }}</td>
           <td>{{ point.height }}</td>
           <td>{{ point.tlv }}</td>
-          <!-- htTLV: measured value, or an unvalidated estimate when height was missing -->
+          <!-- htTLV: value, or N/A when the row could not be calculated (issue #37) -->
           <td>
             <span
-              v-if="point.htlvEstimated"
-              class="estimated"
-              title="Unvalidated estimate — measured height missing"
-              >≈ {{ formatHtTLV(point.estimatedHtTLV) }}</span
+              v-if="point.uncalculable"
+              class="uncalculable"
+              title="Could not calculate — missing or out-of-range height, age, or TLV"
+              >N/A</span
             >
             <template v-else>{{ formatHtTLV(point.htlv) }}</template>
           </td>
-          <!-- Charité Imaging Class: measured, or estimated (not a validated ChIC class) -->
+          <!-- Charité Imaging Class: value, or N/A when the row could not be calculated -->
           <td>
             <span
-              v-if="point.htlvEstimated"
-              class="estimated"
-              title="Unvalidated estimate — measured height missing"
-              >≈ {{ formatClassLabel(point.estimatedClass) }}</span
+              v-if="point.uncalculable"
+              class="uncalculable"
+              title="Could not calculate — missing or out-of-range height, age, or TLV"
+              >N/A</span
             >
             <template v-else>{{ formatClassLabel(point.class) }}</template>
           </td>
@@ -85,9 +85,9 @@
       </tbody>
     </table>
 
-    <p v-if="estimatedCount > 0" class="estimate-note">
-      {{ estimatedCount }} of {{ dataPoints.length }} rows used an estimated height — not a
-      validated ChIC class
+    <p v-if="uncalculableCount > 0" class="uncalculable-note">
+      {{ uncalculableCount }} of {{ dataPoints.length }} rows could not be calculated (missing or
+      out-of-range height, age, or TLV) — shown as N/A and not plotted
     </p>
   </div>
 </template>
@@ -100,18 +100,19 @@ import { formatClassLabel, formatHtTLV } from '@/domain/classification.js';
 const props = defineProps({
   dataPoints: { type: Array, required: true },
   enableGrouping: { type: Boolean, default: false },
-  editingIndex: { type: Number, default: null },
+  editingIndex: { type: Number, default: -1 },
 });
 defineEmits(['edit-point', 'remove-point', 'update-chart-point']);
 
-const estimatedCount = computed(() => props.dataPoints.filter((p) => p.htlvEstimated).length);
+const uncalculableCount = computed(() => props.dataPoints.filter((p) => p.uncalculable).length);
 </script>
 
 <style scoped>
-.estimated {
+.uncalculable {
   font-style: italic;
+  color: #a94442;
 }
-.estimate-note {
+.uncalculable-note {
   margin: -10px 0 20px;
   font-style: italic;
   color: #a94442;
