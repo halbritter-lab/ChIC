@@ -161,9 +161,12 @@ describe('buildExportRows', () => {
     ]);
     const ex = buildExportRows(points);
 
-    expect(Object.keys(ex[0])).not.toEqual(
-      expect.arrayContaining(['htTLV_estimated', 'estimatedHtTLV', 'estimatedClass'])
-    );
+    // Each removed estimate column must be gone (asserted individually so a single
+    // column regressing still fails the test).
+    const keys = Object.keys(ex[0]);
+    expect(keys).not.toContain('htTLV_estimated');
+    expect(keys).not.toContain('estimatedHtTLV');
+    expect(keys).not.toContain('estimatedClass');
 
     const m = ex.find((r) => r.ID === 'm');
     expect(m.Class).toBe(classify(heightAdjustedTLV(3400, 1.7), 40));
