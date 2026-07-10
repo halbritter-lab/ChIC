@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "postbuild": "node scripts/spa-404-fallback.mjs",
+    "audit:precache": "node scripts/audit-precache.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
