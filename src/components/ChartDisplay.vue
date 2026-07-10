@@ -7,13 +7,31 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { Chart, registerables, Filler } from 'chart.js'; // Added Filler for background fills
+import {
+  Chart,
+  ScatterController,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  LogarithmicScale,
+  Tooltip,
+  Filler,
+} from 'chart.js';
 import { formulas } from '@/config/formulasConfig'; // Import formulas
 import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits, ticks and class colors
 
 // Register Chart.js components and plugins
-Chart.register(...registerables);
-Chart.register(Filler); // Register Filler for fills like '+1', 'origin'
+Chart.register(
+  ScatterController,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  LogarithmicScale,
+  Tooltip,
+  Filler
+);
 
 // Props definition
 const props = defineProps({
