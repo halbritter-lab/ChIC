@@ -38,6 +38,13 @@ export function sanitizeBugReportPageUrl(rawUrl) {
     for (const key of [...page.searchParams.keys()]) {
       if (!SAFE_REPORT_PARAMS.has(key)) page.searchParams.delete(key);
     }
+    for (const key of SAFE_REPORT_PARAMS) {
+      const safeValue = page.searchParams
+        .getAll(key)
+        .find((value) => value === 'true' || value === 'false');
+      page.searchParams.delete(key);
+      if (safeValue) page.searchParams.set(key, safeValue);
+    }
     return page.toString();
   } catch {
     return undefined;

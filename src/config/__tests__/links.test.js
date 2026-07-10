@@ -36,6 +36,35 @@ describe('sanitizeBugReportPageUrl', () => {
     );
   });
 
+  it.each([
+    ['acknowledgeBanner', 'yes'],
+    ['showFooter', 'SECRET-PATIENT-42'],
+    ['showCitation', 'TRUE'],
+    ['showDocumentation', '1'],
+    ['showControls', ' false '],
+  ])('removes invalid values for %s', (key, value) => {
+    const page = new URL('https://example.test/ChIC/');
+    page.searchParams.set(key, value);
+
+    expect(sanitizeBugReportPageUrl(page)).toBe('https://example.test/ChIC/');
+  });
+
+  it('removes encoded credential and fragment-like text under allowlisted keys', () => {
+    const input =
+      'https://example.test/ChIC/?showFooter=user%3Asecret%40example.test&showCitation=%23patient-fragment';
+
+    expect(sanitizeBugReportPageUrl(input)).toBe('https://example.test/ChIC/');
+  });
+
+  it('normalizes mixed duplicate toggles to the first exact valid value', () => {
+    const input =
+      'https://example.test/ChIC/?showControls=private&showControls=false&showControls=true&showFooter=SECRET&showFooter=true&showFooter=false';
+
+    expect(sanitizeBugReportPageUrl(input)).toBe(
+      'https://example.test/ChIC/?showFooter=true&showControls=false'
+    );
+  });
+
   it.each([undefined, '', 'not a url', 'javascript:alert(1)', 'file:///tmp/private'])(
     'omits unsafe or unparseable context: %s',
     (input) => expect(sanitizeBugReportPageUrl(input)).toBeUndefined()
