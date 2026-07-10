@@ -3,6 +3,7 @@ node_modules
 /dist
 /dev-dist
 /coverage
+/.worktrees
 
 
 # local env files
