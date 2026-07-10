@@ -74,15 +74,21 @@ function normalizeImportRow(row) {
  * - Any incoming legacy `pg`/`class` is mapped for information only; class is always
  *   recomputed from the data.
  */
-export function processRows(rawRows) {
-  if (!Array.isArray(rawRows)) return [];
+export function processRowsWithSummary(rawRows) {
+  const summary = { rows: [], malformedCount: 0, missingIdCount: 0 };
+  if (!Array.isArray(rawRows)) return summary;
 
-  const out = [];
   for (const rawRow of rawRows) {
     const row = normalizeImportRow(rawRow);
-    if (row == null) continue;
+    if (row == null) {
+      summary.malformedCount += 1;
+      continue;
+    }
     const id = row.id == null ? '' : String(row.id).trim();
-    if (id === '') continue; // blank/whitespace id is not usable
+    if (id === '') {
+      summary.missingIdCount += 1;
+      continue;
+    }
 
     // Informational only — the file's own class label is never trusted for classification.
     const importedClass = legacyPgToLetter(row.pg ?? row.class ?? null);
@@ -108,14 +114,14 @@ export function processRows(rawRows) {
     };
 
     if (!(ageOk && tlvOk && heightOk)) {
-      out.push({ ...base, htlv: null, class: null, lgr: 'N/A', uncalculable: true });
+      summary.rows.push({ ...base, htlv: null, class: null, lgr: 'N/A', uncalculable: true });
       continue;
     }
 
     const htlv = heightAdjustedTLV(tlv, height);
     const cls = classify(htlv, age);
     const lgrFraction = age >= CONFIG.AGE_MIN_LGR ? liverGrowthRate(age, htlv) : null;
-    out.push({
+    summary.rows.push({
       ...base,
       htlv,
       class: cls,
@@ -123,7 +129,51 @@ export function processRows(rawRows) {
       uncalculable: false,
     });
   }
-  return out;
+  return summary;
+}
+
+export function processRows(rawRows) {
+  return processRowsWithSummary(rawRows).rows;
+}
+
+const plural = (count) => (count === 1 ? '' : 's');
+
+export function prepareImport(rawRows) {
+  if (!Array.isArray(rawRows) || rawRows.length === 0) {
+    return { rows: [], error: 'No rows found — nothing imported.', notice: null };
+  }
+
+  const { rows, malformedCount, missingIdCount } = processRowsWithSummary(rawRows);
+  const skipped = [];
+  if (missingIdCount > 0) {
+    skipped.push(`${missingIdCount} row${plural(missingIdCount)} skipped (missing or blank ID)`);
+  }
+  if (malformedCount > 0) {
+    skipped.push(`${malformedCount} malformed row${plural(malformedCount)} skipped`);
+  }
+
+  if (rows.length === 0) {
+    return {
+      rows: [],
+      error: `No usable rows found — nothing imported. ${skipped.join('. ')}.`,
+      notice: null,
+    };
+  }
+
+  const uncalculableCount = rows.filter((row) => row.uncalculable).length;
+  const notices = [...skipped];
+  if (uncalculableCount > 0) {
+    notices.push(
+      `${uncalculableCount} row${plural(uncalculableCount)} could not be calculated ` +
+        `(missing or out-of-range height, age, or TLV) — shown as N/A and not plotted`
+    );
+  }
+
+  return {
+    rows,
+    error: null,
+    notice: notices.length > 0 ? `${notices.join('. ')}.` : null,
+  };
 }
 
 /** Pure export transform: canonical rows -> export-shaped rows (one object per row). */
@@ -232,36 +282,11 @@ export function useDataPersistence() {
   // Non-error notice, e.g. "N rows skipped" — surfaced separately from errorLoading.
   const loadNotice = ref(null);
 
-  // Apply parsed raw rows: classify via processRows, then report (a) how many rows were
-  // dropped for an unusable id and (b) how many were kept but could not be calculated.
   const applyLoaded = (rawRows) => {
-    const rows = processRows(rawRows);
-    const attempted = Array.isArray(rawRows) ? rawRows.length : 0;
-    // Only rows without a usable id are dropped now; everything else is kept (issue #37).
-    const skipped = attempted - rows.length;
-    const uncalculable = rows.filter((r) => r.uncalculable).length;
-    const plural = (n) => (n === 1 ? '' : 's');
-    const skippedText = `${skipped} row${plural(skipped)} skipped (missing or blank ID)`;
-
-    if (rows.length === 0 && attempted > 0) {
-      // Every row was unusable. Report it as an error and keep the existing table —
-      // don't silently wipe the user's data.
-      errorLoading.value = `No valid rows found — nothing imported. ${skippedText}.`;
-      loadedData.value = [];
-      loadNotice.value = null;
-      return;
-    }
-
-    loadedData.value = rows;
-    const notices = [];
-    if (skipped > 0) notices.push(skippedText);
-    if (uncalculable > 0) {
-      notices.push(
-        `${uncalculable} row${plural(uncalculable)} could not be calculated ` +
-          `(missing or out-of-range height, age, or TLV) — shown as N/A and not plotted`
-      );
-    }
-    loadNotice.value = notices.length > 0 ? `${notices.join('. ')}.` : null;
+    const outcome = prepareImport(rawRows);
+    loadedData.value = outcome.rows;
+    errorLoading.value = outcome.error;
+    loadNotice.value = outcome.notice;
   };
 
   // --- Internal File Input Handling ---

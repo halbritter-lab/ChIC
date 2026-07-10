@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { processRows, buildExportRows, parseCsv, toCsv } from '../useDataPersistence.js';
+import {
+  processRows,
+  processRowsWithSummary,
+  prepareImport,
+  buildExportRows,
+  parseCsv,
+  toCsv,
+} from '../useDataPersistence.js';
 import { heightAdjustedTLV, classify, formatHtTLV } from '@/domain/classification.js';
 
 // Mirror the row-object assembly that loadDataFromCsv performs after parseCsv,
@@ -105,6 +112,49 @@ describe('processRows — validation', () => {
       { id: '   ', age: 40, tlv: 3400, height: 1.7 }, // whitespace id
     ]);
     expect(out.map((r) => r.id)).toEqual(['ok']);
+  });
+});
+
+describe('prepareImport — honest row accounting', () => {
+  it('counts malformed rows separately from rows with a missing ID', () => {
+    expect(processRowsWithSummary([null, 'junk', { id: ' ' }])).toEqual({
+      rows: [],
+      malformedCount: 2,
+      missingIdCount: 1,
+    });
+  });
+
+  it('separates malformed rows from rows with a missing ID', () => {
+    const outcome = prepareImport([
+      { id: 'ok', age: 40, height: 1.7, tlv: 3400 },
+      null,
+      'junk',
+      { age: 40, height: 1.7, tlv: 3400 },
+      { id: 'missing-height', age: 40, tlv: 3400 },
+    ]);
+
+    expect(outcome.rows.map((row) => row.id)).toEqual(['ok', 'missing-height']);
+    expect(outcome.error).toBeNull();
+    expect(outcome.notice).toBe(
+      '1 row skipped (missing or blank ID). 2 malformed rows skipped. 1 row could not be calculated (missing or out-of-range height, age, or TLV) — shown as N/A and not plotted.'
+    );
+  });
+
+  it('rejects an empty array without replacing existing application data', () => {
+    expect(prepareImport([])).toEqual({
+      rows: [],
+      error: 'No rows found — nothing imported.',
+      notice: null,
+    });
+  });
+
+  it('reports exact reasons when every row is unusable', () => {
+    expect(prepareImport([null, { id: ' ' }])).toEqual({
+      rows: [],
+      error:
+        'No usable rows found — nothing imported. 1 row skipped (missing or blank ID). 1 malformed row skipped.',
+      notice: null,
+    });
   });
 });
 
