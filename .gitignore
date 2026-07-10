@@ -4,6 +4,7 @@ node_modules
 /dev-dist
 /coverage
 /.worktrees
+/.superpowers
 
 
 # local env files
