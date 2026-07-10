@@ -24,10 +24,10 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      description: Include the exact inputs (age / height / TLV) or the shape of the imported file, if relevant. Remember — no identifiable patient data.
+      description: Use synthetic or minimal reproduction values only. Never paste a patient URL, identifier, exported row, or real clinical inputs.
       placeholder: |
         1. Go to ...
-        2. Enter age 50, height 1.75, TLV 15000
+        2. Enter synthetic age 50, height 1.75, TLV 15000
         3. See ...
     validations:
       required: true
@@ -43,7 +43,7 @@ body:
     id: page-url
     attributes:
       label: Page URL
-      description: The URL you were on. Prefilled automatically from the app's "Report a bug" link.
+      description: Prefilled from the app. Patient and unknown query parameters are removed automatically; verify the URL before submitting.
       placeholder: https://halbritter-lab.github.io/ChIC/
     validations:
       required: false

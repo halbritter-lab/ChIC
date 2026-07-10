@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LINKS, buildBugReportUrl } from '../links.js';
+import { LINKS, buildBugReportUrl, sanitizeBugReportPageUrl } from '../links.js';
 
 describe('LINKS', () => {
   it('points every GitHub link at the halbritter-lab/ChIC repo', () => {
@@ -19,22 +19,41 @@ describe('buildBugReportUrl', () => {
     expect(url).toContain('labels=bug');
   });
 
-  it('prefills version and page-url using the exact form field ids, URL-encoded', () => {
-    const url = buildBugReportUrl({
-      version: '1.2.3',
-      url: 'https://example.com/ChIC/?age=50&tlv=1',
-    });
-    const params = new URL(url).searchParams;
-    // Keys must match the bug_report.yml field ids exactly for GitHub to prefill them.
-    expect(params.get('version')).toBe('1.2.3');
-    expect(params.get('page-url')).toBe('https://example.com/ChIC/?age=50&tlv=1');
-    // Encoding: the & inside the page URL must be escaped, not treated as a separator.
-    expect(url).toContain('page-url=https%3A%2F%2Fexample.com%2FChIC%2F%3Fage%3D50%26tlv%3D1');
-  });
-
   it('omits prefill params when no context is given', () => {
     const url = buildBugReportUrl();
     expect(url).not.toContain('version=');
     expect(url).not.toContain('page-url=');
+  });
+});
+
+describe('sanitizeBugReportPageUrl', () => {
+  it('keeps only known non-clinical display toggles', () => {
+    const input =
+      'https://user:secret@example.test/ChIC/?patientId=SECRET-1&age=50&height=1.75&tlv=15000&showFooter=false&showCitation=true&unknown=private#patient-fragment';
+
+    expect(sanitizeBugReportPageUrl(input)).toBe(
+      'https://example.test/ChIC/?showFooter=false&showCitation=true'
+    );
+  });
+
+  it.each([undefined, '', 'not a url', 'javascript:alert(1)', 'file:///tmp/private'])(
+    'omits unsafe or unparseable context: %s',
+    (input) => expect(sanitizeBugReportPageUrl(input)).toBeUndefined()
+  );
+
+  it('sanitizes inside buildBugReportUrl so callers cannot bypass the boundary', () => {
+    const report = new URL(
+      buildBugReportUrl({
+        version: '1.2.3',
+        url: 'https://example.test/ChIC/?patientId=P1&age=40&showControls=false',
+      })
+    );
+
+    expect(report.searchParams.get('version')).toBe('1.2.3');
+    expect(report.searchParams.get('page-url')).toBe(
+      'https://example.test/ChIC/?showControls=false'
+    );
+    expect(report.href).not.toContain('patientId');
+    expect(report.href).not.toContain('age%3D40');
   });
 });

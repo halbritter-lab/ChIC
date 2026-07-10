@@ -4,6 +4,13 @@
 // constants live in config.js; this module owns outward links only.
 
 const REPO = 'https://github.com/halbritter-lab/ChIC';
+const SAFE_REPORT_PARAMS = new Set([
+  'acknowledgeBanner',
+  'showFooter',
+  'showCitation',
+  'showDocumentation',
+  'showControls',
+]);
 
 export const LINKS = {
   repo: REPO,
@@ -18,6 +25,25 @@ export const LINKS = {
   contactEmail: 'jan.halbritter@charite.de',
 };
 
+export function sanitizeBugReportPageUrl(rawUrl) {
+  if (rawUrl === undefined || rawUrl === null || String(rawUrl).trim() === '') return undefined;
+
+  try {
+    const page = new URL(String(rawUrl));
+    if (page.protocol !== 'https:' && page.protocol !== 'http:') return undefined;
+
+    page.username = '';
+    page.password = '';
+    page.hash = '';
+    for (const key of [...page.searchParams.keys()]) {
+      if (!SAFE_REPORT_PARAMS.has(key)) page.searchParams.delete(key);
+    }
+    return page.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Build a "Report a bug" URL that prefills the Issue Form with reproduction
  * context. GitHub prefills a form field by matching a query-param name to the
@@ -28,8 +54,9 @@ export const LINKS = {
  * @returns {string} absolute URL to the prefilled new-issue form
  */
 export function buildBugReportUrl({ version, url } = {}) {
-  const params = new URLSearchParams({ template: 'bug_report.yml', labels: 'bug' });
-  if (version) params.set('version', String(version));
-  if (url) params.set('page-url', String(url));
-  return `${REPO}/issues/new?${params.toString()}`;
+  const report = new URL(LINKS.bugReportTemplate);
+  if (version) report.searchParams.set('version', String(version));
+  const safePageUrl = sanitizeBugReportPageUrl(url);
+  if (safePageUrl) report.searchParams.set('page-url', safePageUrl);
+  return report.toString();
 }

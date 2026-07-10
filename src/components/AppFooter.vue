@@ -62,6 +62,8 @@
             :alt="link.alt"
             :width="link.width"
             :height="link.height"
+            loading="lazy"
+            decoding="async"
             class="institution-logo"
           />
         </a>
