@@ -24,11 +24,11 @@ export function useQueryParams({
   const initFromQuery = async () => {
     await router.isReady();
     const q = route.query;
+    const firstQueryValue = (raw) => (Array.isArray(raw) ? raw[0] : raw);
 
-    if (q.acknowledgeBanner === 'true') {
+    if (firstQueryValue(q.acknowledgeBanner) === 'true') {
       showModal.value = false;
     }
-    const firstQueryValue = (raw) => (Array.isArray(raw) ? raw[0] : raw);
     const asNumber = (raw) => {
       const value = firstQueryValue(raw);
       if (value === undefined || value === null) return null;
@@ -64,10 +64,10 @@ export function useQueryParams({
       calculateDataPoint();
     }
 
-    showFooter.value = q.showFooter !== 'false';
-    showCitation.value = q.showCitation !== 'false';
-    showDocumentation.value = q.showDocumentation !== 'false';
-    showControls.value = q.showControls !== 'false';
+    showFooter.value = firstQueryValue(q.showFooter) !== 'false';
+    showCitation.value = firstQueryValue(q.showCitation) !== 'false';
+    showDocumentation.value = firstQueryValue(q.showDocumentation) !== 'false';
+    showControls.value = firstQueryValue(q.showControls) !== 'false';
   };
 
   return { showFooter, showCitation, showDocumentation, showControls, initFromQuery };

@@ -79,4 +79,21 @@ describe('useQueryParams — numeric coercion (issue #43)', () => {
     expect(h.totalLiverVolume.value).toBe(15000);
     expect(h.calculateDataPoint).toHaveBeenCalledOnce();
   });
+
+  it('uses the first repeated acknowledgeBanner value', async () => {
+    const h = harness({ acknowledgeBanner: ['true', 'false'] });
+    await h.initFromQuery();
+    expect(h.showModal.value).toBe(false);
+  });
+
+  it.each([
+    ['showFooter', 'showFooter'],
+    ['showCitation', 'showCitation'],
+    ['showDocumentation', 'showDocumentation'],
+    ['showControls', 'showControls'],
+  ])('uses the first repeated %s value', async (queryKey, resultKey) => {
+    const h = harness({ [queryKey]: ['false', 'true'] });
+    await h.initFromQuery();
+    expect(h[resultKey].value).toBe(false);
+  });
 });
