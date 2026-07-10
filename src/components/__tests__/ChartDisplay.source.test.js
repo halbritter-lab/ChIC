@@ -28,4 +28,11 @@ describe('ChartDisplay module registration', () => {
     expect(source).toContain("fill: '-1'");
     expect(source).toContain('order: 4.4');
   });
+
+  it('clears the SVG overlay without redrawing selected props from clearChart', () => {
+    expect(source).toContain('const clearRingOverlay = () =>');
+    const clearChart = source.match(/const clearChart = \(\) => \{([\s\S]*?)\n\};/)?.[1];
+    expect(clearChart).toContain('clearRingOverlay();');
+    expect(clearChart).not.toContain('drawRingOverlay();');
+  });
 });

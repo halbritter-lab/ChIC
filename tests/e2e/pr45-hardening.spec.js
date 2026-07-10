@@ -76,6 +76,39 @@ test('selected-point ring follows logical rows and clears on deletion', async ({
   await expect(page.locator('.ring-overlay circle')).toHaveCount(0);
 });
 
+test('reset clears a selected-point overlay and starts a dense new collection', async ({
+  page,
+}) => {
+  await page.goto('?acknowledgeBanner=true');
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Load Data', exact: true }).click();
+  await (
+    await chooser
+  ).setFiles({
+    name: 'points.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify([
+        { id: 'first', age: 40, height: 1.7, tlv: 3400 },
+        { id: 'second', age: 50, height: 1.8, tlv: 3600 },
+      ])
+    ),
+  });
+  await page.locator('tbody tr').nth(1).click();
+  await expect(page.locator('.ring-overlay circle')).toHaveCount(1);
+
+  await page.getByTitle('Reset Form').click();
+  await expect(page.locator('tbody tr')).toHaveCount(0);
+  await expect(page.locator('.ring-overlay circle')).toHaveCount(0);
+  await page.locator('#idInput').fill('new');
+  await page.locator('#ageInput').fill('45');
+  await page.locator('#heightInput').fill('1.75');
+  await page.locator('#liverInput').fill('3500');
+  await page.getByRole('button', { name: 'Calculate' }).click();
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+  await expect(page.locator('tbody tr')).toContainText('new');
+});
+
 test('mixed and empty JSON imports report exact outcomes without stale replacement', async ({
   page,
 }) => {

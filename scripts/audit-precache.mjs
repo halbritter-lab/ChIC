@@ -7,6 +7,7 @@ if (!existsSync(swPath)) throw new Error('dist/sw.js missing; run npm run build 
 
 const sw = readFileSync(swPath, 'utf8');
 const urls = [...new Set([...sw.matchAll(/\burl:"([^"]+)"/g)].map((match) => match[1]))];
+if (urls.length === 0) throw new Error('No precache manifest URLs found in dist/sw.js.');
 const artifacts = urls.map((url) => ({ url, path: resolve(dist, url.replace(/^\//, '')) }));
 const missing = artifacts.filter(({ path }) => !existsSync(path)).map(({ url }) => url);
 if (missing.length > 0) throw new Error(`Missing precache artifacts: ${missing.join(', ')}`);

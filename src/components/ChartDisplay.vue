@@ -47,15 +47,19 @@ const overlayCanvas = ref(null);
 let chartInstance = null;
 let isInitialLoad = true; // Track if this is the first render
 
-// Function to draw ring overlay around selected point
-const drawRingOverlay = () => {
+const clearRingOverlay = () => {
   const overlay = overlayCanvas.value;
-  if (!overlay || !chartInstance) return;
-
-  // Clear overlay
+  if (!overlay) return;
   while (overlay.firstChild) {
     overlay.removeChild(overlay.firstChild);
   }
+};
+
+// Function to draw ring overlay around selected point
+const drawRingOverlay = () => {
+  clearRingOverlay();
+  const overlay = overlayCanvas.value;
+  if (!overlay || !chartInstance) return;
 
   // If no editing index, nothing to draw
   if (props.editingIndex < 0 || props.editingIndex >= props.dataPoints.length) return;
@@ -471,14 +475,13 @@ const updatePointStyle = (index, color, group) => {
 
 // Clear ONLY the patient/selected points — never the threshold-curve or class-fill datasets.
 const clearChart = () => {
+  clearRingOverlay();
   if (!chartInstance) return;
   for (const label of ['Patient Data', 'Selected Point']) {
     const i = chartInstance.data.datasets.findIndex((d) => d.label === label);
     if (i !== -1) chartInstance.data.datasets[i].data = [];
   }
   chartInstance.update();
-  // Also remove any highlight ring so a reset/clear leaves no stale overlay (issue #35).
-  drawRingOverlay();
 };
 
 // Function to download the chart as PNG

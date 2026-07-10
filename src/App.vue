@@ -456,6 +456,7 @@ export default {
       group.value = '';
       groupColor.value = '';
       dataPoints.value = [];
+      editingIndex.value = -1;
       idWarningMessage.value = '';
       ageValidationMessage.value = '';
       tlvValidationMessage.value = '';

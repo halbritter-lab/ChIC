@@ -15,6 +15,25 @@ afterEach(() => {
 });
 
 describe('precache audit', () => {
+  it('fails when the service worker contains no recognizable manifest URLs', () => {
+    const directory = mkdtempSync(resolve(tmpdir(), 'chic-precache-'));
+    temporaryDirectories.push(directory);
+    mkdirSync(resolve(directory, 'dist'));
+    writeFileSync(resolve(directory, 'dist/sw.js'), 'precacheAndRoute([{uri:"assets/app.js"}]);');
+
+    const result = spawnSync(
+      process.execPath,
+      [resolve(process.cwd(), 'scripts/audit-precache.mjs')],
+      {
+        cwd: directory,
+        encoding: 'utf8',
+      }
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('No precache manifest URLs found in dist/sw.js');
+  });
+
   it('fails when a manifest URL has no local artifact', () => {
     const directory = mkdtempSync(resolve(tmpdir(), 'chic-precache-'));
     temporaryDirectories.push(directory);

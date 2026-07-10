@@ -11,4 +11,8 @@ describe('OG image source', () => {
     expect(source).not.toContain('localhost:8138');
     expect(source).not.toContain('src="/ChIC/');
   });
+
+  it('uses the approved complete product title', () => {
+    expect(source).toContain('<h1>Charité Imaging Classification (ChIC)</h1>');
+  });
 });
