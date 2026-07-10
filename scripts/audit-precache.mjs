@@ -7,6 +7,10 @@ if (!existsSync(swPath)) throw new Error('dist/sw.js missing; run npm run build 
 
 const sw = readFileSync(swPath, 'utf8');
 const urls = [...new Set([...sw.matchAll(/\burl:"([^"]+)"/g)].map((match) => match[1]))];
+const artifacts = urls.map((url) => ({ url, path: resolve(dist, url.replace(/^\//, '')) }));
+const missing = artifacts.filter(({ path }) => !existsSync(path)).map(({ url }) => url);
+if (missing.length > 0) throw new Error(`Missing precache artifacts: ${missing.join(', ')}`);
+
 const forbidden = [
   /exceljs/i,
   /ChICLogo_/,
@@ -17,10 +21,7 @@ const forbidden = [
 const violations = urls.filter((url) => forbidden.some((pattern) => pattern.test(url)));
 if (violations.length > 0) throw new Error(`Forbidden precache entries: ${violations.join(', ')}`);
 
-const bytes = urls.reduce((total, url) => {
-  const path = resolve(dist, url.replace(/^\//, ''));
-  return existsSync(path) ? total + statSync(path).size : total;
-}, 0);
+const bytes = artifacts.reduce((total, { path }) => total + statSync(path).size, 0);
 const limit = 2_190_000;
 console.log(JSON.stringify({ entries: urls.length, bytes, limit }));
 if (bytes > limit) throw new Error(`Precache ${bytes} bytes exceeds ${limit}-byte limit.`);

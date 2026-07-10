@@ -22,10 +22,16 @@ describe('PWA cache policy', () => {
       maxEntries: 2,
       maxAgeSeconds: 60 * 60 * 24 * 365,
     });
+    expect(excelRule.options.cacheableResponse.statuses).toEqual([0, 200]);
     expect(
       excelRule.urlPattern({
         url: new URL('https://example.test/ChIC/assets/exceljs.min-a.js'),
       })
     ).toBe(true);
+    expect(
+      excelRule.urlPattern({
+        url: new URL('https://example.test/ChIC/assets/index-a.js'),
+      })
+    ).toBe(false);
   });
 });
