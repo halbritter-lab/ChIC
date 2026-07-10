@@ -4,7 +4,12 @@ import { statSync } from 'node:fs';
 test('dist server rejects missing assets and traversal while serving SPA navigation', async ({
   request,
 }) => {
-  for (const asset of ['assets/missing.js', 'assets/missing.css', 'missing.png']) {
+  for (const asset of [
+    'assets/missing.js',
+    'assets/missing%2Ejs',
+    'assets/missing.css',
+    'missing.png',
+  ]) {
     const missingAsset = await request.get(asset, {
       headers: { accept: 'text/html' },
     });
