@@ -12,8 +12,16 @@
 - Replace the questioned height-estimation behaviour with an explicit "could not calculate" model (#37).
 - Replace the dead Google Form feedback link with a GitHub-native flow (#38).
 - Redesign the Open Graph social-preview image (#42).
-- **All new external links, labels, and repo coordinates are config-driven** (single source of truth), per the maintainer directive and AGENTS.md invariant #7.
-- Every fix is verified in a running build via headless Chrome, and the final production build scores **Lighthouse 100** across Performance, Accessibility, Best Practices, and SEO.
+- Resolve every actionable PR review thread and the additional import defects reproduced during
+  adversarial Playwright testing.
+- Remove patient-bearing query parameters from public bug-report links.
+- Reduce initial JavaScript and PWA installation cost without weakening the calculator's offline
+  availability.
+- **All new external links and repo coordinates are config-driven** (single source of truth), per the maintainer directive and AGENTS.md invariant #7.
+- Every fix is verified in a production-like build via Playwright. Lighthouse Accessibility, Best
+  Practices, and SEO must remain 100; Performance must improve from the locally reproduced baseline
+  (84 without compression/cache headers) and all measurements must be reported with their serving
+  conditions rather than normalized into a target score.
 
 **Non-goals**
 
@@ -40,9 +48,15 @@ export const LINKS = {
 };
 // Build a bug-report URL with the reporter's context prefilled (page URL, app version).
 export function buildBugReportUrl({ version, url } = {}) {
-  /* appends &version=&page-url= URL-encoded */
+  /* appends &version=&page-url= URL-encoded after sanitizing the page URL */
 }
 ```
+
+`sanitizeBugReportPageUrl(url)` parses an absolute HTTP(S) URL and returns the same origin/path while
+allowlisting only the non-clinical display parameters `acknowledgeBanner`, `showFooter`,
+`showCitation`, `showDocumentation`, and `showControls`. It drops `patientId`, `age`, `height`,
+`tlv`, all unknown query parameters, credentials, fragments, and any unparseable/non-HTTP(S) input.
+`buildBugReportUrl` always applies this sanitizer itself so no caller can accidentally bypass it.
 
 `AppFooter.vue` and `disclaimerMixin.js` (and anywhere else touched) import from here instead of hardcoding. The two citation PMID links in the footer are content, not touched.
 
@@ -66,17 +80,23 @@ if (q.height) {
   const v = num(q.height);
   if (v !== null) height.value = v;
 }
-if (q.tlv) {
-  const v = num(q.tlv);
-  if (v !== null) totalLiverVolume.value = v;
-}
+const tlvParam = num(q.tlv);
+if (tlvParam !== null) totalLiverVolume.value = tlvParam;
 ```
 
-(`tlv=0` remains accepted — `TLV_MIN=0` — and plots at the log-axis floor; pre-existing behaviour, out of scope.)
+(`tlv=0` remains accepted because `TLV_MIN=0`; changing that clinical/input constant requires domain
+owner approval and is out of scope.)
 
 **Docs:** `docs/url-parameters.md` — the "Set all inputs" example (line 40–44) and the auto-calc note (line 18) must state that **`height` is required to plot a class** (the auto-calc guard returns early without a valid height). Add `&height=1.75` to that example so following it actually plots.
 
-**Tests:** add a `useQueryParams` unit test asserting `tlv`/`height` become numbers and validation stays clean (new `src/composables/__tests__/useQueryParams.test.js`).
+The same normalizer is used for age, height, and TLV. Auto-calculation is based on the normalized
+values, not raw query-key presence: a non-blank patient ID plus non-null normalized age and TLV are
+required. A genuinely non-numeric value remains verbatim and still triggers downstream validation;
+a whitespace-only value is ignored and never triggers calculation.
+
+**Tests:** extend `useQueryParams.test.js` to assert numeric coercion, whitespace handling for all
+numeric fields, invalid-value preservation, display toggles, and that whitespace-only TLV does not
+call `calculateDataPoint`.
 
 **Verify:** load `/ChIC/?patientId=12345&age=50&tlv=15000&height=1.75&acknowledgeBanner=true` in-browser → no TLV error, point plotted.
 
@@ -130,10 +150,22 @@ if (q.tlv) {
 - `config.js` — remove `MODEL.ASSUMED_HEIGHT_M` (`:9`).
 - `DataTable.vue` — replace the `≈`-estimate branches (`:36–54`) with plain measured values; render `class`/`htlv` as `N/A` (via `formatClassLabel`/`formatHtTLV` null-handling or a fallback) when `uncalculable`. Replace the estimate footer note (`:88–91`) with an "N of M rows could not be calculated (missing height, age, or TLV)" notice driven by an `uncalculableCount` computed. Add a `title`/tooltip explaining why. Keep the red note styling.
 - `useDataPersistence.js` export (`buildExportRows` `:143–159`, `EXPORT_COLUMNS` `:12–25`, Excel numFmt `:466`): drop `htTLV_estimated`/`estimatedHtTLV`/`estimatedClass`; keep uncalculable rows in the export with blank htTLV and `Class` = `N/A`. `normalizeImportRow` already ignores computed columns → round-trip safe.
-- `applyLoaded` skipped-notice text (`:254`) — since uncalculable rows are now _kept_ not dropped, the "N skipped" wording only covers unusable-id rows; add the uncalculable count to the user-facing message (or surface it from the table). Keep the two notices distinct and honest.
+- Replace the implicit `attempted - processed` skip count with one pure analysis boundary:
+  `processRowsWithSummary(rawRows) -> { rows, malformedCount, missingIdCount }`. Preserve
+  `processRows(rawRows) -> rows` as the public compatibility wrapper. `applyLoaded` uses the summary
+  so `null`/primitive JSON entries are reported as malformed rather than as blank IDs.
+- Add `prepareImport(rawRows) -> { rows, error, notice }` as the pure user-message boundary used by
+  `applyLoaded`. This makes empty/all-invalid/mixed-file behavior unit-testable without FileReader or
+  DOM mocks.
+- `applyLoaded([])` is an error (`No rows found — nothing imported.`), leaves `loadedData` empty, and
+  therefore preserves any existing table. A non-empty file whose rows are all unusable reports the
+  exact malformed/missing-ID counts. Calculable and uncalculable rows otherwise replace the table as
+  before.
 - Interactive/query paths already require height → unaffected (kiosk `?...` without height simply plots nothing, already documented).
 
-**Docs & invariants:** rewrite **AGENTS.md invariant #7** (drop the estimation sentence; document the "could not calculate" model). Update `README.md`, `docs/data-formats.md`, `docs/clinical-background.md`, and the `processRows` header comment (`:66–76`) and `config.js:9` comment.
+**Docs & invariants:** keep **AGENTS.md invariant #7**, `docs/data-formats.md`, the `processRows`
+header comment, and `config.js` aligned with the "could not calculate" model. README and clinical
+background contain no import-estimation claim and need no change.
 
 **Tests:** update `useDataPersistence.test.js` and `classification.test.js` — a height-less import row is kept with `class: null`/`uncalculable: true`, not plotted (htlv null), and exported with `N/A`; add missing-age/missing-tlv kept-and-flagged cases.
 
@@ -156,12 +188,23 @@ if (q.tlv) {
 - `src/config/links.js` (above) holds `feedbackDiscussions`, `bugReportTemplate`, `buildBugReportUrl`, `contactEmail`, `documentation`, `repo`.
 - `AppFooter.vue` (`:38–43`): replace the Google Form `<a>` with two config-driven links, both `target="_blank" rel="noopener noreferrer"`:
   - **"Give feedback"** → `LINKS.feedbackDiscussions`.
-  - **"Report a bug"** → `buildBugReportUrl({ version, url: location.href })` (page URL + app version prefilled). Version comes via a prop from `App.vue` (`packageInfo.version`, already available) to keep the component pure/testable; `location.href` read in a tiny click handler.
+  - **"Report a bug"** → `buildBugReportUrl({ version, url: location.href })`. The helper strips all
+    patient/clinical query values before prefilling the public form. Version comes via a prop from
+    `App.vue` (`packageInfo.version`, already available); `location.href` is read immediately before
+    navigation so safe kiosk/display context is current.
   - Keep the existing "Documentation Page" link but source its href from `LINKS.documentation`.
 - `disclaimerMixin.js:24` — source the contact mailto from `LINKS.contactEmail` (value already correct; just de-hardcode).
 - `AppFooter.vue:50` — add `rel="noopener noreferrer"` to the existing footer **logo** links (currently `target="_blank"` with no `rel`) — boy-scout for Lighthouse Best Practices (codex #13).
+- Add `loading="lazy"` and `decoding="async"` to below-the-fold institution logos. Their explicit
+  dimensions remain unchanged, so this cannot introduce layout shift.
+- Issue Form copy must request synthetic/minimal reproduction values and explicitly prohibit patient
+  URLs, identifiers, exported rows, and real clinical inputs. The page URL description states that
+  patient parameters are removed automatically.
 
-**Tests:** unit-test `buildBugReportUrl` (encodes version + page-url params, correct base). Component smoke: footer renders "Give feedback" + "Report a bug" with expected hrefs.
+**Tests:** unit-test URL construction and sanitization, including encoded patient values, unknown
+parameters, safe toggles, invalid URLs, credentials, hash preservation, and the no-context case.
+Component/Playwright smoke verifies the rendered link never contains a patient ID, age, height, or
+TLV.
 
 **Verify:** footer shows the two links; "Give feedback" opens the Discussions "Ideas" composer; "Report a bug" opens the prefilled Issue Form with version + page URL populated.
 
@@ -171,15 +214,22 @@ if (q.tlv) {
 
 **Decision (maintainer):** Remove the green "L" border entirely; centre the new logo with a single subtitle; high-contrast, more whitespace.
 
-**Source:** `scripts/og-image.svg` (1200×630) is regenerated fresh (its logo is embedded base64). New design:
+**Source:** `scripts/og-image.html` (1200×630) is the editable source. New design:
 
 - White background, **no border rects** (delete the two `#00bf7d` rects).
-- **New logo** `public/ChICLogo_NoText_2026-07-02.png` (2392×1924, non-square) embedded base64, **centred**, aspect-ratio preserved (fit within a box via `preserveAspectRatio`), given visual emphasis.
+- **New logo** `public/ChICLogo_NoText_2026-07-02.png` (2392×1924, non-square) loaded by relative URL,
+  **centred**, aspect-ratio preserved, and given visual emphasis.
 - Title (dark, e.g. `#1a1a1a` or brand navy `#2c3e50`): "Charité Imaging Classification (ChIC)".
 - **Single subtitle**: "Risk stratification for polycystic liver disease" (replaces the green clashing subtitle). Optional muted URL line `halbritter-lab.github.io/ChIC`.
 - All content inside the **1080×600 safe zone**; generous whitespace; WCAG-contrast text. No green.
 
-**Rasterisation (no new dep):** author `scripts/og-image.html` — a self-contained 1200×630 page that references the logo **by served path** (via the running preview server) rather than inlining a 2 MB base64 blob (codex #14) — render it at a 1200×630 viewport in headless Chrome and screenshot to `public/og-image.png`; keep it 1200×630 and < 150 KB. The old `scripts/og-image.svg` is replaced by this HTML source (kept in `scripts/`, never `public/`). (Fallback: one-off `npx @resvg/resvg-js-cli` — not committed.)
+**Rasterisation (no new dep):** the HTML uses the relative source
+`./ChICLogo_NoText_2026-07-02.png`. To regenerate, temporarily copy the HTML to
+`public/og-render.html`, run `npm run dev` (fixed port 8137), open
+`http://localhost:8137/og-render.html` at 1200×630 in Playwright/Chrome, capture `.og` to
+`public/og-image.png`, and delete the temporary file. This works with Vite's development base `/`
+and does not depend on the preview server's production `/ChIC/` base mapping. Keep the PNG 1200×630
+and below 150 KB.
 
 **Meta tags:** already correct (`index.html:81–83`, `:100`, absolute + base-path OK). Update `og:image:alt` (`:86`) and `twitter:image:alt` (`:103`) to match the new copy (drop "classes A–E" phrasing if the subtitle changed). No other meta changes.
 
@@ -187,16 +237,54 @@ if (q.tlv) {
 
 ---
 
+## Adversarial performance hardening
+
+### Root causes
+
+The production build currently emits a 347.9 kB entry chunk (124.0 kB gzip) and a 939.5 kB lazy
+Excel chunk. `ChartDisplay.vue` registers `...registerables`, retaining Chart.js controllers, scales,
+elements, and plugins the app never uses. More importantly, Workbox precaches every JS and public
+PNG/SVG, so service-worker installation downloads 7.3 MiB: the lazy Excel chunk plus approximately
+4.7 MiB of README/source artwork. This defeats the network benefit of Excel code splitting.
+
+### Design
+
+1. Register only `Chart`, `ScatterController`, `LineController`, `LineElement`, `PointElement`,
+   `LinearScale`, `LogarithmicScale`, `Tooltip`, and `Filler`. Dataset array positions, fractional
+   orders, fill references, labels, and the imperative API remain byte-for-byte unchanged.
+2. Set `injectRegister: 'script-defer'` so `registerSW.js` is not parser-blocking.
+3. Workbox precaches the app shell only: HTML, CSS, core JS, text/JSON/ICO/font files, the emitted
+   `assets/logo-*.png`, and manifest icons. It excludes `assets/exceljs*.js`, OG/README/source
+   artwork, and institution logos. A `CacheFirst` runtime rule named `chic-excel` stores the hashed
+   Excel chunk after its first successful online use for one year (maximum two entries, responses
+   0/200). First-session offline Excel is intentionally not guaranteed; subsequent offline Excel use
+   is. The clinical calculator/chart and existing records remain available immediately offline.
+4. No dependency, bundler, clinical-model, or broad CSS refactor is introduced.
+
+### Performance acceptance
+
+- `dist/sw.js` contains no Excel chunk and no `ChICLogo_*`, `ChIC_ApplicationComponents_*`,
+  `logo_v2.svg`, or `og-image.png` precache entries.
+- Total Workbox precache bytes fall by at least 70% from 7.3 MiB.
+- Entry JS gzip size does not increase and should fall after selective Chart.js registration.
+- Playwright confirms chart construction, all five bands, T1 stroke, patient plotting, tooltips,
+  selection, deletion, theme switching, plot download, and CSV/JSON flows.
+- Excel import/export is exercised online after the cache change; the second load is verified from
+  the browser cache. No claim is made that Excel works on a first-ever offline session.
+
+---
+
 ## Sequencing & verification
 
-1. **Config module** (`links.js`) first — everything else consumes it.
-2. Low-risk bug fixes: **#43** → **#36** → **#35** (each: code + unit test + browser check + atomic commit).
-3. **#37** (largest surface: persistence, table, export, docs, tests).
-4. **#38** (repo files + `gh` enable Discussions + footer/mixin + tests).
-5. **#42** (edit SVG → rasterise via headless Chrome → verify).
-6. Update **AGENTS.md** (invariant #7) and docs.
-7. **Adversarial review with codex** on the spec (now) and again on the full diff before finalising.
-8. Full gate: `npm test` + `npm run lint` + `npm run format:check` + `npm run typecheck` + `npm run build`, then **Lighthouse measured** on the production build (served at the `/ChIC/` base path) across all four categories, a manual pass of each fixed flow, and iterative fixes for any blocker (color contrast → Accessibility; missing `rel` → Best Practices; SEO). Lighthouse 100 is the **target, verified by measurement** — real scores reported, remaining blockers fixed or honestly flagged (codex #15). Tap-target size is not scored in the four default categories in current Lighthouse, but contrast and `rel` are.
+1. Privacy-safe links and Issue Form copy, test-first.
+2. Query normalization/auto-calc guard, test-first.
+3. Import summary and empty-file handling, test-first.
+4. OG regeneration instructions and source-path correction.
+5. Chart.js and PWA performance hardening with before/after artifact measurements.
+6. Full unit/static/build gate, then production-like Playwright and Lighthouse verification.
+7. Requirement-by-requirement audit of issues #35, #36, #37, #38, #42, #43 and all unresolved
+   review threads. GitHub threads are not resolved or replied to unless the maintainer explicitly
+   requests that external write.
 
 ## Risks
 
@@ -204,4 +292,7 @@ if (q.tlv) {
 - **Export schema change (#37):** dropping three columns changes exported files; documented, and re-import is unaffected (computed columns ignored).
 - **Discussions enablement (#38):** requires the `gh` token to have admin rights on the repo; if it can't be enabled programmatically, fall back to linking `discussions` root and flag for the maintainer.
 - **600-LOC cap:** touched files (`App.vue` ~554, `ChartDisplay.vue` ~545) stay under cap; new code goes into `links.js` and small edits, not into growing the god files.
-- **Lighthouse 100:** the og-image and any added markup must not regress Performance/SEO; verify the final build, not dev.
+- **PWA offline trade-off:** Excel is deliberately cache-on-first-use; the core calculator remains
+  precached. Artifact inspection and offline Playwright distinguish these two guarantees.
+- **Lighthouse variability:** performance scores depend on compression, cache headers, machine, and
+  throttling. Compare like-for-like runs and report timings/transfer sizes alongside scores.
