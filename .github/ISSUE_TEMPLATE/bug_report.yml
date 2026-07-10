@@ -11,7 +11,7 @@ body:
 
         > ⚠️ ChIC is a research/educational tool, **not** a medical device.
         > **Do not include identifiable patient data** in this report (no names, dates of birth, MRNs, or full dates).
-        > For open-ended feedback or questions, use [GitHub Discussions](https://github.com/halbritter-lab/ChIC/discussions/new?category=ideas) instead.
+        > For open-ended feedback or questions, use [GitHub Discussions](https://github.com/halbritter-lab/ChIC/discussions/new?category=feedback) instead.
   - type: textarea
     id: what-happened
     attributes:

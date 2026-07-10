@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { LINKS, buildBugReportUrl, sanitizeBugReportPageUrl } from '../links.js';
 
 describe('LINKS', () => {
@@ -8,6 +10,17 @@ describe('LINKS', () => {
     expect(LINKS.feedbackDiscussions).toContain('halbritter-lab/ChIC/discussions/new');
     expect(LINKS.feedbackDiscussions).toContain('category=feedback');
     expect(LINKS.contactEmail).toBe('jan.halbritter@charite.de');
+  });
+
+  it('uses the existing Feedback discussion category in GitHub templates', () => {
+    for (const path of [
+      '.github/ISSUE_TEMPLATE/bug_report.yml',
+      '.github/ISSUE_TEMPLATE/config.yml',
+    ]) {
+      const template = readFileSync(resolve(path), 'utf8');
+      expect(template).toContain('/discussions/new?category=feedback');
+      expect(template).not.toContain('/discussions/new?category=ideas');
+    }
   });
 });
 
