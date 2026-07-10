@@ -6,7 +6,7 @@ describe('LINKS', () => {
     expect(LINKS.repo).toBe('https://github.com/halbritter-lab/ChIC');
     expect(LINKS.documentation).toContain('halbritter-lab/ChIC');
     expect(LINKS.feedbackDiscussions).toContain('halbritter-lab/ChIC/discussions/new');
-    expect(LINKS.feedbackDiscussions).toContain('category=ideas');
+    expect(LINKS.feedbackDiscussions).toContain('category=feedback');
     expect(LINKS.contactEmail).toBe('jan.halbritter@charite.de');
   });
 });

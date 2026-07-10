@@ -15,10 +15,8 @@ const SAFE_REPORT_PARAMS = new Set([
 export const LINKS = {
   repo: REPO,
   documentation: `${REPO}/blob/main/README.md`,
-  // Open-ended feedback / questions -> GitHub Discussions (Ideas category).
-  // The `ideas` slug is a default category created when Discussions is enabled;
-  // a maintainer may rename the category in the UI without changing this slug.
-  feedbackDiscussions: `${REPO}/discussions/new?category=ideas`,
+  // Open-ended feedback / questions -> the repository's Feedback discussion category.
+  feedbackDiscussions: `${REPO}/discussions/new?category=feedback`,
   // Structured bug reports -> the prefilled Issue Form (see buildBugReportUrl).
   bugReportTemplate: `${REPO}/issues/new?template=bug_report.yml&labels=bug`,
   // Human contact fallback (kept alongside the GitHub channels).
