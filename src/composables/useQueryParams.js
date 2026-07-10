@@ -28,35 +28,39 @@ export function useQueryParams({
     if (q.acknowledgeBanner === 'true') {
       showModal.value = false;
     }
-    if (q.patientId) patientId.value = q.patientId;
-    if (q.age) {
-      // Clamp a numeric age into the supported range; keep non-numeric input verbatim
-      // so downstream validation can surface the error.
-      const parsed = Number(q.age);
-      age.value = Number.isFinite(parsed)
-        ? Math.min(Math.max(parsed, CONFIG.AGE_MIN), CONFIG.AGE_MAX)
-        : q.age;
-    }
-    // Coerce numeric params to Number so validation (Number.isFinite) accepts them —
-    // a raw string like "15000" fails Number.isFinite and would surface a spurious
-    // "must be a number" error (issue #43). Trim first so a whitespace-only value is
-    // not silently coerced to 0; keep a genuinely non-numeric value verbatim so real
-    // validation errors still surface.
+    const firstQueryValue = (raw) => (Array.isArray(raw) ? raw[0] : raw);
     const asNumber = (raw) => {
-      const t = String(raw).trim();
-      if (t === '') return null;
-      const n = Number(t);
-      return Number.isFinite(n) ? n : raw;
+      const value = firstQueryValue(raw);
+      if (value === undefined || value === null) return null;
+      const text = String(value).trim();
+      if (text === '') return null;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : value;
     };
-    if (q.height) {
-      const v = asNumber(q.height);
-      if (v !== null) height.value = v;
+
+    const patientParam = firstQueryValue(q.patientId);
+    const ageParam = asNumber(q.age);
+    const heightParam = asNumber(q.height);
+    const tlvParam = asNumber(q.tlv);
+
+    if (patientParam !== undefined && patientParam !== null && String(patientParam).trim() !== '') {
+      patientId.value = patientParam;
     }
-    if (q.tlv) {
-      const v = asNumber(q.tlv);
-      if (v !== null) totalLiverVolume.value = v;
+    if (ageParam !== null) {
+      age.value = Number.isFinite(ageParam)
+        ? Math.min(Math.max(ageParam, CONFIG.AGE_MIN), CONFIG.AGE_MAX)
+        : ageParam;
     }
-    if (q.patientId && q.age && q.tlv) {
+    if (heightParam !== null) height.value = heightParam;
+    if (tlvParam !== null) totalLiverVolume.value = tlvParam;
+
+    if (
+      patientParam !== undefined &&
+      patientParam !== null &&
+      String(patientParam).trim() !== '' &&
+      ageParam !== null &&
+      tlvParam !== null
+    ) {
       calculateDataPoint();
     }
 
