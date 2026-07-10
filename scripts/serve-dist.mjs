@@ -47,9 +47,11 @@ createServer((request, response) => {
   }
 
   const acceptsHtml = request.headers.accept?.includes('text/html');
+  const isSpaNavigation = acceptsHtml && extname(pathname) === '';
   if (!file || !existsSync(file) || !statSync(file).isFile()) {
     const fallback = resolve(ROOT, '404.html');
-    if (file && pathname.startsWith(PREFIX) && acceptsHtml && existsSync(fallback)) file = fallback;
+    if (file && pathname.startsWith(PREFIX) && isSpaNavigation && existsSync(fallback))
+      file = fallback;
     else {
       response.writeHead(404).end('Not found');
       return;

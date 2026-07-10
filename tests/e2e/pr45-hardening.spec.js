@@ -4,10 +4,12 @@ import { statSync } from 'node:fs';
 test('dist server rejects missing assets and traversal while serving SPA navigation', async ({
   request,
 }) => {
-  const missingAsset = await request.get('assets/missing.js', {
-    headers: { accept: 'text/javascript' },
-  });
-  expect(missingAsset.status()).toBe(404);
+  for (const asset of ['assets/missing.js', 'assets/missing.css', 'missing.png']) {
+    const missingAsset = await request.get(asset, {
+      headers: { accept: 'text/html' },
+    });
+    expect(missingAsset.status(), asset).toBe(404);
+  }
 
   const traversal = await request.get('%2e%2e%2fpackage.json', {
     headers: { accept: 'text/html' },
@@ -106,11 +108,28 @@ test('chart, downloads, core offline, and Excel cache-on-first-use work', async 
   context,
 }, testInfo) => {
   const runtimeErrors = [];
-  const requestErrors = [];
-  page.on('pageerror', (error) => runtimeErrors.push(error.message));
-  page.on('requestfailed', (request) =>
-    requestErrors.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText}`)
-  );
+  const transportErrors = [];
+  const httpErrors = [];
+  const recordBrowserErrors = (target) => {
+    target.on('pageerror', (error) => runtimeErrors.push(error.message));
+    target.on('requestfailed', (request) =>
+      transportErrors.push({
+        method: request.method(),
+        pathname: new URL(request.url()).pathname,
+        error: request.failure()?.errorText,
+      })
+    );
+    target.on('response', (response) => {
+      if (response.status() >= 400) {
+        httpErrors.push({
+          method: response.request().method(),
+          pathname: new URL(response.url()).pathname,
+          status: response.status(),
+        });
+      }
+    });
+  };
+  recordBrowserErrors(page);
 
   await page.goto('?patientId=visual&age=50&height=1.75&tlv=15000&acknowledgeBanner=true');
   const canvas = page.locator('.chart-container canvas');
@@ -151,10 +170,7 @@ test('chart, downloads, core offline, and Excel cache-on-first-use work', async 
 
   await context.setOffline(true);
   const offlinePage = await context.newPage();
-  offlinePage.on('pageerror', (error) => runtimeErrors.push(error.message));
-  offlinePage.on('requestfailed', (request) =>
-    requestErrors.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText}`)
-  );
+  recordBrowserErrors(offlinePage);
   await offlinePage.goto('?acknowledgeBanner=true', { waitUntil: 'domcontentloaded' });
   await expect(offlinePage).toHaveTitle(/ChIC/);
   await expect(offlinePage.getByRole('button', { name: 'Calculate' })).toBeVisible();
@@ -166,6 +182,14 @@ test('chart, downloads, core offline, and Excel cache-on-first-use work', async 
   await offlinePage.getByRole('link', { name: 'Excel', exact: true }).click();
   expect((await offlineExcelDownload).suggestedFilename()).toBe('batch_upload_template.xlsx');
   expect(runtimeErrors).toEqual([]);
-  const optionalFooterLogo = /\/(?:CeRKiD_|dfg_logo_|Heisenberg-Programm_)/;
-  expect(requestErrors.filter((error) => !optionalFooterLogo.test(error))).toEqual([]);
+  expect(httpErrors).toEqual([]);
+  const optionalFooterLogos = new Set([
+    '/ChIC/CeRKiD_175x130.jpg',
+    '/ChIC/dfg_logo_schriftzug_schwarz_foerderung_en.gif',
+    '/ChIC/Heisenberg-Programm_400x235.png',
+  ]);
+  expect(transportErrors.filter(({ pathname }) => !optionalFooterLogos.has(pathname))).toEqual([]);
+  expect(transportErrors.map(({ pathname }) => pathname).sort()).toEqual(
+    [...optionalFooterLogos].sort()
+  );
 });
