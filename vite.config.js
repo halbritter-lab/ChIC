@@ -2,6 +2,24 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 
+export const PWA_INJECT_REGISTER = 'script-defer';
+
+export const PWA_WORKBOX_CONFIG = {
+  globPatterns: ['**/*.{js,css,html,ico,json,txt,woff2}', 'assets/logo-*.png'],
+  globIgnores: ['**/assets/exceljs*.js'],
+  runtimeCaching: [
+    {
+      urlPattern: ({ url }) => /\/assets\/exceljs\.min-[^/]+\.js$/.test(url.pathname),
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'chic-excel',
+        expiration: { maxEntries: 2, maxAgeSeconds: 60 * 60 * 24 * 365 },
+        cacheableResponse: { statuses: [0, 200] },
+      },
+    },
+  ],
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   const base = command === 'build' ? '/ChIC/' : '/';
@@ -12,10 +30,8 @@ export default defineConfig(({ command }) => {
       vue(),
       VitePWA({
         registerType: 'autoUpdate', // Or 'prompt' based on preference
-        // injectRegister: 'auto', // or null or 'script'
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'], // Ensure all needed assets are cached
-        },
+        injectRegister: PWA_INJECT_REGISTER,
+        workbox: PWA_WORKBOX_CONFIG,
         manifest: {
           name: 'Charité Imaging Classification Tool',
           short_name: 'ChIC',

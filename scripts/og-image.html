@@ -1,0 +1,94 @@
+<!doctype html>
+<!--
+  Editable SOURCE for public/og-image.png (Open Graph / Twitter social preview), issue #42.
+  1200×630 (1.91:1) — the universal OG/large-summary card size.
+
+  To regenerate public/og-image.png (no build dependency):
+    1. Copy this file to public/og-render.html.
+    2. Run npm run dev.
+    3. Open http://localhost:8137/og-render.html in headless Chrome at a 1200×630 viewport.
+    4. Screenshot the .og element to public/og-image.png.
+    5. Delete public/og-render.html.
+
+  Design (per issue #42 review): horizontal split — left-aligned title + single subtitle on the
+  left, a large logo on the right so it keeps presence at small preview sizes. Borderless white
+  card, high-contrast navy/slate text (WCAG AA), generous whitespace, content inside the safe zone.
+
+  Logo: og-logo.png is the background-stripped, downscaled derivative of ChICLogo_NoText (the
+  source asset ships with an opaque off-white box that reads as a faint panel on the white card).
+  To regenerate og-logo.png: serve public/ over http, draw ChICLogo_NoText to a canvas, clear
+  bright near-neutral pixels (max(r,g,b) > 205 && saturation < 16) to transparent, downscale to
+  ~1000px wide, and save. The blue liver/cysts/bars stay (they carry chroma); only the box goes.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        background: #ffffff;
+      }
+      .og {
+        width: 1200px;
+        height: 630px;
+        background: #ffffff;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 48px;
+        padding: 60px 76px;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+      .og .text {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: left;
+      }
+      .og h1 {
+        font-size: 58px;
+        line-height: 1.09;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: #1f2d3d; /* deep navy — high contrast on white */
+      }
+      .og .sub {
+        margin-top: 24px;
+        font-size: 26px;
+        line-height: 1.3;
+        font-weight: 500;
+        color: #445566; /* muted slate, WCAG AA on white */
+      }
+      .og .brand {
+        flex: 0 0 auto;
+        width: 390px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .og .brand img {
+        width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="og">
+      <div class="text">
+        <h1>Charité Imaging Classification (ChIC)</h1>
+        <div class="sub">Risk stratification for polycystic liver disease</div>
+      </div>
+      <div class="brand">
+        <img src="./og-logo.png" alt="ChIC logo" />
+      </div>
+    </div>
+  </body>
+</html>

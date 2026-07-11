@@ -114,7 +114,7 @@
 
     <!-- Use the AppFooter component -->
     <!-- Note: footerLinks prop is provided by the footerMixin -->
-    <AppFooter :show-footer="showFooter" :footer-links="footerLinks" />
+    <AppFooter :show-footer="showFooter" :footer-links="footerLinks" :version="version" />
   </div>
 </template>
 
@@ -302,19 +302,17 @@ export default {
       displayLiverGrowthRate.value =
         liverGrowthRate.value !== null ? liverGrowthRate.value * 100 : null;
 
-      // Interactive path always has a measured height (guarded above), so this is a
-      // validated ChIC class — never an estimate.
+      // Interactive path always has a measured, in-range height (guarded above), so this
+      // is always a calculable, validated ChIC class.
       const newData = {
         id: patientId.value,
         age: age.value,
         height: height.value,
         tlv: totalLiverVolume.value,
         htlv: heightAdjustedTLV.value, // numeric for chart
-        htlvEstimated: false,
-        estimatedHtTLV: null,
         class: progressionGroup.value,
-        estimatedClass: null,
         lgr: liverGrowthRate.value !== null ? (liverGrowthRate.value * 100).toFixed(2) : 'N/A',
+        uncalculable: false,
         group: enableGrouping.value ? group.value : '',
         groupColor: enableGrouping.value ? groupColor.value : null,
       };
@@ -417,6 +415,14 @@ export default {
       if (newDataArray && newDataArray.length > 0) {
         // Replace existing data points - this triggers the ChartDisplay watcher automatically
         dataPoints.value = [...newDataArray];
+        // Reveal the Group/Color columns when the imported file already carries grouping data.
+        // Otherwise they stay hidden until the user toggles grouping, and re-calculating a fixed
+        // row would drop its uploaded colour — the grouping-off Calculate path writes group ''
+        // and groupColor null (issue #37 reviewer note).
+        const hasGrouping = newDataArray.some(
+          (p) => (p.group && p.group !== '') || (p.groupColor && p.groupColor !== '')
+        );
+        if (hasGrouping) enableGrouping.value = true;
         // Clear the loaded data in the composable so the same file can be loaded again
         loadedData.value = [];
         // Reset editing state when loading new data
@@ -458,6 +464,7 @@ export default {
       group.value = '';
       groupColor.value = '';
       dataPoints.value = [];
+      editingIndex.value = -1;
       idWarningMessage.value = '';
       ageValidationMessage.value = '';
       tlvValidationMessage.value = '';

@@ -14,7 +14,7 @@ The application supports uploading multiple patient records at once in three for
 | **CSV**          | Comma-separated values with the same column structure as the Excel format — universally compatible with all spreadsheet apps.        |
 | **JSON**         | An array of patient objects with the properties: `id`, `age`, `height`, `tlv`, `group` (optional), `groupColor` (optional).          |
 
-All imported records are added to the chart and data table for immediate visualization and analysis. Height-adjusted TLV, class and LGR are re-computed on load. Records without a height are estimated from the cohort-mean height and flagged as estimates.
+All imported records are added to the chart and data table for immediate visualization and analysis. Height-adjusted TLV, class and LGR are re-computed on load. A record is only classified when it has a valid, in-range **height, age, and TLV**; a record missing any of these (or out of range) is kept in the table but shown as **N/A**, is **not plotted**, and is counted in an import notice — it is **not** estimated from a cohort-mean height.
 
 ## Export
 

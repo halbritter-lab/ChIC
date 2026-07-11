@@ -7,13 +7,31 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { Chart, registerables, Filler } from 'chart.js'; // Added Filler for background fills
+import {
+  Chart,
+  ScatterController,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  LogarithmicScale,
+  Tooltip,
+  Filler,
+} from 'chart.js';
 import { formulas } from '@/config/formulasConfig'; // Import formulas
 import { CONFIG } from '@/config/config'; // Import CONFIG for axis limits, ticks and class colors
 
 // Register Chart.js components and plugins
-Chart.register(...registerables);
-Chart.register(Filler); // Register Filler for fills like '+1', 'origin'
+Chart.register(
+  ScatterController,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  LogarithmicScale,
+  Tooltip,
+  Filler
+);
 
 // Props definition
 const props = defineProps({
@@ -29,20 +47,27 @@ const overlayCanvas = ref(null);
 let chartInstance = null;
 let isInitialLoad = true; // Track if this is the first render
 
-// Function to draw ring overlay around selected point
-const drawRingOverlay = () => {
+const clearRingOverlay = () => {
   const overlay = overlayCanvas.value;
-  if (!overlay || !chartInstance) return;
-
-  // Clear overlay
+  if (!overlay) return;
   while (overlay.firstChild) {
     overlay.removeChild(overlay.firstChild);
   }
+};
+
+// Function to draw ring overlay around selected point
+const drawRingOverlay = () => {
+  clearRingOverlay();
+  const overlay = overlayCanvas.value;
+  if (!overlay || !chartInstance) return;
 
   // If no editing index, nothing to draw
   if (props.editingIndex < 0 || props.editingIndex >= props.dataPoints.length) return;
 
   const point = props.dataPoints[props.editingIndex];
+  // An uncalculable row (missing height/age/TLV — issue #37) has htlv: null and is not
+  // plotted; getPixelForValue(null) would place the ring at a bogus coordinate, so skip.
+  if (!point || !Number.isFinite(point.htlv)) return;
   const canvas = chartCanvas.value;
   const canvasRect = canvas.getBoundingClientRect();
   const containerRect = overlayCanvas.value.parentElement.getBoundingClientRect();
@@ -218,6 +243,10 @@ const initChart = () => {
             tension: 0,
             fill: '-1', // fill up to previous dataset (T2)
             backgroundColor: CONFIG.CLASS_COLORS.B.band, // Class B band (between T1 and T2)
+            // These two T1 fills share lineDataT1 with the visible 'Threshold 1' line, so a
+            // 'nearest' tooltip over T1 ties on all three and lists the fills too (issue #36).
+            // isFill hides them from the tooltip (same flag the T4 left-polygon fill uses).
+            isFill: true,
             order: 4.5,
           },
           // Fill between T1 and baseline (PG1 color)
@@ -233,6 +262,7 @@ const initChart = () => {
             tension: 0,
             fill: '+1', // fill down to next dataset (baseline)
             backgroundColor: CONFIG.CLASS_COLORS.A.band, // Class A band (between T1 and baseline)
+            isFill: true, // hide from tooltip — shares T1 points (issue #36)
             order: 4.6,
           },
           // Baseline dataset used as fill target for T1 below-fill
@@ -250,7 +280,15 @@ const initChart = () => {
             fill: false,
             order: 4.7,
           },
-          // Visible Threshold T1 line drawn on top of fills
+          // Visible Threshold T1 line drawn on top of fills.
+          // order must be BELOW its two fills (T1 Above Fill 4.5, T1 Below Fill 4.6) so the
+          // stroke paints in front of them — a higher order draws first/behind and the
+          // translucent fills then over-paint the line, making the lowest line look faded
+          // and broken (issue #36). T2–T4 carry their fill on the same dataset, so their
+          // strokes already sit above their fill; T1's line is a separate dataset and needs
+          // this explicit lower order. 4.4 < 4.5 keeps it above the fills but still behind
+          // the patient points (order -1). No array position or fill '+1'/'-1' target changes,
+          // so the class bands (invariant #3) are unaffected.
           {
             type: 'line',
             label: 'Threshold 1',
@@ -260,7 +298,7 @@ const initChart = () => {
             showLine: true,
             pointRadius: 0,
             fill: false,
-            order: 5,
+            order: 4.4,
           },
           // Patient Data: render this dataset last so points appear above fills and lines
           {
@@ -367,6 +405,11 @@ const initChart = () => {
             display: false,
           },
           tooltip: {
+            // Drop fill-only datasets before they become tooltip rows. Threshold 1 carries its
+            // two class-band fills on separate datasets that share its points, so without this a
+            // hover over T1 lists 'T1 Above Fill'/'T1 Below Fill' alongside it (issue #36); the
+            // other thresholds are single datasets and already show one line.
+            filter: (item) => !(item.dataset && item.dataset.isFill),
             callbacks: {
               label: function (context) {
                 // Hide fill-only datasets from the tooltip
@@ -442,6 +485,7 @@ const updatePointStyle = (index, color, group) => {
 
 // Clear ONLY the patient/selected points — never the threshold-curve or class-fill datasets.
 const clearChart = () => {
+  clearRingOverlay();
   if (!chartInstance) return;
   for (const label of ['Patient Data', 'Selected Point']) {
     const i = chartInstance.data.datasets.findIndex((d) => d.label === label);
@@ -512,6 +556,10 @@ watch(
       // Animate on initial load if data is present
       updateChart(props.dataPoints.length > 0);
     }
+    // Reposition or clear the highlight ring on any data change. Deleting a point only
+    // changes dataPoints (not editingIndex-by-value when a different row is removed), so
+    // the editingIndex watcher alone would leave a stale ring at old coordinates (issue #35).
+    drawRingOverlay();
   },
   { deep: true }
 );

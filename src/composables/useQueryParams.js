@@ -24,29 +24,50 @@ export function useQueryParams({
   const initFromQuery = async () => {
     await router.isReady();
     const q = route.query;
+    const firstQueryValue = (raw) => (Array.isArray(raw) ? raw[0] : raw);
 
-    if (q.acknowledgeBanner === 'true') {
+    if (firstQueryValue(q.acknowledgeBanner) === 'true') {
       showModal.value = false;
     }
-    if (q.patientId) patientId.value = q.patientId;
-    if (q.age) {
-      // Clamp a numeric age into the supported range; keep non-numeric input verbatim
-      // so downstream validation can surface the error.
-      const parsed = Number(q.age);
-      age.value = Number.isFinite(parsed)
-        ? Math.min(Math.max(parsed, CONFIG.AGE_MIN), CONFIG.AGE_MAX)
-        : q.age;
+    const asNumber = (raw) => {
+      const value = firstQueryValue(raw);
+      if (value === undefined || value === null) return null;
+      const text = String(value).trim();
+      if (text === '') return null;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : value;
+    };
+
+    const patientParam = firstQueryValue(q.patientId);
+    const ageParam = asNumber(q.age);
+    const heightParam = asNumber(q.height);
+    const tlvParam = asNumber(q.tlv);
+
+    if (patientParam !== undefined && patientParam !== null && String(patientParam).trim() !== '') {
+      patientId.value = patientParam;
     }
-    if (q.height) height.value = q.height;
-    if (q.tlv) totalLiverVolume.value = q.tlv;
-    if (q.patientId && q.age && q.tlv) {
+    if (ageParam !== null) {
+      age.value = Number.isFinite(ageParam)
+        ? Math.min(Math.max(ageParam, CONFIG.AGE_MIN), CONFIG.AGE_MAX)
+        : ageParam;
+    }
+    if (heightParam !== null) height.value = heightParam;
+    if (tlvParam !== null) totalLiverVolume.value = tlvParam;
+
+    if (
+      patientParam !== undefined &&
+      patientParam !== null &&
+      String(patientParam).trim() !== '' &&
+      ageParam !== null &&
+      tlvParam !== null
+    ) {
       calculateDataPoint();
     }
 
-    showFooter.value = q.showFooter !== 'false';
-    showCitation.value = q.showCitation !== 'false';
-    showDocumentation.value = q.showDocumentation !== 'false';
-    showControls.value = q.showControls !== 'false';
+    showFooter.value = firstQueryValue(q.showFooter) !== 'false';
+    showCitation.value = firstQueryValue(q.showCitation) !== 'false';
+    showDocumentation.value = firstQueryValue(q.showDocumentation) !== 'false';
+    showControls.value = firstQueryValue(q.showControls) !== 'false';
   };
 
   return { showFooter, showCitation, showDocumentation, showControls, initFromQuery };

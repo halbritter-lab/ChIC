@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createRouter, createMemoryHistory } from 'vue-router';
+import { nextTick } from 'vue';
 import App from '@/App.vue';
 
 // ChartDisplay renders a real <canvas> + Chart.js, which jsdom cannot back.
@@ -21,7 +22,10 @@ const mountApp = async () => {
     global: {
       plugins: [router],
       stubs: {
-        ChartDisplay: { template: '<div data-test="chart-stub" />' },
+        ChartDisplay: {
+          template: '<div data-test="chart-stub" />',
+          methods: { clearChart() {} },
+        },
       },
     },
   });
@@ -52,5 +56,29 @@ describe('App smoke', () => {
     expect(wrapper.findComponent({ name: 'InputControls' }).exists()).toBe(true);
     // Chart area is present (stubbed).
     expect(wrapper.find('[data-test="chart-stub"]').exists()).toBe(true);
+  });
+
+  it('resets the edit cursor before calculating a new row', async () => {
+    localStorage.setItem('disclaimerAcknowledged', 'true');
+    const wrapper = await mountApp();
+    wrapper.vm.dataPoints = [
+      { id: 'first', age: 40, height: 1.7, tlv: 3400 },
+      { id: 'second', age: 50, height: 1.8, tlv: 3600 },
+    ];
+    await nextTick();
+
+    wrapper.vm.editDataPoint(1);
+    wrapper.vm.resetForm();
+    wrapper.vm.patientId = 'new';
+    wrapper.vm.age = 45;
+    wrapper.vm.height = 1.75;
+    wrapper.vm.totalLiverVolume = 3500;
+    await nextTick();
+    wrapper.vm.calculateDataPoint();
+
+    expect(wrapper.vm.editingIndex).toBe(-1);
+    expect(wrapper.vm.dataPoints).toHaveLength(1);
+    expect(wrapper.vm.dataPoints.map((point) => point.id)).toEqual(['new']);
+    expect(wrapper.vm.dataPoints.every((point) => point !== undefined)).toBe(true);
   });
 });

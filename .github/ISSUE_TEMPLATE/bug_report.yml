@@ -1,0 +1,63 @@
+name: Bug report
+description: Report a problem with the ChIC application
+title: '[bug] '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve ChIC. Please describe the problem below.
+
+        > ⚠️ ChIC is a research/educational tool, **not** a medical device.
+        > **Do not include identifiable patient data** in this report (no names, dates of birth, MRNs, or full dates).
+        > For open-ended feedback or questions, use [GitHub Discussions](https://github.com/halbritter-lab/ChIC/discussions/new?category=feedback) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What went wrong?
+      description: A clear description of the problem and what you expected instead.
+      placeholder: When I ..., ChIC did ..., but I expected ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use synthetic or minimal reproduction values only. Never paste a patient URL, identifier, exported row, or real clinical inputs.
+      placeholder: |
+        1. Go to ...
+        2. Enter synthetic age 50, height 1.75, TLV 15000
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in the app header (e.g. 0.6.0). Prefilled automatically when you open this form from the app's "Report a bug" link.
+      placeholder: e.g. 0.6.0
+    validations:
+      required: false
+  - type: input
+    id: page-url
+    attributes:
+      label: Page URL
+      description: Prefilled from the app. Patient and unknown query parameters are removed automatically; verify the URL before submitting.
+      placeholder: https://halbritter-lab.github.io/ChIC/
+    validations:
+      required: false
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + version
+      placeholder: e.g. Chrome 126, Firefox 128, Safari 17
+    validations:
+      required: false
+  - type: textarea
+    id: console
+    attributes:
+      label: Screenshots / console output
+      description: If applicable. Drag images here; paste any browser console errors.
+    validations:
+      required: false

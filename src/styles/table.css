@@ -60,7 +60,9 @@
 .row-editing {
   background-color: #1b4d7c !important;
   color: white !important;
-  font-weight: 600;
+  /* No bolder font on select: the navy fill + white text already mark the row, and under the
+     auto table layout the wider bold glyphs reflowed every column width on select/deselect
+     (issue #37 reviewer note). */
 }
 .row-editing td {
   color: white !important;
