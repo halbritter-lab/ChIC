@@ -141,6 +141,70 @@ test('mixed and empty JSON imports report exact outcomes without stale replaceme
   );
 });
 
+// Load JSON into the app via the hidden file chooser (shared by the reviewer-feedback tests).
+async function importJson(page, name, data) {
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Load Data', exact: true }).click();
+  await (
+    await chooser
+  ).setFiles({
+    name,
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(data)),
+  });
+}
+
+test('all three calculated columns show a styled N/A for uncalculable rows (issue #37)', async ({
+  page,
+}) => {
+  await page.goto('?acknowledgeBanner=true');
+  await importJson(page, 'na.json', [
+    { id: 'na', age: 40, tlv: 3400 }, // missing height -> uncalculable
+    { id: 'ok', age: 40, height: 1.7, tlv: 3400 },
+  ]);
+  const rows = page.locator('tbody tr');
+  await expect(rows).toHaveCount(2);
+  // htTLV, Class and LGR all render the same red+italic N/A on the uncalculable row.
+  const naCells = rows.nth(0).locator('.uncalculable');
+  await expect(naCells).toHaveCount(3);
+  await expect(naCells.first()).toHaveText('N/A');
+  await expect(rows.nth(1).locator('.uncalculable')).toHaveCount(0);
+
+  // Note wording (no Oxford comma, "in table") and amber advisory colour.
+  const note = page.locator('.uncalculable-note');
+  await expect(note).toContainText(
+    'could not be calculated (missing or out-of-range height, age and TLV) — shown as N/A in table and not plotted'
+  );
+  expect(await note.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(138, 109, 59)');
+});
+
+test('importing grouped data reveals the Group/Color columns (issue #37)', async ({ page }) => {
+  await page.goto('?acknowledgeBanner=true');
+  await importJson(page, 'grouped.json', [
+    { id: 'g1', age: 40, height: 1.7, tlv: 3400, group: 'Cohort A', groupColor: '#e2001a' },
+  ]);
+  await expect(page.locator('thead th', { hasText: 'Group' })).toBeVisible();
+  await expect(page.locator('thead th', { hasText: 'Color' })).toBeVisible();
+  // The imported colour survives into the chart point (not reset to the default black).
+  await expect(page.locator('tbody tr td input').first()).toHaveValue('Cohort A');
+});
+
+test('selecting a row does not shift the table column widths (issue #37)', async ({ page }) => {
+  await page.goto('?acknowledgeBanner=true');
+  await importJson(page, 'widths.json', [
+    { id: 'row-one', age: 40, height: 1.7, tlv: 3400 },
+    { id: 'row-two', age: 50, height: 1.8, tlv: 3600 },
+    { id: 'row-three', age: 60, height: 1.9, tlv: 3800 },
+  ]);
+  const headers = page.locator('thead th');
+  const widthsOf = () =>
+    headers.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+  const before = await widthsOf();
+  await page.locator('tbody tr').nth(1).click();
+  await expect(page.locator('tbody tr.row-editing')).toHaveCount(1);
+  expect(await widthsOf()).toEqual(before);
+});
+
 test('chart, downloads, core offline, and Excel cache-on-first-use work', async ({
   page,
   context,
