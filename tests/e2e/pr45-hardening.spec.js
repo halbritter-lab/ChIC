@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { readFileSync, statSync } from 'node:fs';
+// Single source of truth for the app version, so a release bump can't drift
+// past the report-URL assertion unnoticed.
+import { version } from '../../package.json';
 
 test('dist server rejects missing assets and traversal while serving SPA navigation', async ({
   request,
@@ -37,7 +40,7 @@ test('query inputs calculate and public report URL contains no patient context',
   await expect(page.locator('tbody tr')).toHaveCount(1);
   await expect(page.locator('tbody tr')).toContainText('SECRET-123');
   const report = await page.getByRole('link', { name: 'Report a bug' }).getAttribute('href');
-  expect(report).toContain('version=0.5.5');
+  expect(report).toContain(`version=${version}`);
   expect(report).toContain('showCitation%3Dfalse');
   expect(report).not.toMatch(/SECRET-123|patientId|age%3D50|height%3D1\.75|tlv%3D15000/);
 });
