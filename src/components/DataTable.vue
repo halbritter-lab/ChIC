@@ -37,7 +37,7 @@
             <span
               v-if="point.uncalculable"
               class="uncalculable"
-              title="Could not calculate — missing or out-of-range height, age, or TLV"
+              title="Could not calculate — missing or out-of-range height, age and TLV"
               >N/A</span
             >
             <template v-else>{{ formatHtTLV(point.htlv) }}</template>
@@ -47,12 +47,22 @@
             <span
               v-if="point.uncalculable"
               class="uncalculable"
-              title="Could not calculate — missing or out-of-range height, age, or TLV"
+              title="Could not calculate — missing or out-of-range height, age and TLV"
               >N/A</span
             >
             <template v-else>{{ formatClassLabel(point.class) }}</template>
           </td>
-          <td>{{ point.lgr }}</td>
+          <!-- LGR: value, or N/A when the row could not be calculated (issue #37), styled
+               like htTLV/Class so all calculated outputs read the same -->
+          <td>
+            <span
+              v-if="point.uncalculable"
+              class="uncalculable"
+              title="Could not calculate — missing or out-of-range height, age and TLV"
+              >N/A</span
+            >
+            <template v-else>{{ point.lgr }}</template>
+          </td>
           <td v-if="enableGrouping">
             <input
               v-model="point.group"
@@ -87,7 +97,7 @@
 
     <p v-if="uncalculableCount > 0" class="uncalculable-note">
       {{ uncalculableCount }} of {{ dataPoints.length }} rows could not be calculated (missing or
-      out-of-range height, age, or TLV) — shown as N/A and not plotted
+      out-of-range height, age and TLV) — shown as N/A in table and not plotted
     </p>
   </div>
 </template>
@@ -108,13 +118,17 @@ const uncalculableCount = computed(() => props.dataPoints.filter((p) => p.uncalc
 </script>
 
 <style scoped>
+/* N/A cell value: red — signals the missing datum inside the table. */
 .uncalculable {
   font-style: italic;
   color: #a94442;
 }
+/* Advisory note below the table: amber, matching the import notice (.load-notice) so both
+   "some rows could not be calculated" messages read as one advisory voice — distinct from
+   the red used for errors and for N/A cell values (issue #37, reviewer note). */
 .uncalculable-note {
   margin: -10px 0 20px;
   font-style: italic;
-  color: #a94442;
+  color: #8a6d3b;
 }
 </style>

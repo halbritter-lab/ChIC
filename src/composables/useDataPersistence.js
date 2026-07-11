@@ -165,7 +165,7 @@ export function prepareImport(rawRows) {
   if (uncalculableCount > 0) {
     notices.push(
       `${uncalculableCount} row${plural(uncalculableCount)} could not be calculated ` +
-        `(missing or out-of-range height, age, or TLV) — shown as N/A and not plotted`
+        `(missing or out-of-range height, age and TLV) — shown as N/A in table and not plotted`
     );
   }
 

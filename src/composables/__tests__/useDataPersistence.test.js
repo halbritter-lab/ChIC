@@ -136,7 +136,7 @@ describe('prepareImport — honest row accounting', () => {
     expect(outcome.rows.map((row) => row.id)).toEqual(['ok', 'missing-height']);
     expect(outcome.error).toBeNull();
     expect(outcome.notice).toBe(
-      '1 row skipped (missing or blank ID). 2 malformed rows skipped. 1 row could not be calculated (missing or out-of-range height, age, or TLV) — shown as N/A and not plotted.'
+      '1 row skipped (missing or blank ID). 2 malformed rows skipped. 1 row could not be calculated (missing or out-of-range height, age and TLV) — shown as N/A in table and not plotted.'
     );
   });
 
