@@ -415,6 +415,14 @@ export default {
       if (newDataArray && newDataArray.length > 0) {
         // Replace existing data points - this triggers the ChartDisplay watcher automatically
         dataPoints.value = [...newDataArray];
+        // Reveal the Group/Color columns when the imported file already carries grouping data.
+        // Otherwise they stay hidden until the user toggles grouping, and re-calculating a fixed
+        // row would drop its uploaded colour — the grouping-off Calculate path writes group ''
+        // and groupColor null (issue #37 reviewer note).
+        const hasGrouping = newDataArray.some(
+          (p) => (p.group && p.group !== '') || (p.groupColor && p.groupColor !== '')
+        );
+        if (hasGrouping) enableGrouping.value = true;
         // Clear the loaded data in the composable so the same file can be loaded again
         loadedData.value = [];
         // Reset editing state when loading new data
