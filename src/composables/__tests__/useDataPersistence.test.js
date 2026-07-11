@@ -223,8 +223,10 @@ describe('buildExportRows', () => {
     expect(m.htTLV).toBe(formatHtTLV(heightAdjustedTLV(3400, 1.7)));
 
     const e = ex.find((r) => r.ID === 'e');
-    expect(e.Class).toBe('N/A'); // explicit could-not-calculate marker
-    expect(e.htTLV).toBe('');
+    // All three calculated columns carry the same explicit could-not-calculate marker
+    // (PR #45 review: htTLV exported blank while Class/LGR said N/A).
+    expect(e.htTLV).toBe('N/A');
+    expect(e.Class).toBe('N/A');
     expect(e['LGR (%/y)']).toBe('N/A');
   });
 

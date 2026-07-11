@@ -184,9 +184,11 @@ export function buildExportRows(points) {
     'Age (y)': p.age ?? '',
     'Height (m)': p.height ?? '',
     'TLV (ml)': p.tlv ?? '',
-    htTLV: p.htlv != null ? formatHtTLV(p.htlv) : '',
-    // Uncalculable rows carry an explicit 'N/A' so an exported file shows they could not
-    // be classified (rather than a blank that reads like "not filled in").
+    // Uncalculable rows carry an explicit 'N/A' in every calculated column (htTLV,
+    // Class, LGR) so an exported file shows they could not be classified (rather than
+    // a blank that reads like "not filled in"). Import ignores these columns, so the
+    // marker round-trips safely.
+    htTLV: p.uncalculable ? 'N/A' : p.htlv != null ? formatHtTLV(p.htlv) : '',
     Class: p.uncalculable ? 'N/A' : (p.class ?? ''),
     'LGR (%/y)': p.lgr,
     Group: p.group || '',

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 
 test('dist server rejects missing assets and traversal while serving SPA navigation', async ({
   request,
@@ -176,6 +176,59 @@ test('all three calculated columns show a styled N/A for uncalculable rows (issu
     'could not be calculated (missing or out-of-range height, age and TLV) — shown as N/A in table and not plotted'
   );
   expect(await note.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(138, 109, 59)');
+});
+
+test('every export format marks uncalculable rows N/A in all calculated columns (issue #37)', async ({
+  page,
+}, testInfo) => {
+  await page.goto('?acknowledgeBanner=true');
+  await importJson(page, 'export-na.json', [
+    { id: 'ok', age: 40, height: 1.7, tlv: 3400 },
+    { id: 'na', age: 40, tlv: 3400 }, // missing height -> uncalculable
+  ]);
+  await expect(page.locator('tbody tr')).toHaveCount(2);
+
+  const downloadAs = async (format) => {
+    await page.getByRole('button', { name: 'Download Data' }).click();
+    const download = page.waitForEvent('download');
+    await page.locator('.download-menu .menu-item', { hasText: format }).click();
+    const file = await download;
+    const path = testInfo.outputPath(file.suggestedFilename());
+    await file.saveAs(path);
+    return path;
+  };
+
+  // JSON: the uncalculable row carries N/A in htTLV, Class and LGR; the calculable
+  // row keeps real values (htTLV exported blank was the last open PR #45 review item).
+  const json = JSON.parse(readFileSync(await downloadAs('JSON'), 'utf8'));
+  const na = json.find((row) => row.ID === 'na');
+  expect(na.htTLV).toBe('N/A');
+  expect(na.Class).toBe('N/A');
+  expect(na['LGR (%/y)']).toBe('N/A');
+  const ok = json.find((row) => row.ID === 'ok');
+  expect(ok.htTLV).toMatch(/^\d/);
+  expect(ok.Class).toMatch(/^[A-E]$/);
+
+  // CSV: same row, same three markers, height cell blank.
+  const csv = readFileSync(await downloadAs('CSV'), 'utf8');
+  expect(csv.split('\n')).toContain('na,40,,3400,N/A,N/A,N/A,,');
+
+  // Excel: read back the workbook and check the same cells. Column keys are a
+  // write-time concept in ExcelJS, so address cells via the header row.
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(await downloadAs('Excel'));
+  const sheet = workbook.worksheets[0];
+  const columnIndex = {};
+  sheet.getRow(1).eachCell((cell, col) => {
+    columnIndex[cell.value] = col;
+  });
+  const naRow = [2, 3]
+    .map((r) => sheet.getRow(r))
+    .find((row) => row.getCell(columnIndex.ID).value === 'na');
+  expect(naRow.getCell(columnIndex.htTLV).value).toBe('N/A');
+  expect(naRow.getCell(columnIndex.Class).value).toBe('N/A');
+  expect(naRow.getCell(columnIndex['LGR (%/y)']).value).toBe('N/A');
 });
 
 test('importing grouped data reveals the Group/Color columns (issue #37)', async ({ page }) => {
