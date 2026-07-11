@@ -6,6 +6,10 @@ node_modules
 /.worktrees
 /.superpowers
 
+# Playwright e2e output (npm run test:e2e)
+/test-results
+/playwright-report
+
 
 # local env files
 .env.local
