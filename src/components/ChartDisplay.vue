@@ -243,6 +243,10 @@ const initChart = () => {
             tension: 0,
             fill: '-1', // fill up to previous dataset (T2)
             backgroundColor: CONFIG.CLASS_COLORS.B.band, // Class B band (between T1 and T2)
+            // These two T1 fills share lineDataT1 with the visible 'Threshold 1' line, so a
+            // 'nearest' tooltip over T1 ties on all three and lists the fills too (issue #36).
+            // isFill hides them from the tooltip (same flag the T4 left-polygon fill uses).
+            isFill: true,
             order: 4.5,
           },
           // Fill between T1 and baseline (PG1 color)
@@ -258,6 +262,7 @@ const initChart = () => {
             tension: 0,
             fill: '+1', // fill down to next dataset (baseline)
             backgroundColor: CONFIG.CLASS_COLORS.A.band, // Class A band (between T1 and baseline)
+            isFill: true, // hide from tooltip — shares T1 points (issue #36)
             order: 4.6,
           },
           // Baseline dataset used as fill target for T1 below-fill
@@ -400,6 +405,11 @@ const initChart = () => {
             display: false,
           },
           tooltip: {
+            // Drop fill-only datasets before they become tooltip rows. Threshold 1 carries its
+            // two class-band fills on separate datasets that share its points, so without this a
+            // hover over T1 lists 'T1 Above Fill'/'T1 Below Fill' alongside it (issue #36); the
+            // other thresholds are single datasets and already show one line.
+            filter: (item) => !(item.dataset && item.dataset.isFill),
             callbacks: {
               label: function (context) {
                 // Hide fill-only datasets from the tooltip

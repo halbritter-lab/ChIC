@@ -29,6 +29,14 @@ describe('ChartDisplay module registration', () => {
     expect(source).toContain('order: 4.4');
   });
 
+  it('hides threshold fill datasets from the tooltip (issue #36)', () => {
+    // The two T1 fills share Threshold 1's points, so a 'nearest' tooltip over T1 ties on all
+    // three; isFill + the tooltip filter drop the fills so only the line shows.
+    expect(source).toContain('filter: (item) => !(item.dataset && item.dataset.isFill)');
+    // Left polygon fill + the two T1 band fills.
+    expect((source.match(/isFill: true/g) || []).length).toBeGreaterThanOrEqual(3);
+  });
+
   it('clears the SVG overlay without redrawing selected props from clearChart', () => {
     expect(source).toContain('const clearRingOverlay = () =>');
     const clearChart = source.match(/const clearChart = \(\) => \{([\s\S]*?)\n\};/)?.[1];
