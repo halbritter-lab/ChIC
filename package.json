@@ -22,7 +22,7 @@
     "typecheck": "vue-tsc --noEmit -p jsconfig.json"
   },
   "dependencies": {
-    "chart.js": "^4.4.0",
+    "chart.js": "^4.5.1",
     "exceljs": "^4.4.0",
     "vue": "^3.2.13",
     "vue-router": "^4.2.5"
